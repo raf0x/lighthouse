@@ -165,31 +165,65 @@ export default function Home() {
               </div>
 
               {/* MAU Trend Chart */}
-              <div className="mt-4 pt-4 border-t">
-                <p className="text-xs text-gray-500 mb-2">Monthly Active Users (Last 5 Months)</p>
-                <div className="flex items-end space-x-1 h-12">
-                  {selectedAccount.monthly_active_users.map((mau, i) => (
-                    <div 
-                      key={i} 
-                      className="flex-1 bg-blue-500 rounded-t"
-                      style={{ 
-                        height: `${(mau / Math.max(...selectedAccount.monthly_active_users)) * 100}%`,
-                        opacity: 0.4 + (i * 0.15)
-                      }}
-                    />
-                  ))}
-                </div>
-                <div className="flex justify-between text-xs text-gray-400 mt-1">
-                  <span>{selectedAccount.monthly_active_users[0]}</span>
-                  <span className={`font-semibold ${
-                    selectedAccount.monthly_active_users[4] > selectedAccount.monthly_active_users[0] 
-                      ? 'text-green-600' 
-                      : 'text-red-600'
-                  }`}>
-                    {selectedAccount.monthly_active_users[4]}
-                  </span>
-                </div>
-              </div>
+<div className="mt-4 pt-4 border-t">
+  <p className="text-xs text-gray-500 mb-3 flex items-center justify-between">
+    <span>Monthly Active Users (Last 5 Months)</span>
+    <span className={`text-xs font-semibold ${
+      selectedAccount.monthly_active_users[4] > selectedAccount.monthly_active_users[0] 
+        ? 'text-green-600' 
+        : 'text-red-600'
+    }`}>
+      {selectedAccount.monthly_active_users[4] > selectedAccount.monthly_active_users[0] ? '↑' : '↓'}
+      {Math.abs(selectedAccount.monthly_active_users[4] - selectedAccount.monthly_active_users[0])} users
+    </span>
+  </p>
+  <div className="flex items-end space-x-2 h-16">
+    {selectedAccount.monthly_active_users.map((mau, i) => {
+      const prevMau = i > 0 ? selectedAccount.monthly_active_users[i - 1] : mau;
+      const isGrowth = mau >= prevMau;
+      const maxMau = Math.max(...selectedAccount.monthly_active_users);
+      
+      return (
+        <div 
+          key={i} 
+          className="flex-1 group relative flex flex-col items-center"
+        >
+          {/* Hover tooltip */}
+          <div className="absolute -top-8 opacity-0 group-hover:opacity-100 transition-opacity bg-gray-900 text-white text-xs px-2 py-1 rounded whitespace-nowrap z-10">
+            {mau} users
+          </div>
+          
+          {/* Bar */}
+          <div 
+            className={`w-full rounded-t transition-all cursor-pointer ${
+              isGrowth ? 'bg-gradient-to-t from-green-400 to-green-600' : 'bg-gradient-to-t from-red-400 to-red-600'
+            } group-hover:opacity-90`}
+            style={{ 
+              height: `${(mau / maxMau) * 100}%`,
+            }}
+          />
+          
+          {/* Month label */}
+          <span className="text-xs text-gray-400 mt-1">M{i + 1}</span>
+        </div>
+      );
+    })}
+  </div>
+  
+  {/* Summary */}
+  <div className="flex justify-between items-center text-xs mt-3 pt-2 border-t border-gray-100">
+    <span className="text-gray-500">
+      Start: <span className="font-semibold text-gray-700">{selectedAccount.monthly_active_users[0]}</span>
+    </span>
+    <span className={`font-semibold ${
+      selectedAccount.monthly_active_users[4] > selectedAccount.monthly_active_users[0] 
+        ? 'text-green-600' 
+        : 'text-red-600'
+    }`}>
+      Current: {selectedAccount.monthly_active_users[4]}
+    </span>
+  </div>
+</div>
 
               {/* Confidence Indicators */}
               <div className="mt-4 pt-4 border-t flex items-center space-x-6 text-xs">
