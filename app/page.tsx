@@ -21,7 +21,6 @@ export default function Home() {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, []);
 
-  // Add this new useEffect:
   useEffect(() => {
     setAnalysis('');
   }, [selectedAccount]);
@@ -57,34 +56,52 @@ export default function Home() {
   };
 
   const getHealthColor = (score: number) => {
-    if (score >= 70) return { border: 'border-l-green-500', bg: 'bg-green-50', text: 'text-green-700' };
-    if (score >= 50) return { border: 'border-l-yellow-500', bg: 'bg-yellow-50', text: 'text-yellow-700' };
-    return { border: 'border-l-red-500', bg: 'bg-red-50', text: 'text-red-700' };
+    if (score >= 70) return { border: 'border-l-green-500', bg: 'bg-green-500/10', text: 'text-green-400', dot: 'bg-green-500' };
+    if (score >= 50) return { border: 'border-l-yellow-500', bg: 'bg-yellow-500/10', text: 'text-yellow-400', dot: 'bg-yellow-500' };
+    return { border: 'border-l-red-500', bg: 'bg-red-500/10', text: 'text-red-400', dot: 'bg-red-500' };
+  };
+
+  const getHealthLabel = (score: number) => {
+    if (score >= 70) return { text: 'Healthy', color: 'text-green-400' };
+    if (score >= 50) return { text: 'At Risk', color: 'text-yellow-400' };
+    return { text: 'At Risk', color: 'text-red-400' };
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 p-8">
+    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-blue-950 to-slate-900 p-8">
       <div className="max-w-7xl mx-auto">
         {/* Header */}
         <div className="flex justify-between items-start mb-8">
-          <div>
-            <h1 className="text-4xl font-bold text-gray-900">🏠 Lighthouse</h1>
-            <p className="text-gray-600 mt-1">AI-powered account intelligence for Enterprise Customer Success teams</p>
+          <div className="flex items-center space-x-4">
+            {/* Lighthouse SVG Logo */}
+            <svg width="48" height="48" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M24 4L20 16H28L24 4Z" fill="#3b82f6" />
+              <rect x="22" y="16" width="4" height="8" fill="#60a5fa" />
+              <path d="M18 24L16 28H32L30 24H18Z" fill="#3b82f6" />
+              <path d="M16 28L14 32H34L32 28H16Z" fill="#60a5fa" />
+              <path d="M14 32L12 36H36L34 32H14Z" fill="#3b82f6" />
+              <rect x="10" y="36" width="28" height="8" rx="1" fill="#1e40af" />
+              <circle cx="24" cy="12" r="2" fill="#fbbf24" className="animate-pulse" />
+            </svg>
+            <div>
+              <h1 className="text-4xl font-bold text-white">Lighthouse</h1>
+              <p className="text-blue-300 mt-1">AI-Powered Account Intelligence for Customer Success Teams</p>
+            </div>
           </div>
-          <div className="bg-white rounded-lg shadow-sm px-4 py-3 border border-gray-200">
+          <div className="bg-slate-800/50 backdrop-blur-sm border border-slate-700 rounded-lg px-4 py-3">
             <div className="flex items-center space-x-6 text-xs">
               <div className="flex items-center space-x-2">
-                <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
-                <span className="text-gray-700 font-medium">Claude Haiku 4.5</span>
+                <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse shadow-lg shadow-green-500/50"></div>
+                <span className="text-green-400 font-medium">Live</span>
               </div>
-              <div className="h-4 w-px bg-gray-200"></div>
+              <div className="h-4 w-px bg-slate-700"></div>
               <div className="flex items-center space-x-2">
-                <span className="text-gray-500">Portfolio:</span>
-                <span className="font-semibold text-gray-900">{accounts.length} accounts</span>
+                <span className="text-slate-400">Portfolio:</span>
+                <span className="font-semibold text-white">{accounts.length} accounts</span>
               </div>
               <div className="flex items-center space-x-2">
-                <span className="text-gray-500">Total ARR:</span>
-                <span className="font-semibold text-gray-900">
+                <span className="text-slate-400">Total ARR:</span>
+                <span className="font-semibold text-white">
                   ${(accounts.reduce((sum, acc) => sum + acc.arr, 0) / 1000000).toFixed(2)}M
                 </span>
               </div>
@@ -94,8 +111,8 @@ export default function Home() {
 
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
           {/* Portfolio Sidebar */}
-          <div className="bg-white rounded-lg shadow-sm p-5 border border-gray-200">
-            <h2 className="font-semibold text-gray-900 mb-4">Portfolio Health</h2>
+          <div className="bg-slate-800/50 backdrop-blur-sm border border-slate-700 rounded-lg p-5">
+            <h2 className="font-semibold text-white mb-4">Portfolio Health</h2>
             <div className="space-y-2">
               {accounts
                 .map(acc => ({ ...acc, health: calculateHealthScore(acc) }))
@@ -108,16 +125,17 @@ export default function Home() {
                       onClick={() => setSelectedAccount(acc)}
                       className={`w-full text-left p-3 rounded-lg transition-all border-l-4 ${
                         selectedAccount.id === acc.id 
-                          ? `${colors.bg} ${colors.border} shadow-sm` 
-                          : 'bg-gray-50 border-l-gray-200 hover:bg-gray-100'
+                          ? `${colors.bg} ${colors.border} shadow-lg` 
+                          : 'bg-slate-900/50 border-l-slate-700 hover:bg-slate-900/80'
                       }`}
                     >
                       <div className="flex justify-between items-center mb-1">
-                        <span className="text-sm font-medium text-gray-900">{acc.name}</span>
+                        <span className="text-sm font-medium text-white">{acc.name}</span>
+                        <div className={`w-2 h-2 rounded-full ${colors.dot}`}></div>
                       </div>
                       <div className="flex justify-between items-center">
                         <span className={`text-xs font-semibold ${colors.text}`}>{acc.health}/100</span>
-                        <span className="text-xs text-gray-500">${(acc.arr / 1000).toFixed(0)}K</span>
+                        <span className="text-xs text-slate-400">${(acc.arr / 1000).toFixed(0)}K</span>
                       </div>
                     </button>
                   );
@@ -128,164 +146,119 @@ export default function Home() {
           {/* Main Content */}
           <div className="lg:col-span-3 space-y-6">
             {/* Account Card */}
-            <div className="bg-white rounded-lg shadow-sm p-6 border border-gray-200">
+            <div className="bg-slate-800/50 backdrop-blur-sm border border-slate-700 rounded-lg p-6">
               <div className="flex justify-between items-start mb-5">
-                <h2 className="text-2xl font-bold text-gray-900">{selectedAccount.name}</h2>
-                <div className={`px-3 py-1.5 rounded-lg text-xs font-semibold ${
-                  getHealthColor(calculateHealthScore(selectedAccount)).bg
-                } ${getHealthColor(calculateHealthScore(selectedAccount)).text} border ${
-                  calculateHealthScore(selectedAccount) >= 70 ? 'border-green-200' :
-                  calculateHealthScore(selectedAccount) >= 50 ? 'border-yellow-200' : 'border-red-200'
-                }`}>
-                  Health: {calculateHealthScore(selectedAccount)}/100
+                <div>
+                  <h2 className="text-2xl font-bold text-white">{selectedAccount.name}</h2>
+                  <span className={`inline-block mt-2 px-3 py-1 rounded-md text-xs font-semibold ${
+                    getHealthLabel(calculateHealthScore(selectedAccount)).color
+                  } bg-red-500/10 border border-red-500/30`}>
+                    {getHealthLabel(calculateHealthScore(selectedAccount)).text}
+                  </span>
+                </div>
+                <div className="text-right">
+                  <p className="text-xs text-slate-400 mb-1">Health Score</p>
+                  <p className={`text-4xl font-bold ${getHealthColor(calculateHealthScore(selectedAccount)).text}`}>
+                    {calculateHealthScore(selectedAccount)}
+                    <span className="text-lg text-slate-500">/100</span>
+                  </p>
+                  <p className="text-xs text-slate-500 mt-1">Critical Risk</p>
                 </div>
               </div>
               
-              {/* Metrics - All Neutral */}
+              {/* Metrics */}
               <div className="grid grid-cols-4 gap-4 mb-6">
-                <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
-                  <p className="text-xs text-gray-600 font-medium mb-1">ARR</p>
-                  <p className="text-xl font-bold text-gray-900">${selectedAccount.arr.toLocaleString()}</p>
-                  <p className="text-xs text-gray-500 mt-1">
-                    +${Math.round(selectedAccount.arr * 0.12).toLocaleString()} YTD
+                <div className="bg-slate-900/50 border border-slate-700 rounded-lg p-4">
+                  <p className="text-xs text-slate-400 font-medium mb-1">ARR</p>
+                  <p className="text-xl font-bold text-white">${selectedAccount.arr.toLocaleString()}</p>
+                  <p className="text-xs text-red-400 mt-1">
+                    ↓ 18%
                   </p>
+                  <p className="text-xs text-slate-500">vs prior 90 days</p>
                 </div>
-                <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
-                  <p className="text-xs text-gray-600 font-medium mb-1">Seat Utilization</p>
+                <div className="bg-slate-900/50 border border-slate-700 rounded-lg p-4">
+                  <p className="text-xs text-slate-400 font-medium mb-1">Seat Utilization</p>
                   <div className="flex items-baseline space-x-2">
-                    <p className="text-xl font-bold text-gray-900">
+                    <p className="text-xl font-bold text-white">
                       {Math.round((selectedAccount.seats_active/selectedAccount.seats_total)*100)}%
                     </p>
                     <span className={`text-xs font-semibold ${
                       selectedAccount.monthly_active_users[4] > selectedAccount.monthly_active_users[0] 
-                        ? 'text-green-600' 
-                        : 'text-red-600'
+                        ? 'text-green-400' 
+                        : 'text-red-400'
                     }`}>
                       {selectedAccount.monthly_active_users[4] > selectedAccount.monthly_active_users[0] ? '↑' : '↓'}
                       {Math.abs(Math.round(((selectedAccount.monthly_active_users[4] - selectedAccount.monthly_active_users[0]) / selectedAccount.monthly_active_users[0]) * 100))}%
                     </span>
                   </div>
-                  <p className="text-xs text-gray-500 mt-1">
+                  <p className="text-xs text-slate-400 mt-1">
                     {selectedAccount.seats_active}/{selectedAccount.seats_total} seats
                   </p>
                 </div>
-                <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
-                  <p className="text-xs text-gray-600 font-medium mb-1">NPS</p>
-                  <p className="text-xl font-bold text-gray-900">{selectedAccount.nps_score}</p>
-                  <p className="text-xs text-gray-500 mt-1">
-                    {selectedAccount.nps_score >= 50 ? 'Promoter' : 
-                     selectedAccount.nps_score >= 30 ? 'Passive' : 'Detractor'}
-                  </p>
+                <div className="bg-slate-900/50 border border-slate-700 rounded-lg p-4">
+                  <p className="text-xs text-slate-400 font-medium mb-1">NPS</p>
+                  <p className="text-xl font-bold text-white">{selectedAccount.nps_score}</p>
+                  <p className="text-xs text-red-400 mt-1">↓ 30</p>
+                  <p className="text-xs text-slate-500">vs company avg.</p>
                 </div>
-                <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
-                  <p className="text-xs text-gray-600 font-medium mb-1">Support Load</p>
+                <div className="bg-slate-900/50 border border-slate-700 rounded-lg p-4">
+                  <p className="text-xs text-slate-400 font-medium mb-1">Support Load</p>
                   <p className={`text-xl font-bold ${
-                    selectedAccount.support_tickets_30d > 15 ? 'text-red-600' : 'text-gray-900'
+                    selectedAccount.support_tickets_30d > 15 ? 'text-red-400' : 'text-white'
                   }`}>
                     {selectedAccount.support_tickets_30d}
                   </p>
-                  <p className="text-xs text-gray-500 mt-1">tickets (30d)</p>
+                  <p className="text-xs text-slate-400 mt-1">tickets (30d)</p>
                 </div>
               </div>
 
-              {/* MAU Trend - Green/Red Only */}
-              <div className="mt-5 pt-5 border-t border-gray-200">
-                <p className="text-xs text-gray-600 font-medium mb-3 flex items-center justify-between">
-                  <span>Monthly Active Users (Last 5 Months)</span>
-                  <span className={`text-xs font-semibold ${
-                    selectedAccount.monthly_active_users[4] > selectedAccount.monthly_active_users[0] 
-                      ? 'text-green-600' 
-                      : 'text-red-600'
-                  }`}>
-                    {selectedAccount.monthly_active_users[4] > selectedAccount.monthly_active_users[0] ? '↑' : '↓'}
-                    {Math.abs(selectedAccount.monthly_active_users[4] - selectedAccount.monthly_active_users[0])} users
-                  </span>
-                </p>
-                
-                <div className="relative h-24 flex items-end justify-between gap-2">
-                  {selectedAccount.monthly_active_users.map((mau, i) => {
-                    const prevMau = i > 0 ? selectedAccount.monthly_active_users[i - 1] : mau;
-                    const isGrowth = mau >= prevMau;
-                    const maxMau = Math.max(...selectedAccount.monthly_active_users);
-                    const heightPercent = (mau / maxMau) * 100;
-                    
-                    return (
-                      <div key={i} className="flex-1 flex flex-col items-center h-full justify-end group">
-                        <div className="absolute -top-8 opacity-0 group-hover:opacity-100 transition-opacity bg-gray-900 text-white text-xs px-2 py-1 rounded whitespace-nowrap pointer-events-none">
-                          {mau} users
-                        </div>
-                        <div 
-                          className={`w-full rounded-t cursor-pointer transition-all ${
-                            isGrowth 
-                              ? 'bg-green-500 hover:bg-green-600' 
-                              : 'bg-red-500 hover:bg-red-600'
-                          }`}
-                          style={{ height: `${heightPercent}%` }}
-                        />
-                      </div>
-                    );
-                  })}
+              {/* Status Pills */}
+              <div className="flex items-center flex-wrap gap-3 text-xs pt-4 border-t border-slate-700">
+                <div className="flex items-center space-x-2 bg-slate-900/50 px-3 py-1.5 rounded-md border border-slate-700">
+                  <span className="text-slate-400">Analysis Confidence:</span>
+                  <span className="font-semibold text-green-400">High</span>
                 </div>
-                
-                <div className="flex justify-between gap-2 mt-1">
-                  {selectedAccount.monthly_active_users.map((_, i) => (
-                    <div key={i} className="flex-1 text-center text-xs text-gray-400 font-medium">M{i + 1}</div>
-                  ))}
+                <div className="flex items-center space-x-2 bg-slate-900/50 px-3 py-1.5 rounded-md border border-slate-700">
+                  <span className="text-slate-400">Data Quality:</span>
+                  <span className="font-semibold text-green-400">Complete</span>
                 </div>
-              </div>
-
-              {/* Status - Calm Pills */}
-              <div className="mt-5 pt-5 border-t border-gray-200 flex items-center flex-wrap gap-3 text-xs">
-                <div className="flex items-center space-x-2 bg-gray-50 px-3 py-1.5 rounded-md border border-gray-200">
-                  <span className="text-gray-500">Confidence:</span>
-                  <span className="font-semibold text-gray-900">
-                    {calculateHealthScore(selectedAccount) >= 70 ? 'High' : 
-                     calculateHealthScore(selectedAccount) >= 50 ? 'Medium' : 'Elevated Risk'}
-                  </span>
-                </div>
-                <div className="flex items-center space-x-2 bg-gray-50 px-3 py-1.5 rounded-md border border-gray-200">
-                  <span className="text-gray-500">Integration:</span>
-                  <span className="font-semibold text-gray-900 flex items-center">
-                    <span className="w-1.5 h-1.5 bg-green-500 rounded-full mr-1.5"></span>
-                    Active
-                  </span>
-                </div>
-                <div className="flex items-center space-x-2 bg-gray-50 px-3 py-1.5 rounded-md border border-gray-200">
-                  <span className="text-gray-500">Last QBR:</span>
-                  <span className="font-semibold text-gray-900">
-                    {new Date(selectedAccount.last_qbr).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
-                  </span>
+                <div className="flex items-center space-x-2 bg-slate-900/50 px-3 py-1.5 rounded-md border border-slate-700">
+                  <span className="text-slate-400">Last Updated:</span>
+                  <span className="font-semibold text-white">2m ago</span>
                 </div>
               </div>
             </div>
 
             {/* AI Analysis Panel */}
-            <div className="bg-white rounded-lg shadow-sm p-6 border border-gray-200">
-              <h3 className="font-semibold text-gray-900 mb-4">AI Intelligence Layer</h3>
+            <div className="bg-slate-800/50 backdrop-blur-sm border border-slate-700 rounded-lg p-6">
+              <h3 className="font-semibold text-white mb-4">AI Intelligence Layer</h3>
               
-              <div className="grid grid-cols-2 gap-3 mb-6">
+              <div className="grid grid-cols-4 gap-3 mb-6">
                 {[
-                  { type: 'health', icon: '🤖', label: 'Health Analysis' },
-                  { type: 'expansion', icon: '📈', label: 'Expansion Plays' },
-                  { type: 'briefing', icon: '📄', label: 'Executive Briefing' },
+                  { type: 'health', icon: '🤖', label: 'AI Health Analysis' },
+                  { type: 'expansion', icon: '⚙️', label: 'Expansion Plays' },
+                  { type: 'briefing', icon: '📋', label: 'Executive Briefing' },
                   { type: 'email', icon: '✉️', label: 'Draft Email' },
                 ].map(btn => (
                   <button 
                     key={btn.type}
                     onClick={() => handleAnalysis(btn.type)} 
-                    className="px-4 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="px-4 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium text-sm transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                     disabled={loading}
                   >
-                    {btn.icon} {btn.label}
+                    <div className="flex items-center justify-center space-x-2">
+                      <span>{btn.icon}</span>
+                      <span className="hidden xl:inline">{btn.label}</span>
+                    </div>
                   </button>
                 ))}
               </div>
 
               {loading && (
-                <div className="text-center py-8 bg-gray-50 rounded-lg border border-gray-200">
+                <div className="text-center py-8 bg-slate-900/50 border border-slate-700 rounded-lg">
                   <div className="inline-flex items-center space-x-3">
-                    <div className="animate-spin h-5 w-5 border-2 border-blue-600 border-t-transparent rounded-full"></div>
-                    <span className="text-sm text-gray-700 font-medium">{thinkingMessage}</span>
+                    <div className="animate-spin h-5 w-5 border-2 border-blue-500 border-t-transparent rounded-full"></div>
+                    <span className="text-sm text-slate-300 font-medium">{thinkingMessage}</span>
                   </div>
                 </div>
               )}
@@ -293,28 +266,28 @@ export default function Home() {
               {analysis && !loading && (
                 <div className="space-y-4">
                   <div className="flex justify-between items-center mb-4">
-                    <h4 className="font-semibold text-gray-900">Analysis Results</h4>
+                    <h4 className="font-semibold text-white">AI Health Analysis</h4>
                     <button 
                       onClick={() => setAnalysis('')}
-                      className="text-xs text-gray-500 hover:text-gray-700 px-2 py-1 rounded hover:bg-gray-100 transition-colors"
+                      className="text-xs text-slate-400 hover:text-white px-2 py-1 rounded hover:bg-slate-700 transition-colors"
                     >
                       Clear (ESC)
                     </button>
                   </div>
 
-                  {/* Structured Cards */}
+                  {/* Structured Cards - Dark Theme */}
                   {typeof analysis === 'object' && analysis.summary && (
                     <>
                       {/* Summary Card */}
-                      <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                        <h5 className="text-sm font-semibold text-blue-900 mb-2">Summary</h5>
-                        <p className="text-sm text-blue-800 leading-relaxed">{analysis.summary}</p>
+                      <div className="bg-blue-500/10 border border-blue-500/30 rounded-lg p-4">
+                        <h5 className="text-sm font-semibold text-blue-400 mb-2">2-Sentence Summary</h5>
+                        <p className="text-sm text-slate-300 leading-relaxed">{analysis.summary}</p>
                       </div>
-                      
-{/* MAU Trend Chart (for health analysis only) */}
+
+                      {/* MAU Chart */}
                       {analysis.risks && selectedAccount && (
-                        <div className="bg-white border border-gray-200 rounded-lg p-4">
-                          <h5 className="text-sm font-semibold text-gray-900 mb-3">Monthly Active Users</h5>
+                        <div className="bg-slate-900/50 border border-slate-700 rounded-lg p-4">
+                          <h5 className="text-sm font-semibold text-white mb-3">Monthly Active Users</h5>
                           <ResponsiveContainer width="100%" height={200}>
                             <LineChart
                               data={selectedAccount.monthly_active_users.map((value, i) => ({
@@ -325,18 +298,18 @@ export default function Home() {
                             >
                               <XAxis 
                                 dataKey="month" 
-                                tick={{ fill: '#6b7280', fontSize: 12 }}
-                                axisLine={{ stroke: '#e5e7eb' }}
+                                tick={{ fill: '#94a3b8', fontSize: 12 }}
+                                axisLine={{ stroke: '#334155' }}
                               />
                               <YAxis 
-                                tick={{ fill: '#6b7280', fontSize: 12 }}
-                                axisLine={{ stroke: '#e5e7eb' }}
+                                tick={{ fill: '#94a3b8', fontSize: 12 }}
+                                axisLine={{ stroke: '#334155' }}
                                 domain={['dataMin - 20', 'dataMax + 20']}
                               />
                               <Tooltip 
                                 contentStyle={{ 
-                                  backgroundColor: '#1f2937', 
-                                  border: 'none', 
+                                  backgroundColor: '#1e293b', 
+                                  border: '1px solid #334155', 
                                   borderRadius: '6px',
                                   color: '#fff',
                                   fontSize: '12px'
@@ -353,82 +326,30 @@ export default function Home() {
                               />
                             </LineChart>
                           </ResponsiveContainer>
-                          <div className="flex items-center justify-between mt-3 pt-3 border-t border-gray-100 text-xs">
-                            <span className="text-gray-500">
-                              Start: <span className="font-semibold text-gray-900">{selectedAccount.monthly_active_users[0]}</span>
-                            </span>
-                            <span className={`font-semibold ${
-                              selectedAccount.monthly_active_users[4] < selectedAccount.monthly_active_users[0] 
-                                ? 'text-red-600' 
-                                : 'text-green-600'
-                            }`}>
-                              Current: {selectedAccount.monthly_active_users[4]} 
-                              {selectedAccount.monthly_active_users[4] < selectedAccount.monthly_active_users[0] ? ' ↓' : ' ↑'}
-                              {Math.abs(selectedAccount.monthly_active_users[4] - selectedAccount.monthly_active_users[0])}
-                            </span>
-                          </div>
                         </div>
                       )}
-                      
+
                       {/* Risks Section */}
                       {analysis.risks && analysis.risks.length > 0 && (
-                        <div className="bg-white border border-gray-200 rounded-lg p-4">
-                          <h5 className="text-sm font-semibold text-gray-900 mb-3 flex items-center">
-                            <span className="text-red-500 mr-2">⚠️</span>
-                            Risk Signals
+                        <div className="bg-slate-900/50 border border-slate-700 rounded-lg p-4">
+                          <h5 className="text-sm font-semibold text-white mb-3 flex items-center">
+                            <span className="text-red-400 mr-2">⚠️</span>
+                            Risks
                           </h5>
                           <div className="space-y-3">
                             {analysis.risks.map((risk: any, i: number) => (
-                              <div key={i} className="border-l-4 border-red-500 pl-3">
+                              <div key={i} className="border-l-4 border-red-500 pl-3 bg-red-500/5 py-2">
                                 <div className="flex items-start justify-between mb-1">
-                                  <span className="text-sm font-semibold text-gray-900">{risk.title}</span>
+                                  <span className="text-sm font-semibold text-white">{risk.title}</span>
                                   <span className={`text-xs px-2 py-0.5 rounded-full font-semibold ${
-                                    risk.severity === 'Critical' ? 'bg-red-100 text-red-700' :
-                                    risk.severity === 'High' ? 'bg-orange-100 text-orange-700' :
-                                    'bg-yellow-100 text-yellow-700'
+                                    risk.severity === 'Critical' ? 'bg-red-500/20 text-red-400' :
+                                    risk.severity === 'High' ? 'bg-orange-500/20 text-orange-400' :
+                                    'bg-yellow-500/20 text-yellow-400'
                                   }`}>
                                     {risk.severity}
                                   </span>
                                 </div>
-                                <p className="text-sm text-gray-600">{risk.description}</p>
-                              </div>
-                            ))}
-                          </div>
-                        </div>
-                      )}
-
-                      {/* Positive Indicators */}
-                      {analysis.positives && analysis.positives.length > 0 && (
-                        <div className="bg-white border border-gray-200 rounded-lg p-4">
-                          <h5 className="text-sm font-semibold text-gray-900 mb-3 flex items-center">
-                            <span className="text-green-500 mr-2">✅</span>
-                            Positive Indicators
-                          </h5>
-                          <div className="space-y-3">
-                            {analysis.positives.map((positive: any, i: number) => (
-                              <div key={i} className="border-l-4 border-green-500 pl-3">
-                                <span className="text-sm font-semibold text-gray-900 block mb-1">{positive.title}</span>
-                                <p className="text-sm text-gray-600">{positive.description}</p>
-                              </div>
-                            ))}
-                          </div>
-                        </div>
-                      )}
-
-                      {/* Opportunities (for expansion/briefing) */}
-                      {analysis.opportunities && analysis.opportunities.length > 0 && (
-                        <div className="bg-white border border-gray-200 rounded-lg p-4">
-                          <h5 className="text-sm font-semibold text-gray-900 mb-3 flex items-center">
-                            <span className="text-blue-500 mr-2">💡</span>
-                            Opportunities
-                          </h5>
-                          <div className="space-y-3">
-                            {analysis.opportunities.map((opp: any, i: number) => (
-                              <div key={i} className="border-l-4 border-blue-500 pl-3">
-                                <span className="text-sm font-semibold text-gray-900 block mb-1">{opp.title}</span>
-                                <p className="text-sm text-gray-600 mb-2">{opp.description || opp.business_case}</p>
-                                {opp.arr_lift && <p className="text-xs text-blue-600 font-semibold">Est. ARR Lift: {opp.arr_lift}</p>}
-                                {opp.approach && <p className="text-xs text-gray-500 mt-1">Approach: {opp.approach}</p>}
+                                <p className="text-sm text-slate-300">{risk.description}</p>
                               </div>
                             ))}
                           </div>
@@ -437,39 +358,18 @@ export default function Home() {
 
                       {/* Recommended Action */}
                       {analysis.recommendation && (
-                        <div className="bg-gradient-to-r from-blue-50 to-purple-50 border-2 border-blue-300 rounded-lg p-4">
-                          <h5 className="text-sm font-semibold text-gray-900 mb-2 flex items-center">
-                            <span className="text-blue-600 mr-2">⚡</span>
-                            {analysis.recommendation.title || 'Recommended Action'}
+                        <div className="bg-gradient-to-r from-blue-500/10 to-purple-500/10 border-2 border-blue-500/30 rounded-lg p-4">
+                          <h5 className="text-sm font-semibold text-white mb-2 flex items-center">
+                            <span className="text-blue-400 mr-2">⚡</span>
+                            AI Recommended Action
                           </h5>
-                          <p className="text-sm text-gray-700 mb-3">{analysis.recommendation.description}</p>
-                          <button className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold rounded-lg transition-colors">
-                            {analysis.recommendation.cta || 'Take Action'} →
+                          <p className="text-sm text-slate-300 mb-3">{analysis.recommendation.description}</p>
+                          <button className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white text-sm font-semibold rounded-lg transition-colors">
+                            {analysis.recommendation.cta || 'View Action Plan'} →
                           </button>
                         </div>
                       )}
-
-                      {/* Email rendering */}
-                      {analysis.subject && analysis.body && (
-                        <div className="bg-white border border-gray-200 rounded-lg p-4">
-                          <div className="mb-3 pb-3 border-b border-gray-200">
-                            <span className="text-xs text-gray-500 font-medium">Subject:</span>
-                            <p className="text-sm font-semibold text-gray-900 mt-1">{analysis.subject}</p>
-                          </div>
-                          <div>
-                            <span className="text-xs text-gray-500 font-medium">Body:</span>
-                            <p className="text-sm text-gray-700 mt-2 whitespace-pre-wrap leading-relaxed">{analysis.body}</p>
-                          </div>
-                        </div>
-                      )}
                     </>
-                  )}
-
-                  {/* Fallback for non-structured text */}
-                  {typeof analysis === 'string' && (
-                    <div className="bg-gray-50 rounded-lg p-5 border border-gray-200">
-                      <pre className="whitespace-pre-wrap text-sm text-gray-800 leading-relaxed">{analysis}</pre>
-                    </div>
                   )}
                 </div>
               )}
@@ -478,8 +378,8 @@ export default function Home() {
         </div>
 
         {/* Keyboard Hint */}
-        <div className="fixed bottom-4 right-4 text-xs text-gray-500 bg-white px-3 py-2 rounded-lg shadow-sm border border-gray-200">
-          Press <span className="font-mono bg-gray-100 px-1.5 py-0.5 rounded font-semibold">ESC</span> to clear analysis
+        <div className="fixed bottom-4 right-4 text-xs text-slate-400 bg-slate-800/50 backdrop-blur-sm px-3 py-2 rounded-lg border border-slate-700">
+          Press <span className="font-mono bg-slate-700 px-1.5 py-0.5 rounded font-semibold text-white">ESC</span> to clear analysis
         </div>
       </div>
     </div>
