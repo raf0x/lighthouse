@@ -10,12 +10,9 @@ export async function POST(request: Request) {
     const { account, type } = await request.json();
     const health = calculateHealthScore(account);
 
-    // Calculate portfolio context
-    const avgHealth = accounts.reduce((sum, acc) => 
-      sum + calculateHealthScore(acc), 0) / accounts.length;
+    const avgHealth = accounts.reduce((sum, acc) => sum + calculateHealthScore(acc), 0) / accounts.length;
     const accountHealth = calculateHealthScore(account);
-    const percentile = (accounts.filter(acc => 
-      calculateHealthScore(acc) < accountHealth).length / accounts.length) * 100;
+    const percentile = (accounts.filter(acc => calculateHealthScore(acc) < accountHealth).length / accounts.length) * 100;
     const isOutlier = accountHealth < (avgHealth - 20) || accountHealth > (avgHealth + 20);
 
     const portfolioContext = `
@@ -23,98 +20,111 @@ Portfolio Context:
 - Account health: ${health}/100
 - Portfolio average: ${Math.round(avgHealth)}/100
 - Account rank: ${Math.round(percentile)}th percentile
-${isOutlier ? '⚠️ OUTLIER: Significant deviation from portfolio norm' : ''}`;
+${isOutlier ? '⚠️ OUTLIER: Significant deviation from portfolio norm' : ''}
+`;
 
-    const prompts: Record<string, string> = {
-      health: `You are a Customer Success analyst. Analyze this enterprise account with appropriate hedging and professional uncertainty where data is limited.
+    const prompts: any = {
+      health: `You are a Customer Success analyst. Analyze this account and return ONLY valid JSON with NO preamble, NO markdown code fences, NO explanatory text.
 
 Account: ${account.name}
 ARR: $${account.arr}
 Seats: ${account.seats_active}/${account.seats_total}
-MAU Trend (5 months): ${account.monthly_active_users}
+MAU Trend: ${account.monthly_active_users.join(', ')}
 Support Tickets (30d): ${account.support_tickets_30d}
 NPS: ${account.nps_score}
-Last QBR: ${account.last_qbr}
 
 ${portfolioContext}
 
-Provide:
-1. **2-3 Sentence Summary** - Include hedging language where appropriate ("suggests", "indicates", "may require"). Reference portfolio context.
-2. **Top 3 Risk Signals** - Frame as "signals" not certainties. Note data limitations.
-3. **Top 2 Positive Indicators** - Acknowledge what's working
-4. **Recommended Action** - Use measured language ("consider", "recommend review", "may benefit from")
+Return ONLY this JSON structure with NO additional text:
+{
+  "summary": "2-3 sentence executive summary with measured language",
+  "risks": [
+    {"title": "Risk title", "description": "Brief explanation", "severity": "Critical|High|Medium"}
+  ],
+  "positives": [
+    {"title": "Positive signal", "description": "Brief explanation"}
+  ],
+  "recommendation": {
+    "title": "Recommended action title",
+    "description": "What to do and why",
+    "cta": "Action button text"
+  }
+}`,
 
-Use professional hedging. Real CS analysis acknowledges uncertainty.`,
-
-      expansion: `You are a Customer Success expansion strategist. Identify 2-3 expansion opportunities with realistic qualifications.
+      expansion: `Identify expansion opportunities. Return ONLY valid JSON with NO preamble or markdown.
 
 Account: ${account.name}
 Industry: ${account.industry}
 ARR: $${account.arr}
-Seats: ${account.seats_active}/${account.seats_total} active
-MAU Trend: ${account.monthly_active_users}
+Seats: ${account.seats_active}/${account.seats_total}
 
 ${portfolioContext}
 
-For each opportunity:
-1. Title
-2. Business case (include "if X is resolved" qualifiers where relevant)
-3. Estimated ARR lift (provide ranges, not exact numbers)
-4. Recommended approach (acknowledge potential obstacles)
+Return ONLY this JSON:
+{
+  "summary": "Brief expansion overview",
+  "opportunities": [
+    {"title": "Opportunity name", "business_case": "Why this matters", "arr_lift": "Estimated value", "approach": "How to pitch"}
+  ]
+}`,
 
-Consider portfolio benchmarks when evaluating expansion readiness. Acknowledge adoption or engagement barriers where relevant.`,
-
-      briefing: `Create an executive briefing with appropriate professional hedging.
+      briefing: `Create executive briefing. Return ONLY valid JSON with NO preamble.
 
 Account: ${account.name}
-Executive: ${account.executive_contact}
 ARR: $${account.arr}
-Health Score: ${health}/100
-Seat Utilization: ${Math.round((account.seats_active/account.seats_total)*100)}%
-MAU Trend: ${account.monthly_active_users[4]} current vs ${account.monthly_active_users[0]} (5 months ago)
-NPS: ${account.nps_score}
+Health: ${health}/100
 
 ${portfolioContext}
 
-Format:
-**Executive Summary** (2-3 sentences with measured language, reference portfolio position)
-**Key Risk Signals** (frame as signals, not certainties; note confidence levels)
-**Growth Opportunities** (1-2 with realistic qualifications)
-**Recommended Next Actions** (3-4 actions with timeframes and contingencies)
+Return ONLY this JSON:
+{
+  "summary": "Executive summary",
+  "risks": [{"title": "Risk", "description": "Details", "severity": "Critical|High|Medium"}],
+  "opportunities": [{"title": "Growth opportunity", "description": "Details"}],
+  "next_actions": ["Action 1", "Action 2"]
+}`,
 
-Use executive-appropriate hedging. Consider portfolio context in recommendations.`,
+      email: `Draft email to ${account.executive_contact} at ${account.name}.
 
-      email: `Draft a personalized, consultative email to ${account.executive_contact} at ${account.name}.
+Context: Last QBR ${account.last_qbr}, MAU ${account.monthly_active_users[4]}, Health ${health}/100
 
-Context:
-- Last QBR: ${account.last_qbr}
-- Current MAU: ${account.monthly_active_users[4]}
-- Seat utilization: ${Math.round((account.seats_active/account.seats_total)*100)}%
-- Support tickets: ${account.support_tickets_30d}
-- Account health: ${health}/100
-- Portfolio average: ${Math.round(avgHealth)}/100
-
-Tone: Professional, consultative, appropriately tentative. Reference specific signals without being presumptuous about internal dynamics.
-
-Format: Subject + Body (under 150 words)
-
-Real CS emails acknowledge that you're working with incomplete information. Use appropriate hedging.`,
+Return ONLY this JSON:
+{
+  "subject": "Email subject line",
+  "body": "Email body (under 150 words, professional tone)"
+}`
     };
 
     const message = await client.messages.create({
       model: 'claude-haiku-4-5-20251001',
-      max_tokens: 1200,
+      max_tokens: 800,
       messages: [{ role: 'user', content: prompts[type] }],
     });
 
+    const rawText = message.content[0].type === 'text' ? message.content[0].text : '';
+    
+    // Strip markdown code fences if present
+    const cleanedText = rawText.replace(/```json\n?|\n?```/g, '').trim();
+    
+    // Parse JSON
+    let analysisData;
+    try {
+      analysisData = JSON.parse(cleanedText);
+    } catch (parseError) {
+      return NextResponse.json({ 
+        error: 'JSON parse error', 
+        raw: rawText,
+        cleaned: cleanedText 
+      }, { status: 500 });
+    }
+
     return NextResponse.json({
-      analysis: message.content[0].type === 'text' ? message.content[0].text : '',
+      analysis: analysisData,
+      type: type,
+      account: account
     });
+
   } catch (error: any) {
-    console.error('API Error:', error);
-    return NextResponse.json({ 
-      error: 'API error', 
-      details: error.message 
-    }, { status: 500 });
+    return NextResponse.json({ error: 'API error', details: error.message }, { status: 500 });
   }
 }
