@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { accounts } from '@/lib/data';
 import { calculateHealthScore } from '@/lib/utils';
+import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
 
 export default function Home() {
   const [selectedAccount, setSelectedAccount] = useState(accounts[0]);
@@ -304,7 +305,66 @@ export default function Home() {
                         <h5 className="text-sm font-semibold text-blue-900 mb-2">Summary</h5>
                         <p className="text-sm text-blue-800 leading-relaxed">{analysis.summary}</p>
                       </div>
-
+                      
+{/* MAU Trend Chart (for health analysis only) */}
+                      {analysis.risks && selectedAccount && (
+                        <div className="bg-white border border-gray-200 rounded-lg p-4">
+                          <h5 className="text-sm font-semibold text-gray-900 mb-3">Monthly Active Users</h5>
+                          <ResponsiveContainer width="100%" height={200}>
+                            <LineChart
+                              data={selectedAccount.monthly_active_users.map((value, i) => ({
+                                month: ['Feb', 'Mar', 'Apr', 'May', 'Jun'][i],
+                                users: value
+                              }))}
+                              margin={{ top: 5, right: 20, left: 0, bottom: 5 }}
+                            >
+                              <XAxis 
+                                dataKey="month" 
+                                tick={{ fill: '#6b7280', fontSize: 12 }}
+                                axisLine={{ stroke: '#e5e7eb' }}
+                              />
+                              <YAxis 
+                                tick={{ fill: '#6b7280', fontSize: 12 }}
+                                axisLine={{ stroke: '#e5e7eb' }}
+                                domain={['dataMin - 20', 'dataMax + 20']}
+                              />
+                              <Tooltip 
+                                contentStyle={{ 
+                                  backgroundColor: '#1f2937', 
+                                  border: 'none', 
+                                  borderRadius: '6px',
+                                  color: '#fff',
+                                  fontSize: '12px'
+                                }}
+                                formatter={(value: any) => [`${value} users`, 'MAU']}
+                              />
+                              <Line 
+                                type="monotone" 
+                                dataKey="users" 
+                                stroke={selectedAccount.monthly_active_users[4] < selectedAccount.monthly_active_users[0] ? '#ef4444' : '#10b981'}
+                                strokeWidth={3}
+                                dot={{ fill: selectedAccount.monthly_active_users[4] < selectedAccount.monthly_active_users[0] ? '#ef4444' : '#10b981', r: 5 }}
+                                activeDot={{ r: 7 }}
+                              />
+                            </LineChart>
+                          </ResponsiveContainer>
+                          <div className="flex items-center justify-between mt-3 pt-3 border-t border-gray-100 text-xs">
+                            <span className="text-gray-500">
+                              Start: <span className="font-semibold text-gray-900">{selectedAccount.monthly_active_users[0]}</span>
+                            </span>
+                            <span className={`font-semibold ${
+                              selectedAccount.monthly_active_users[4] < selectedAccount.monthly_active_users[0] 
+                                ? 'text-red-600' 
+                                : 'text-green-600'
+                            }`}>
+                              Current: {selectedAccount.monthly_active_users[4]} 
+                              {selectedAccount.monthly_active_users[4] < selectedAccount.monthly_active_users[0] ? ' ↓' : ' ↑'}
+                              {Math.abs(selectedAccount.monthly_active_users[4] - selectedAccount.monthly_active_users[0])}
+                            </span>
+                          </div>
+                        </div>
+                      )}
+                      
                       {/* Risks Section */}
                       {analysis.risks && analysis.risks.length > 0 && (
                         <div className="bg-white border border-gray-200 rounded-lg p-4">
