@@ -21,6 +21,11 @@ export default function Home() {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, []);
 
+  // Add this new useEffect:
+  useEffect(() => {
+    setAnalysis('');
+  }, [selectedAccount]);
+
   const handleAnalysis = async (type: string) => {
     setLoading(true);
     
