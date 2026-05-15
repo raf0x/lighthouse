@@ -6,7 +6,7 @@ import { calculateHealthScore } from '@/lib/utils';
 
 export default function Home() {
   const [selectedAccount, setSelectedAccount] = useState(accounts[0]);
-  const [analysis, setAnalysis] = useState('');
+  const [analysis, setAnalysis] = useState<any>('');
   const [loading, setLoading] = useState(false);
   const [thinkingMessage, setThinkingMessage] = useState('');
 
@@ -69,7 +69,7 @@ export default function Home() {
             <div className="flex items-center space-x-6 text-xs">
               <div className="flex items-center space-x-2">
                 <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
-                <span className="text-gray-700 font-medium">Claude Sonnet 4.6</span>
+                <span className="text-gray-700 font-medium">Claude Haiku 4.5</span>
               </div>
               <div className="h-4 w-px bg-gray-200"></div>
               <div className="flex items-center space-x-2">
@@ -238,12 +238,12 @@ export default function Home() {
                   </span>
                 </div>
                 <div className="flex items-center space-x-2 bg-gray-50 px-3 py-1.5 rounded-md border border-gray-200">
-  <span className="text-gray-500">Integration:</span>
-  <span className="font-semibold text-gray-900 flex items-center">
-    <span className="w-1.5 h-1.5 bg-green-500 rounded-full mr-1.5"></span>
-    Active
-  </span>
-</div>
+                  <span className="text-gray-500">Integration:</span>
+                  <span className="font-semibold text-gray-900 flex items-center">
+                    <span className="w-1.5 h-1.5 bg-green-500 rounded-full mr-1.5"></span>
+                    Active
+                  </span>
+                </div>
                 <div className="flex items-center space-x-2 bg-gray-50 px-3 py-1.5 rounded-md border border-gray-200">
                   <span className="text-gray-500">Last QBR:</span>
                   <span className="font-semibold text-gray-900">
@@ -253,7 +253,7 @@ export default function Home() {
               </div>
             </div>
 
-            {/* AI Panel - Blue Only */}
+            {/* AI Analysis Panel */}
             <div className="bg-white rounded-lg shadow-sm p-6 border border-gray-200">
               <h3 className="font-semibold text-gray-900 mb-4">AI Intelligence Layer</h3>
               
@@ -285,17 +285,127 @@ export default function Home() {
               )}
 
               {analysis && !loading && (
-                <div className="bg-gray-50 rounded-lg p-5 border border-gray-200">
-                  <div className="flex justify-between items-start mb-3">
+                <div className="space-y-4">
+                  <div className="flex justify-between items-center mb-4">
                     <h4 className="font-semibold text-gray-900">Analysis Results</h4>
                     <button 
                       onClick={() => setAnalysis('')}
-                      className="text-xs text-gray-500 hover:text-gray-700 px-2 py-1 rounded hover:bg-white transition-colors"
+                      className="text-xs text-gray-500 hover:text-gray-700 px-2 py-1 rounded hover:bg-gray-100 transition-colors"
                     >
                       Clear (ESC)
                     </button>
                   </div>
-                  <pre className="whitespace-pre-wrap text-sm text-gray-800 leading-relaxed">{analysis}</pre>
+
+                  {/* Structured Cards */}
+                  {typeof analysis === 'object' && analysis.summary && (
+                    <>
+                      {/* Summary Card */}
+                      <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                        <h5 className="text-sm font-semibold text-blue-900 mb-2">Summary</h5>
+                        <p className="text-sm text-blue-800 leading-relaxed">{analysis.summary}</p>
+                      </div>
+
+                      {/* Risks Section */}
+                      {analysis.risks && analysis.risks.length > 0 && (
+                        <div className="bg-white border border-gray-200 rounded-lg p-4">
+                          <h5 className="text-sm font-semibold text-gray-900 mb-3 flex items-center">
+                            <span className="text-red-500 mr-2">⚠️</span>
+                            Risk Signals
+                          </h5>
+                          <div className="space-y-3">
+                            {analysis.risks.map((risk: any, i: number) => (
+                              <div key={i} className="border-l-4 border-red-500 pl-3">
+                                <div className="flex items-start justify-between mb-1">
+                                  <span className="text-sm font-semibold text-gray-900">{risk.title}</span>
+                                  <span className={`text-xs px-2 py-0.5 rounded-full font-semibold ${
+                                    risk.severity === 'Critical' ? 'bg-red-100 text-red-700' :
+                                    risk.severity === 'High' ? 'bg-orange-100 text-orange-700' :
+                                    'bg-yellow-100 text-yellow-700'
+                                  }`}>
+                                    {risk.severity}
+                                  </span>
+                                </div>
+                                <p className="text-sm text-gray-600">{risk.description}</p>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Positive Indicators */}
+                      {analysis.positives && analysis.positives.length > 0 && (
+                        <div className="bg-white border border-gray-200 rounded-lg p-4">
+                          <h5 className="text-sm font-semibold text-gray-900 mb-3 flex items-center">
+                            <span className="text-green-500 mr-2">✅</span>
+                            Positive Indicators
+                          </h5>
+                          <div className="space-y-3">
+                            {analysis.positives.map((positive: any, i: number) => (
+                              <div key={i} className="border-l-4 border-green-500 pl-3">
+                                <span className="text-sm font-semibold text-gray-900 block mb-1">{positive.title}</span>
+                                <p className="text-sm text-gray-600">{positive.description}</p>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Opportunities (for expansion/briefing) */}
+                      {analysis.opportunities && analysis.opportunities.length > 0 && (
+                        <div className="bg-white border border-gray-200 rounded-lg p-4">
+                          <h5 className="text-sm font-semibold text-gray-900 mb-3 flex items-center">
+                            <span className="text-blue-500 mr-2">💡</span>
+                            Opportunities
+                          </h5>
+                          <div className="space-y-3">
+                            {analysis.opportunities.map((opp: any, i: number) => (
+                              <div key={i} className="border-l-4 border-blue-500 pl-3">
+                                <span className="text-sm font-semibold text-gray-900 block mb-1">{opp.title}</span>
+                                <p className="text-sm text-gray-600 mb-2">{opp.description || opp.business_case}</p>
+                                {opp.arr_lift && <p className="text-xs text-blue-600 font-semibold">Est. ARR Lift: {opp.arr_lift}</p>}
+                                {opp.approach && <p className="text-xs text-gray-500 mt-1">Approach: {opp.approach}</p>}
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Recommended Action */}
+                      {analysis.recommendation && (
+                        <div className="bg-gradient-to-r from-blue-50 to-purple-50 border-2 border-blue-300 rounded-lg p-4">
+                          <h5 className="text-sm font-semibold text-gray-900 mb-2 flex items-center">
+                            <span className="text-blue-600 mr-2">⚡</span>
+                            {analysis.recommendation.title || 'Recommended Action'}
+                          </h5>
+                          <p className="text-sm text-gray-700 mb-3">{analysis.recommendation.description}</p>
+                          <button className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold rounded-lg transition-colors">
+                            {analysis.recommendation.cta || 'Take Action'} →
+                          </button>
+                        </div>
+                      )}
+
+                      {/* Email rendering */}
+                      {analysis.subject && analysis.body && (
+                        <div className="bg-white border border-gray-200 rounded-lg p-4">
+                          <div className="mb-3 pb-3 border-b border-gray-200">
+                            <span className="text-xs text-gray-500 font-medium">Subject:</span>
+                            <p className="text-sm font-semibold text-gray-900 mt-1">{analysis.subject}</p>
+                          </div>
+                          <div>
+                            <span className="text-xs text-gray-500 font-medium">Body:</span>
+                            <p className="text-sm text-gray-700 mt-2 whitespace-pre-wrap leading-relaxed">{analysis.body}</p>
+                          </div>
+                        </div>
+                      )}
+                    </>
+                  )}
+
+                  {/* Fallback for non-structured text */}
+                  {typeof analysis === 'string' && (
+                    <div className="bg-gray-50 rounded-lg p-5 border border-gray-200">
+                      <pre className="whitespace-pre-wrap text-sm text-gray-800 leading-relaxed">{analysis}</pre>
+                    </div>
+                  )}
                 </div>
               )}
             </div>
