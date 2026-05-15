@@ -34,7 +34,7 @@ export default function Home() {
     <div className="min-h-screen bg-gray-50 p-8">
       <div className="max-w-7xl mx-auto">
         <h1 className="text-4xl font-bold mb-2">🏠 Lighthouse</h1>
-        <p className="text-gray-600 mb-8">AI Account Intelligence</p>
+        <p className="text-gray-600 mb-8">AI-powered account intelligence for Enterprise Customer Success teams</p>
 
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
           <div className="bg-white rounded-lg shadow p-4">
