@@ -24,7 +24,7 @@ export async function POST(request: Request) {
     console.log('Making Anthropic API call...');
     
     const message = await client.messages.create({
-      model: 'claude-opus-4-7',
+      model: 'claude-sonnet-4-6',
       max_tokens: 800,
       messages: [{ role: 'user', content: prompts[type] }],
     });
