@@ -280,7 +280,7 @@ export default function Home() {
                     <>
                       {/* Summary Card */}
                       <div className="bg-blue-500/10 border border-blue-500/30 rounded-lg p-5">
-                        <h5 className="text-base font-semibold text-blue-400 mb-2">2-Sentence Summary</h5>
+                       <h5 className="text-base font-semibold text-blue-400 mb-2">Summary</h5>
                         <p className="text-sm text-slate-400 leading-relaxed">{analysis.summary}</p>
                       </div>
 
