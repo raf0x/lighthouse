@@ -75,37 +75,26 @@ export default function Home() {
           <div className="flex items-center space-x-4">
             {/* Lighthouse SVG Logo */}
             <svg width="56" height="56" viewBox="0 0 56 56" fill="none" xmlns="http://www.w3.org/2000/svg">
-  <defs>
-    <linearGradient id="bgGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" stopColor="#1e40af" />
-      <stop offset="100%" stopColor="#3b82f6" />
-    </linearGradient>
-  </defs>
-  {/* Circular background */}
-  <circle cx="28" cy="28" r="27" fill="url(#bgGradient)" />
-  <circle cx="28" cy="28" r="26" fill="none" stroke="#60a5fa" strokeWidth="1" opacity="0.3" />
+  {/* Outer dark blue circle */}
+  <circle cx="28" cy="28" r="27" fill="#1e3a8a" />
   
-  {/* Light beam */}
-  <path d="M28 8 L38 18 L28 12 L18 18 Z" fill="#3b82f6" opacity="0.6" />
+  {/* Inner lighter blue circle */}
+  <circle cx="28" cy="28" r="20" fill="#3b82f6" />
   
-  {/* Lighthouse body */}
-  <rect x="24" y="20" width="8" height="16" fill="white" rx="1" />
+  {/* Light beam (triangle pointing upper right) */}
+  <path d="M28 18 L42 10 L38 22 Z" fill="#60a5fa" opacity="0.8" />
   
-  {/* Top section */}
-  <path d="M22 20 L28 14 L34 20 Z" fill="white" />
+  {/* Lighthouse tower (white rectangle) */}
+  <rect x="25" y="22" width="6" height="18" fill="white" rx="0.5" />
   
-  {/* Light room */}
-  <rect x="23" y="14" width="10" height="6" fill="#dbeafe" rx="1" />
+  {/* Lighthouse top (small cap) */}
+  <rect x="24" y="20" width="8" height="3" fill="white" rx="1" />
   
-  {/* Light */}
-  <circle cx="28" cy="17" r="2" fill="#fbbf24" className="animate-pulse" />
+  {/* Light source (small rectangle at top) */}
+  <rect x="26.5" y="18" width="3" height="2" fill="white" />
   
-  {/* Base */}
-  <rect x="20" y="36" width="16" height="4" fill="#1e40af" rx="1" />
-  
-  {/* Windows */}
-  <rect x="26" y="24" width="4" height="3" fill="#3b82f6" rx="0.5" />
-  <rect x="26" y="30" width="4" height="3" fill="#3b82f6" rx="0.5" />
+  {/* Lighthouse base */}
+  <rect x="23" y="39" width="10" height="2" fill="white" rx="0.5" />
 </svg>
             <div>
               <h1 className="text-4xl font-bold text-white">Lighthouse</h1>
