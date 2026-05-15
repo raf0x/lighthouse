@@ -10,20 +10,25 @@ export default function Home() {
   const [loading, setLoading] = useState(false);
 
   const handleAnalysis = async (type: string) => {
-    setLoading(true);
-    try {
-      const response = await fetch('/api/analyze', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ account: selectedAccount, type }),
-      });
-      const data = await response.json();
-      setAnalysis(data.analysis);
-    } catch (error) {
-      setAnalysis('Error generating analysis.');
+  setLoading(true);
+  try {
+    const response = await fetch('/api/analyze', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ account: selectedAccount, type }),
+    });
+    const data = await response.json();
+    
+    if (!response.ok) {
+      setAnalysis(`ERROR: ${data.error}\nDetails: ${data.details || 'No details'}`);
+    } else {
+      setAnalysis(data.analysis || 'No analysis returned');
     }
-    setLoading(false);
-  };
+  } catch (error: any) {
+    setAnalysis(`ERROR: ${error.message}`);
+  }
+  setLoading(false);
+};
 
   return (
     <div className="min-h-screen bg-gray-50 p-8">
