@@ -164,7 +164,7 @@ export default function Home() {
                 </div>
               </div>
 
-              {/* MAU Trend Chart */}
+             {/* MAU Trend Chart */}
 <div className="mt-4 pt-4 border-t">
   <p className="text-xs text-gray-500 mb-3 flex items-center justify-between">
     <span>Monthly Active Users (Last 5 Months)</span>
@@ -177,37 +177,41 @@ export default function Home() {
       {Math.abs(selectedAccount.monthly_active_users[4] - selectedAccount.monthly_active_users[0])} users
     </span>
   </p>
-  <div className="flex items-end space-x-2 h-16">
+  
+  {/* Chart container */}
+  <div className="relative h-24 flex items-end justify-between gap-2">
     {selectedAccount.monthly_active_users.map((mau, i) => {
       const prevMau = i > 0 ? selectedAccount.monthly_active_users[i - 1] : mau;
       const isGrowth = mau >= prevMau;
       const maxMau = Math.max(...selectedAccount.monthly_active_users);
+      const heightPercent = (mau / maxMau) * 100;
       
       return (
-        <div 
-          key={i} 
-          className="flex-1 group relative flex flex-col items-center"
-        >
+        <div key={i} className="flex-1 flex flex-col items-center h-full justify-end group">
           {/* Hover tooltip */}
-          <div className="absolute -top-8 opacity-0 group-hover:opacity-100 transition-opacity bg-gray-900 text-white text-xs px-2 py-1 rounded whitespace-nowrap z-10">
+          <div className="absolute -top-8 opacity-0 group-hover:opacity-100 transition-opacity bg-gray-900 text-white text-xs px-2 py-1 rounded whitespace-nowrap pointer-events-none">
             {mau} users
           </div>
           
           {/* Bar */}
           <div 
-            className={`w-full rounded-t transition-all cursor-pointer ${
-              isGrowth ? 'bg-gradient-to-t from-green-400 to-green-600' : 'bg-gradient-to-t from-red-400 to-red-600'
-            } group-hover:opacity-90`}
-            style={{ 
-              height: `${(mau / maxMau) * 100}%`,
-            }}
+            className={`w-full rounded-t cursor-pointer transition-all ${
+              isGrowth 
+                ? 'bg-gradient-to-t from-green-400 to-green-600 hover:from-green-500 hover:to-green-700' 
+                : 'bg-gradient-to-t from-red-400 to-red-600 hover:from-red-500 hover:to-red-700'
+            }`}
+            style={{ height: `${heightPercent}%` }}
           />
-          
-          {/* Month label */}
-          <span className="text-xs text-gray-400 mt-1">M{i + 1}</span>
         </div>
       );
     })}
+  </div>
+  
+  {/* Month labels */}
+  <div className="flex justify-between gap-2 mt-1">
+    {selectedAccount.monthly_active_users.map((_, i) => (
+      <div key={i} className="flex-1 text-center text-xs text-gray-400">M{i + 1}</div>
+    ))}
   </div>
   
   {/* Summary */}
