@@ -264,7 +264,7 @@ export default function Home() {
               )}
 
               {analysis && !loading && (
-                <div className="space-y-6 overflow-auto">
+                <div className="space-y-6">
                   <div className="flex justify-between items-center mb-4">
                     <h4 className="font-semibold text-white">AI Health Analysis</h4>
                     <button 
@@ -280,7 +280,7 @@ export default function Home() {
                     <>
                       {/* Summary Card */}
                       <div className="bg-blue-500/10 border border-blue-500/30 rounded-lg p-5">
-                       <h5 className="text-base font-semibold text-blue-400 mb-2">Summary</h5>
+                        <h5 className="text-base font-semibold text-blue-400 mb-2">Summary</h5>
                         <p className="text-sm text-slate-400 leading-relaxed">{analysis.summary}</p>
                       </div>
 
@@ -290,8 +290,7 @@ export default function Home() {
                           <h5 className="text-base font-semibold text-white mb-3">Monthly Active Users</h5>
                           <ResponsiveContainer width="100%" height={200}>
                             <LineChart
-  isAnimationActive={false}
-  data={selectedAccount.monthly_active_users.map((value, i) => ({
+                              data={selectedAccount.monthly_active_users.map((value, i) => ({
                                 month: ['Feb', 'Mar', 'Apr', 'May', 'Jun'][i],
                                 users: value
                               }))}
@@ -324,6 +323,7 @@ export default function Home() {
                                 strokeWidth={3}
                                 dot={{ fill: selectedAccount.monthly_active_users[4] < selectedAccount.monthly_active_users[0] ? '#ef4444' : '#10b981', r: 5 }}
                                 activeDot={{ r: 7 }}
+                                isAnimationActive={false}
                               />
                             </LineChart>
                           </ResponsiveContainer>
