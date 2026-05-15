@@ -264,7 +264,7 @@ export default function Home() {
               )}
 
               {analysis && !loading && (
-                <div className="space-y-4">
+                <div className="space-y-6">
                   <div className="flex justify-between items-center mb-4">
                     <h4 className="font-semibold text-white">AI Health Analysis</h4>
                     <button 
@@ -279,15 +279,15 @@ export default function Home() {
                   {typeof analysis === 'object' && analysis.summary && (
                     <>
                       {/* Summary Card */}
-                      <div className="bg-blue-500/10 border border-blue-500/30 rounded-lg p-4">
-                        <h5 className="text-sm font-semibold text-blue-400 mb-2">2-Sentence Summary</h5>
-                        <p className="text-sm text-slate-300 leading-relaxed">{analysis.summary}</p>
+                      <div className="bg-blue-500/10 border border-blue-500/30 rounded-lg p-5">
+                        <h5 className="text-base font-semibold text-blue-400 mb-2">2-Sentence Summary</h5>
+                        <p className="text-sm text-slate-400 leading-relaxed">{analysis.summary}</p>
                       </div>
 
                       {/* MAU Chart */}
                       {analysis.risks && selectedAccount && (
-                        <div className="bg-slate-900/50 border border-slate-700 rounded-lg p-4">
-                          <h5 className="text-sm font-semibold text-white mb-3">Monthly Active Users</h5>
+                        <div className="bg-slate-900/50 border border-slate-700 rounded-lg p-5">
+                          <h5 className="text-base font-semibold text-white mb-3">Monthly Active Users</h5>
                           <ResponsiveContainer width="100%" height={200}>
                             <LineChart
                               data={selectedAccount.monthly_active_users.map((value, i) => ({
@@ -331,16 +331,16 @@ export default function Home() {
 
                       {/* Risks Section */}
                       {analysis.risks && analysis.risks.length > 0 && (
-                        <div className="bg-slate-900/50 border border-slate-700 rounded-lg p-4">
-                          <h5 className="text-sm font-semibold text-white mb-3 flex items-center">
+                        <div className="bg-slate-900/50 border border-slate-700 rounded-lg p-5">
+                          <h5 className="text-base font-semibold text-white mb-3 flex items-center">
                             <span className="text-red-400 mr-2">⚠️</span>
                             Risks
                           </h5>
-                          <div className="space-y-3">
+                          <div className="space-y-4">
                             {analysis.risks.map((risk: any, i: number) => (
-                              <div key={i} className="border-l-4 border-red-500 pl-3 bg-red-500/5 py-2">
+                              <div key={i} className="border-l-4 border-red-500 pl-3 bg-red-500/5 py-3">
                                 <div className="flex items-start justify-between mb-1">
-                                  <span className="text-sm font-semibold text-white">{risk.title}</span>
+                                  <span className="text-base font-semibold text-white">{risk.title}</span>
                                   <span className={`text-xs px-2 py-0.5 rounded-full font-semibold ${
                                     risk.severity === 'Critical' ? 'bg-red-500/20 text-red-400' :
                                     risk.severity === 'High' ? 'bg-orange-500/20 text-orange-400' :
@@ -349,7 +349,45 @@ export default function Home() {
                                     {risk.severity}
                                   </span>
                                 </div>
-                                <p className="text-sm text-slate-300">{risk.description}</p>
+                                <p className="text-sm text-slate-400">{risk.description}</p>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Positive Indicators */}
+                      {analysis.positives && analysis.positives.length > 0 && (
+                        <div className="bg-slate-900/50 border border-slate-700 rounded-lg p-5">
+                          <h5 className="text-base font-semibold text-white mb-3 flex items-center">
+                            <span className="text-green-400 mr-2">✅</span>
+                            Positive Indicators
+                          </h5>
+                          <div className="space-y-4">
+                            {analysis.positives.map((positive: any, i: number) => (
+                              <div key={i} className="border-l-4 border-green-500 pl-3 bg-green-500/5 py-3">
+                                <span className="text-base font-semibold text-white block mb-1">{positive.title}</span>
+                                <p className="text-sm text-slate-400">{positive.description}</p>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Opportunities */}
+                      {analysis.opportunities && analysis.opportunities.length > 0 && (
+                        <div className="bg-slate-900/50 border border-slate-700 rounded-lg p-5">
+                          <h5 className="text-base font-semibold text-white mb-3 flex items-center">
+                            <span className="text-blue-400 mr-2">💡</span>
+                            Opportunities
+                          </h5>
+                          <div className="space-y-4">
+                            {analysis.opportunities.map((opp: any, i: number) => (
+                              <div key={i} className="border-l-4 border-blue-500 pl-3 bg-blue-500/5 py-3">
+                                <span className="text-base font-semibold text-white block mb-1">{opp.title}</span>
+                                <p className="text-sm text-slate-400 mb-2">{opp.description || opp.business_case}</p>
+                                {opp.arr_lift && <p className="text-xs text-blue-400 font-semibold">Est. ARR Lift: {opp.arr_lift}</p>}
+                                {opp.approach && <p className="text-xs text-slate-500 mt-1">Approach: {opp.approach}</p>}
                               </div>
                             ))}
                           </div>
@@ -358,18 +396,39 @@ export default function Home() {
 
                       {/* Recommended Action */}
                       {analysis.recommendation && (
-                        <div className="bg-gradient-to-r from-blue-500/10 to-purple-500/10 border-2 border-blue-500/30 rounded-lg p-4">
-                          <h5 className="text-sm font-semibold text-white mb-2 flex items-center">
+                        <div className="bg-gradient-to-r from-blue-500/10 to-purple-500/10 border-2 border-blue-500/30 rounded-lg p-5">
+                          <h5 className="text-base font-semibold text-white mb-2 flex items-center">
                             <span className="text-blue-400 mr-2">⚡</span>
                             AI Recommended Action
                           </h5>
-                          <p className="text-sm text-slate-300 mb-3">{analysis.recommendation.description}</p>
+                          <p className="text-sm text-slate-400 mb-3">{analysis.recommendation.description}</p>
                           <button className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white text-sm font-semibold rounded-lg transition-colors">
                             {analysis.recommendation.cta || 'View Action Plan'} →
                           </button>
                         </div>
                       )}
+
+                      {/* Email rendering */}
+                      {analysis.subject && analysis.body && (
+                        <div className="bg-slate-900/50 border border-slate-700 rounded-lg p-5">
+                          <div className="mb-3 pb-3 border-b border-slate-700">
+                            <span className="text-xs text-slate-400 font-medium">Subject:</span>
+                            <p className="text-sm font-semibold text-white mt-1">{analysis.subject}</p>
+                          </div>
+                          <div>
+                            <span className="text-xs text-slate-400 font-medium">Body:</span>
+                            <p className="text-sm text-slate-400 mt-2 whitespace-pre-wrap leading-relaxed">{analysis.body}</p>
+                          </div>
+                        </div>
+                      )}
                     </>
+                  )}
+
+                  {/* Fallback for non-structured text */}
+                  {typeof analysis === 'string' && (
+                    <div className="bg-slate-900/50 border border-slate-700 rounded-lg p-5">
+                      <pre className="whitespace-pre-wrap text-sm text-slate-400 leading-relaxed">{analysis}</pre>
+                    </div>
                   )}
                 </div>
               )}
