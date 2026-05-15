@@ -88,7 +88,7 @@ export default function Home() {
               <p className="text-blue-300 mt-1">AI-Powered Account Intelligence for Customer Success Teams</p>
             </div>
           </div>
-          <div className="bg-slate-800/50 backdrop-blur-sm border border-slate-700 rounded-lg px-4 py-3">
+          <div className="bg-slate-800/90 border border-slate-700 rounded-lg px-4 py-3">
             <div className="flex items-center space-x-6 text-xs">
               <div className="flex items-center space-x-2">
                 <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse shadow-lg shadow-green-500/50"></div>
@@ -111,7 +111,7 @@ export default function Home() {
 
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
           {/* Portfolio Sidebar */}
-          <div className="bg-slate-800/50 backdrop-blur-sm border border-slate-700 rounded-lg p-5">
+          <div className="bg-slate-800/90 border border-slate-700 rounded-lg p-5">
             <h2 className="font-semibold text-white mb-4">Portfolio Health</h2>
             <div className="space-y-2">
               {accounts
@@ -146,7 +146,7 @@ export default function Home() {
           {/* Main Content */}
           <div className="lg:col-span-3 space-y-6">
             {/* Account Card */}
-            <div className="bg-slate-800/50 backdrop-blur-sm border border-slate-700 rounded-lg p-6">
+            <div className="bg-slate-800/90 border border-slate-700 rounded-lg p-6">
               <div className="flex justify-between items-start mb-5">
                 <div>
                   <h2 className="text-2xl font-bold text-white">{selectedAccount.name}</h2>
@@ -230,7 +230,7 @@ export default function Home() {
             </div>
 
             {/* AI Analysis Panel */}
-            <div className="bg-slate-800/50 backdrop-blur-sm border border-slate-700 rounded-lg p-6">
+            <div className="bg-slate-800/90 border border-slate-700 rounded-lg p-6">
               <h3 className="font-semibold text-white mb-4">AI Intelligence Layer</h3>
               
               <div className="grid grid-cols-4 gap-3 mb-6">
@@ -264,7 +264,7 @@ export default function Home() {
               )}
 
               {analysis && !loading && (
-                <div className="space-y-6">
+                <div className="space-y-6 overflow-auto">
                   <div className="flex justify-between items-center mb-4">
                     <h4 className="font-semibold text-white">AI Health Analysis</h4>
                     <button 
@@ -290,7 +290,8 @@ export default function Home() {
                           <h5 className="text-base font-semibold text-white mb-3">Monthly Active Users</h5>
                           <ResponsiveContainer width="100%" height={200}>
                             <LineChart
-                              data={selectedAccount.monthly_active_users.map((value, i) => ({
+  isAnimationActive={false}
+  data={selectedAccount.monthly_active_users.map((value, i) => ({
                                 month: ['Feb', 'Mar', 'Apr', 'May', 'Jun'][i],
                                 users: value
                               }))}
@@ -437,7 +438,7 @@ export default function Home() {
         </div>
 
         {/* Keyboard Hint */}
-        <div className="fixed bottom-4 right-4 text-xs text-slate-400 bg-slate-800/50 backdrop-blur-sm px-3 py-2 rounded-lg border border-slate-700">
+        <div className="fixed bottom-4 right-4 text-xs text-slate-400 bg-slate-800/90 px-3 py-2 rounded-lg border border-slate-700">
           Press <span className="font-mono bg-slate-700 px-1.5 py-0.5 rounded font-semibold text-white">ESC</span> to clear analysis
         </div>
       </div>
