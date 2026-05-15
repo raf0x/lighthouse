@@ -238,9 +238,12 @@ export default function Home() {
                   </span>
                 </div>
                 <div className="flex items-center space-x-2 bg-gray-50 px-3 py-1.5 rounded-md border border-gray-200">
-                  <span className="text-gray-500">Data Quality:</span>
-                  <span className="font-semibold text-gray-900">Complete</span>
-                </div>
+  <span className="text-gray-500">Integration:</span>
+  <span className="font-semibold text-gray-900 flex items-center">
+    <span className="w-1.5 h-1.5 bg-green-500 rounded-full mr-1.5"></span>
+    Active
+  </span>
+</div>
                 <div className="flex items-center space-x-2 bg-gray-50 px-3 py-1.5 rounded-md border border-gray-200">
                   <span className="text-gray-500">Last QBR:</span>
                   <span className="font-semibold text-gray-900">
