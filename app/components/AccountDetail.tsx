@@ -4,6 +4,8 @@ import * as React from 'react';
 import { calculateHealthScore, healthBand, bandLabel, bandColor } from '@/app/lib/lighthouse';
 import { IconAlert } from './icons';
 import MetricTile from './MetricTile';
+import DecisionStrip from './DecisionStrip';
+import RelativeTime from './RelativeTime';
 import type { Account } from './types';
 
 export default function AccountDetail({ account }: { account: Account }) {
@@ -17,6 +19,8 @@ export default function AccountDetail({ account }: { account: Account }) {
 
   return (
     <div className="card" style={{ marginBottom: 20 }}>
+      <DecisionStrip account={account} />
+      
       <div className="acc-detail-head">
         <div>
           <div className="acc-title">{account.name}</div>
@@ -88,7 +92,7 @@ export default function AccountDetail({ account }: { account: Account }) {
         <div className="cs-chip">
           <span className="live-dot" />
           <span className="lbl">Last Updated</span>
-          <span className="val" style={{ fontFamily: 'var(--font-mono)' }}>2m ago</span>
+          <RelativeTime />
         </div>
         <div className="cs-chip">
           <span className="lbl">Renewal</span>
