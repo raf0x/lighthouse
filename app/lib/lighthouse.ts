@@ -57,10 +57,12 @@ export function mockAnalysis(account: Account, type: AnalysisType): Analysis {
         { title: 'Severe Seat Underutilization', description: `${100 - seatPct}% of licensed seats are inactive — value perception eroding.`, severity: 'High' },
         { title: 'Elevated Support Burden', description: `${account.tickets_30d} open tickets in 30d · NPS ${account.nps}`, severity: 'High' },
       ] : [],
-      positives: !critical ? [
-        { title: 'Stable executive sponsorship', description: `${account.exec} engaged via QBR in the last cycle.` },
-        { title: 'Above-cohort NPS', description: `NPS ${account.nps} sits in the top tertile of the portfolio.` },
-      ] : [],
+      positives: health >= 50 && account.nps >= 50 ? [
+  { title: 'Stable executive sponsorship', description: `${account.exec} engaged via QBR in the last cycle.` },
+  { title: 'Strong NPS Performance', description: `NPS ${account.nps} indicates promoter-level satisfaction.` },
+] : health >= 50 ? [
+  { title: 'Stable executive sponsorship', description: `${account.exec} engaged via QBR in the last cycle.` },
+] : [],
       recommendation: {
         title: critical ? 'Escalate to executive sponsor' : 'Schedule expansion-readiness review',
         description: critical
