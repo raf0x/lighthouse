@@ -148,3 +148,102 @@ button:focus-visible, .acc-row:focus-visible { outline:none; box-shadow: 0 0 0 3
 /* Keyboard hint */
 .kbd-hint { position:fixed; bottom:16px; right:16px; padding:8px 12px; background:rgba(16,23,40,0.92); border:1px solid var(--border-subtle); border-radius:8px; font-size:11px; color:var(--fg-3); backdrop-filter: blur(8px); }
 .kbd-hint kbd { display:inline-block; padding:1px 6px; background:var(--surface-3); border:1px solid var(--border-default); border-radius:4px; font-family:var(--font-mono); font-size:10px; color:var(--fg-1); font-weight:600; }
+
+/* ========== MOBILE RESPONSIVE ========== */
+@media (max-width: 768px) {
+  /* Reduce canvas padding */
+  .app-canvas { padding: 16px 12px; }
+  
+  /* Stack header */
+  .app-header { flex-direction: column; gap: 16px; align-items: stretch; }
+  .brand { justify-content: center; }
+  .brand-name { font-size: 24px; }
+  .brand-tagline { font-size: 14px; text-align: center; }
+  .live-strip { flex-wrap: wrap; justify-content: center; }
+  .live-strip > * + * { padding-left: 12px; border-left: none; }
+  
+  /* Stack grid layout */
+  .app-grid { grid-template-columns: 1fr; gap: 16px; }
+  
+  /* Hide sidebar on mobile, show accounts inline */
+  .sidebar { display: none; }
+  
+  /* Reduce card padding */
+  .card { padding: 16px; border-radius: 12px; }
+  .card--elevated { padding: 16px; }
+  
+  /* Decision strip - make scrollable */
+  .acc-detail-head + div[style*="display: flex"] {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    gap: 12px;
+    padding-bottom: 8px;
+  }
+  .acc-detail-head + div[style*="display: flex"] > div {
+    min-width: 100px;
+    flex-shrink: 0;
+  }
+  
+  /* Reduce account header size */
+  .acc-title { font-size: 24px; }
+  .acc-subtitle { font-size: 13px; }
+  .acc-score-block .score { font-size: 40px; }
+  
+  /* Stack metrics 2x2 instead of 4 across */
+  .metric-strip { grid-template-columns: repeat(2, 1fr); gap: 10px; }
+  .metric { padding: 12px; }
+  .metric-value { font-size: 20px; }
+  .metric-eyebrow { font-size: 9px; }
+  
+  /* Stack confidence chips */
+  .confidence-strip { gap: 8px; }
+  .cs-chip { padding: 6px 10px; font-size: 11px; }
+  
+  /* Agent tabs wrap better */
+  .agent-tabs { gap: 8px; }
+  .agent-tab { padding: 8px 12px; font-size: 12px; }
+  
+  /* Reduce response card padding */
+  .r-card { padding: 16px; margin-top: 16px; }
+  .summary .text { font-size: 15px; line-height: 1.5; }
+  .risk-item, .opp-item, .pos-item { padding: 12px; }
+  .recommend { padding: 16px; }
+  .recommend .title { font-size: 18px; }
+  
+  /* Email body */
+  .email-body { padding: 16px; font-size: 13px; }
+  
+  /* Portfolio page - hide table, show cards */
+  table { display: none; }
+  
+  /* Portfolio stats stack */
+  div[style*="display: flex; gap: 32px"] { 
+    flex-direction: column; 
+    gap: 16px !important; 
+  }
+  
+  /* Escalation cards stack */
+  div[style*="grid-template-columns: repeat(auto-fit"] {
+    grid-template-columns: 1fr !important;
+  }
+  
+  /* Reduce all h1 sizes */
+  h1 { font-size: 28px !important; }
+  h2 { font-size: 16px !important; }
+  h3 { font-size: 14px !important; }
+  
+  /* Make buttons full-width on mobile */
+  .btn { width: 100%; justify-content: center; }
+  .agent-tabs { flex-direction: column; }
+  .agent-tab { width: 100%; }
+  
+  /* Keyboard hint - smaller */
+  .kbd-hint { bottom: 8px; right: 8px; font-size: 10px; padding: 6px 8px; }
+}
+
+/* Tablet breakpoint */
+@media (min-width: 769px) and (max-width: 1024px) {
+  .app-canvas { padding: 24px 16px; }
+  .metric-strip { grid-template-columns: repeat(2, 1fr); }
+  .app-grid { grid-template-columns: 240px 1fr; }
+}
