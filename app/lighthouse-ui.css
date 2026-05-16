@@ -109,7 +109,7 @@ html, body { background: var(--bg-base); color: var(--fg-1); font-family: var(--
 .r-card-title { font-size:14px; font-weight:700; color:var(--fg-1); display:flex; align-items:center; gap:8px; margin-bottom:16px; }
 .r-card-title .count { font-family:var(--font-mono); font-size:10px; color:var(--fg-3); margin-left:auto; }
 .summary { background:linear-gradient(135deg, rgba(91,168,255,0.10), rgba(91,168,255,0.03) 60%); border:1px solid rgba(91,168,255,0.35); box-shadow:0 0 0 1px rgba(91,168,255,0.15), var(--shadow-card); }
-.summary .text { font-family:var(--font-display); font-style:italic; font-size:18px; line-height:1.45; color:var(--fg-1); }
+.summary .text { font-family:var(--font-sans); font-style:normal; font-size:16px; line-height:1.6; color:var(--fg-1); font-weight:500; }
 .risk-item, .opp-item, .pos-item { padding:14px 16px; border-radius:0 8px 8px 0; margin-bottom:12px; display:grid; grid-template-columns: 1fr auto; gap:12px; align-items:flex-start; }
 .risk-item { background:rgba(255,92,92,0.05); border-left:3px solid var(--critical-fg); }
 .opp-item { background:rgba(91,168,255,0.05); border-left:3px solid var(--beam-400); }
