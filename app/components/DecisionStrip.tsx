@@ -17,7 +17,7 @@ export default function DecisionStrip({ account }: { account: Account }) {
                        mauDelta > 10 ? 'Usage Growth' : 'Seat Expansion';
   const motion = health < 50 ? 'Executive Escalation' : 
                  health < 70 ? 'Proactive Check-in' : 'Expansion Review';
-  const urgency = daysToRenewal < 0 ? 'OVERDUE' :
+  const urgency = daysToRenewal < 0 ? `${Math.abs(daysToRenewal)}d Overdue` :
                daysToRenewal < 60 ? `${daysToRenewal} Days` :
                health < 30 ? '14 Days' :
                health < 50 ? '30 Days' : '60 Days';
