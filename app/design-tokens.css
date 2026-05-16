@@ -1,14 +1,97 @@
+/* ============================================================
+   Lighthouse Design System — Foundations
+   Colors + Typography tokens
+   ============================================================ */
+
 @import url('https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600;700&family=Geist+Mono:wght@400;500;600&family=Instrument+Serif:ital@0;1&display=swap');
 
 :root {
+  /* -------- Brand: Beacon ------------------------------------ */
+  --beam-50:  #EAF4FF;
+  --beam-100: #C9E2FF;
+  --beam-200: #9CCBFF;
+  --beam-300: #6FB1FF;
   --beam-400: #5BA8FF;
   --beam-500: #2F86E8;
-  --bg-canvas: #0A0F1F;
-  --surface-1: #101728;
-  --border-subtle: #1A2640;
+  --beam-600: #1F6BCC;
+  --beam-700: #154E99;
+  --beam-800: #0D3768;
+  --beam-900: #081F3D;
+
+  /* -------- Surfaces: Deep ocean ----------------------------- */
+  --bg-base:        #07091A;
+  --bg-canvas:      #0A0F1F;
+  --surface-1:      #101728;
+  --surface-2:      #15203A;
+  --surface-3:      #1B2B4D;
+  --surface-inset:  #080C1A;
+
+  /* -------- Borders & dividers ------------------------------- */
+  --border-subtle:  #1A2640;
+  --border-default: #243453;
+  --border-strong:  #324767;
+
+  /* -------- Foreground --------------------------------------- */
   --fg-1: #F4F6FB;
   --fg-2: #C6CFE2;
   --fg-3: #8C99B5;
-  --critical-fg: #FF6B6B;
-  --healthy-fg: #3DDC97;
+  --fg-4: #5C6884;
+
+  /* -------- Semantic: status & health ------------------------ */
+  --critical-bg:   rgba(255, 92, 92, 0.10);
+  --critical-line: rgba(255, 92, 92, 0.30);
+  --critical-fg:   #FF6B6B;
+  --critical-solid:#E64545;
+
+  --high-bg:   rgba(255, 155, 71, 0.10);
+  --high-line: rgba(255, 155, 71, 0.30);
+  --high-fg:   #FFA463;
+  --high-solid:#E6822A;
+
+  --medium-bg:   rgba(255, 209, 102, 0.10);
+  --medium-line: rgba(255, 209, 102, 0.30);
+  --medium-fg:   #FFD166;
+  --medium-solid:#E6B233;
+
+  --healthy-bg:   rgba(61, 220, 151, 0.10);
+  --healthy-line: rgba(61, 220, 151, 0.30);
+  --healthy-fg:   #3DDC97;
+  --healthy-solid:#22B97A;
+
+  /* -------- Agent special ------------------------------------ */
+  --agent-bg:    rgba(91, 168, 255, 0.08);
+  --agent-line:  rgba(91, 168, 255, 0.30);
+
+  /* -------- Spacing scale (4pt grid) ------------------------- */
+  --space-4: 16px;
+  --space-6: 24px;
+
+  /* -------- Radii ------------------------------------------- */
+  --radius-md: 10px;
+  --radius-lg: 14px;
+
+  /* -------- Elevation: layered shadows + beam glow ---------- */
+  --shadow-card:
+    0 1px 0 0 rgba(255, 255, 255, 0.03) inset,
+    0 1px 2px 0 rgba(0, 0, 0, 0.40),
+    0 8px 24px -6px rgba(0, 0, 0, 0.40);
+
+  --shadow-beam:
+    0 0 0 1px rgba(91, 168, 255, 0.30),
+    0 8px 32px -4px rgba(91, 168, 255, 0.25);
+
+  /* -------- Type: families --------------------------------- */
+  --font-sans:    'Geist', -apple-system, system-ui, sans-serif;
+  --font-mono:    'Geist Mono', ui-monospace, monospace;
+  --font-display: 'Instrument Serif', Georgia, serif;
+
+  /* -------- Motion ----------------------------------------- */
+  --ease-out: cubic-bezier(0.16, 1, 0.30, 1);
+}
+
+body {
+  font-family: var(--font-sans);
+  color: var(--fg-1);
+  background: var(--bg-base);
+  -webkit-font-smoothing: antialiased;
 }
