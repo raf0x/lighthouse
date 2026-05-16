@@ -1,6 +1,3 @@
-// app/lib/lighthouse.ts
-// Typed accounts + health helpers + mock agent fallback.
-
 import type { Account, AnalysisType, Analysis, Band } from '@/app/components/types';
 
 export const accounts: Account[] = [
