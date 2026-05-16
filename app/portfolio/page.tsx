@@ -1,8 +1,9 @@
 'use client';
 
 import * as React from 'react';
-import { useSearchParams } from 'next/navigation';
-import { accounts, calculateHealthScore } from '@/app/lib/lighthouse';
+import { accounts, calculateHealthScore, healthBand } from '@/app/lib/lighthouse';
+import { IconAlert, IconTrendUp, IconTrendDown } from '@/app/components/icons';
+import { useRouter } from 'next/navigation';
 import Header from './components/Header';
 import PortfolioSidebar from './components/PortfolioSidebar';
 import AccountDetail from './components/AccountDetail';
