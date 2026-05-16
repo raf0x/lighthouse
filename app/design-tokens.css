@@ -1,0 +1,14 @@
+@import url('https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600;700&family=Geist+Mono:wght@400;500;600&family=Instrument+Serif:ital@0;1&display=swap');
+
+:root {
+  --beam-400: #5BA8FF;
+  --beam-500: #2F86E8;
+  --bg-canvas: #0A0F1F;
+  --surface-1: #101728;
+  --border-subtle: #1A2640;
+  --fg-1: #F4F6FB;
+  --fg-2: #C6CFE2;
+  --fg-3: #8C99B5;
+  --critical-fg: #FF6B6B;
+  --healthy-fg: #3DDC97;
+}
