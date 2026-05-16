@@ -63,7 +63,7 @@ export default function AgentPanel({ account }: { account: Account }) {
   const activeMeta = AGENT_TABS.find(t => t.type === activeType);
 
   return (
-    <div className="card">
+    <div className="card card--elevated">
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
           <span style={{
