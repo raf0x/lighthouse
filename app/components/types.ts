@@ -7,7 +7,7 @@ export type Account = {
   contract_end: string;
   seats_total: number;
   seats_active: number;
-  mau: number[];               // 5-month trailing
+  mau: number[];
   tickets_30d: number;
   nps: number;
   last_qbr: string;
