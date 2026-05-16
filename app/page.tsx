@@ -74,21 +74,34 @@ export default function Home() {
         <div className="flex justify-between items-start mb-8">
           <div className="flex items-center space-x-4">
             {/* Lighthouse SVG Logo */}
-            <svg width="48" height="48" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <path d="M24 4L20 16H28L24 4Z" fill="#3b82f6" />
-              <rect x="22" y="16" width="4" height="8" fill="#60a5fa" />
-              <path d="M18 24L16 28H32L30 24H18Z" fill="#3b82f6" />
-              <path d="M16 28L14 32H34L32 28H16Z" fill="#60a5fa" />
-              <path d="M14 32L12 36H36L34 32H14Z" fill="#3b82f6" />
-              <rect x="10" y="36" width="28" height="8" rx="1" fill="#1e40af" />
-              <circle cx="24" cy="12" r="2" fill="#fbbf24" className="animate-pulse" />
-            </svg>
+            <svg width="56" height="56" viewBox="0 0 56 56" fill="none" xmlns="http://www.w3.org/2000/svg">
+  {/* Outer dark blue circle */}
+  <circle cx="28" cy="28" r="27" fill="#1e3a8a" />
+  
+  {/* Inner lighter blue circle */}
+  <circle cx="28" cy="28" r="20" fill="#3b82f6" />
+  
+  {/* Light beam (triangle pointing upper right) */}
+  <path d="M28 18 L42 10 L38 22 Z" fill="#60a5fa" opacity="0.8" />
+  
+  {/* Lighthouse tower (white rectangle) */}
+  <rect x="25" y="22" width="6" height="18" fill="white" rx="0.5" />
+  
+  {/* Lighthouse top (small cap) */}
+  <rect x="24" y="20" width="8" height="3" fill="white" rx="1" />
+  
+  {/* Light source (small rectangle at top) */}
+  <rect x="26.5" y="18" width="3" height="2" fill="white" />
+  
+  {/* Lighthouse base */}
+  <rect x="23" y="39" width="10" height="2" fill="white" rx="0.5" />
+</svg>
             <div>
               <h1 className="text-4xl font-bold text-white">Lighthouse</h1>
               <p className="text-blue-300 mt-1">AI-Powered Account Intelligence for Customer Success Teams</p>
             </div>
           </div>
-          <div className="bg-slate-800/50 backdrop-blur-sm border border-slate-700 rounded-lg px-4 py-3">
+          <div className="bg-slate-800/90 border border-slate-700 rounded-lg px-4 py-3">
             <div className="flex items-center space-x-6 text-xs">
               <div className="flex items-center space-x-2">
                 <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse shadow-lg shadow-green-500/50"></div>
@@ -111,7 +124,7 @@ export default function Home() {
 
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
           {/* Portfolio Sidebar */}
-          <div className="bg-slate-800/50 backdrop-blur-sm border border-slate-700 rounded-lg p-5">
+          <div className="bg-slate-800/90 border border-slate-700 rounded-lg p-5">
             <h2 className="font-semibold text-white mb-4">Portfolio Health</h2>
             <div className="space-y-2">
               {accounts
@@ -146,7 +159,7 @@ export default function Home() {
           {/* Main Content */}
           <div className="lg:col-span-3 space-y-6">
             {/* Account Card */}
-            <div className="bg-slate-800/50 backdrop-blur-sm border border-slate-700 rounded-lg p-6">
+            <div className="bg-slate-800/90 border border-slate-700 rounded-lg p-6">
               <div className="flex justify-between items-start mb-5">
                 <div>
                   <h2 className="text-2xl font-bold text-white">{selectedAccount.name}</h2>
@@ -230,7 +243,7 @@ export default function Home() {
             </div>
 
             {/* AI Analysis Panel */}
-            <div className="bg-slate-800/50 backdrop-blur-sm border border-slate-700 rounded-lg p-6">
+            <div className="bg-slate-800/90 border border-slate-700 rounded-lg p-6">
               <h3 className="font-semibold text-white mb-4">AI Intelligence Layer</h3>
               
               <div className="grid grid-cols-4 gap-3 mb-6">
@@ -264,7 +277,7 @@ export default function Home() {
               )}
 
               {analysis && !loading && (
-                <div className="space-y-4">
+                <div className="space-y-6">
                   <div className="flex justify-between items-center mb-4">
                     <h4 className="font-semibold text-white">AI Health Analysis</h4>
                     <button 
@@ -279,15 +292,15 @@ export default function Home() {
                   {typeof analysis === 'object' && analysis.summary && (
                     <>
                       {/* Summary Card */}
-                      <div className="bg-blue-500/10 border border-blue-500/30 rounded-lg p-4">
-                        <h5 className="text-sm font-semibold text-blue-400 mb-2">2-Sentence Summary</h5>
-                        <p className="text-sm text-slate-300 leading-relaxed">{analysis.summary}</p>
+                      <div className="bg-blue-500/10 border border-blue-500/30 rounded-lg p-5">
+                        <h5 className="text-base font-semibold text-blue-400 mb-2">Summary</h5>
+                        <p className="text-sm text-slate-400 leading-relaxed">{analysis.summary}</p>
                       </div>
 
                       {/* MAU Chart */}
                       {analysis.risks && selectedAccount && (
-                        <div className="bg-slate-900/50 border border-slate-700 rounded-lg p-4">
-                          <h5 className="text-sm font-semibold text-white mb-3">Monthly Active Users</h5>
+                        <div className="bg-slate-900/50 border border-slate-700 rounded-lg p-5">
+                          <h5 className="text-base font-semibold text-white mb-3">Monthly Active Users</h5>
                           <ResponsiveContainer width="100%" height={200}>
                             <LineChart
                               data={selectedAccount.monthly_active_users.map((value, i) => ({
@@ -323,6 +336,7 @@ export default function Home() {
                                 strokeWidth={3}
                                 dot={{ fill: selectedAccount.monthly_active_users[4] < selectedAccount.monthly_active_users[0] ? '#ef4444' : '#10b981', r: 5 }}
                                 activeDot={{ r: 7 }}
+                                isAnimationActive={false}
                               />
                             </LineChart>
                           </ResponsiveContainer>
@@ -331,16 +345,16 @@ export default function Home() {
 
                       {/* Risks Section */}
                       {analysis.risks && analysis.risks.length > 0 && (
-                        <div className="bg-slate-900/50 border border-slate-700 rounded-lg p-4">
-                          <h5 className="text-sm font-semibold text-white mb-3 flex items-center">
+                        <div className="bg-slate-900/50 border border-slate-700 rounded-lg p-5">
+                          <h5 className="text-base font-semibold text-white mb-3 flex items-center">
                             <span className="text-red-400 mr-2">⚠️</span>
                             Risks
                           </h5>
-                          <div className="space-y-3">
+                          <div className="space-y-4">
                             {analysis.risks.map((risk: any, i: number) => (
-                              <div key={i} className="border-l-4 border-red-500 pl-3 bg-red-500/5 py-2">
+                              <div key={i} className="border-l-4 border-red-500 pl-3 bg-red-500/5 py-3">
                                 <div className="flex items-start justify-between mb-1">
-                                  <span className="text-sm font-semibold text-white">{risk.title}</span>
+                                  <span className="text-base font-semibold text-white">{risk.title}</span>
                                   <span className={`text-xs px-2 py-0.5 rounded-full font-semibold ${
                                     risk.severity === 'Critical' ? 'bg-red-500/20 text-red-400' :
                                     risk.severity === 'High' ? 'bg-orange-500/20 text-orange-400' :
@@ -349,7 +363,45 @@ export default function Home() {
                                     {risk.severity}
                                   </span>
                                 </div>
-                                <p className="text-sm text-slate-300">{risk.description}</p>
+                                <p className="text-sm text-slate-400">{risk.description}</p>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Positive Indicators */}
+                      {analysis.positives && analysis.positives.length > 0 && (
+                        <div className="bg-slate-900/50 border border-slate-700 rounded-lg p-5">
+                          <h5 className="text-base font-semibold text-white mb-3 flex items-center">
+                            <span className="text-green-400 mr-2">✅</span>
+                            Positive Indicators
+                          </h5>
+                          <div className="space-y-4">
+                            {analysis.positives.map((positive: any, i: number) => (
+                              <div key={i} className="border-l-4 border-green-500 pl-3 bg-green-500/5 py-3">
+                                <span className="text-base font-semibold text-white block mb-1">{positive.title}</span>
+                                <p className="text-sm text-slate-400">{positive.description}</p>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Opportunities */}
+                      {analysis.opportunities && analysis.opportunities.length > 0 && (
+                        <div className="bg-slate-900/50 border border-slate-700 rounded-lg p-5">
+                          <h5 className="text-base font-semibold text-white mb-3 flex items-center">
+                            <span className="text-blue-400 mr-2">💡</span>
+                            Opportunities
+                          </h5>
+                          <div className="space-y-4">
+                            {analysis.opportunities.map((opp: any, i: number) => (
+                              <div key={i} className="border-l-4 border-blue-500 pl-3 bg-blue-500/5 py-3">
+                                <span className="text-base font-semibold text-white block mb-1">{opp.title}</span>
+                                <p className="text-sm text-slate-400 mb-2">{opp.description || opp.business_case}</p>
+                                {opp.arr_lift && <p className="text-xs text-blue-400 font-semibold">Est. ARR Lift: {opp.arr_lift}</p>}
+                                {opp.approach && <p className="text-xs text-slate-500 mt-1">Approach: {opp.approach}</p>}
                               </div>
                             ))}
                           </div>
@@ -358,18 +410,39 @@ export default function Home() {
 
                       {/* Recommended Action */}
                       {analysis.recommendation && (
-                        <div className="bg-gradient-to-r from-blue-500/10 to-purple-500/10 border-2 border-blue-500/30 rounded-lg p-4">
-                          <h5 className="text-sm font-semibold text-white mb-2 flex items-center">
+                        <div className="bg-gradient-to-r from-blue-500/10 to-purple-500/10 border-2 border-blue-500/30 rounded-lg p-5">
+                          <h5 className="text-base font-semibold text-white mb-2 flex items-center">
                             <span className="text-blue-400 mr-2">⚡</span>
                             AI Recommended Action
                           </h5>
-                          <p className="text-sm text-slate-300 mb-3">{analysis.recommendation.description}</p>
+                          <p className="text-sm text-slate-400 mb-3">{analysis.recommendation.description}</p>
                           <button className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white text-sm font-semibold rounded-lg transition-colors">
                             {analysis.recommendation.cta || 'View Action Plan'} →
                           </button>
                         </div>
                       )}
+
+                      {/* Email rendering */}
+                      {analysis.subject && analysis.body && (
+                        <div className="bg-slate-900/50 border border-slate-700 rounded-lg p-5">
+                          <div className="mb-3 pb-3 border-b border-slate-700">
+                            <span className="text-xs text-slate-400 font-medium">Subject:</span>
+                            <p className="text-sm font-semibold text-white mt-1">{analysis.subject}</p>
+                          </div>
+                          <div>
+                            <span className="text-xs text-slate-400 font-medium">Body:</span>
+                            <p className="text-sm text-slate-400 mt-2 whitespace-pre-wrap leading-relaxed">{analysis.body}</p>
+                          </div>
+                        </div>
+                      )}
                     </>
+                  )}
+
+                  {/* Fallback for non-structured text */}
+                  {typeof analysis === 'string' && (
+                    <div className="bg-slate-900/50 border border-slate-700 rounded-lg p-5">
+                      <pre className="whitespace-pre-wrap text-sm text-slate-400 leading-relaxed">{analysis}</pre>
+                    </div>
                   )}
                 </div>
               )}
@@ -378,7 +451,7 @@ export default function Home() {
         </div>
 
         {/* Keyboard Hint */}
-        <div className="fixed bottom-4 right-4 text-xs text-slate-400 bg-slate-800/50 backdrop-blur-sm px-3 py-2 rounded-lg border border-slate-700">
+        <div className="fixed bottom-4 right-4 text-xs text-slate-400 bg-slate-800/90 px-3 py-2 rounded-lg border border-slate-700">
           Press <span className="font-mono bg-slate-700 px-1.5 py-0.5 rounded font-semibold text-white">ESC</span> to clear analysis
         </div>
       </div>
