@@ -31,6 +31,8 @@ export type Recommendation = { title: string; description: string; cta?: string 
 
 export type Analysis = {
   summary?: string;
+  confidence?: 'high' | 'medium' | 'low' | 'limited';
+  confidenceReason?: string;
   risks?: Risk[];
   positives?: Positive[];
   opportunities?: Opportunity[];
