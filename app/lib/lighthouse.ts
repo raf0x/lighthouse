@@ -49,25 +49,22 @@ export function mockAnalysis(account: Account, type: AnalysisType): Analysis {
   const health = calculateHealthScore(account);
   const critical = health < 30;
 
- if (type === 'health') {
-  return {
-    summary: `${account.name} is ${critical ? 'critically at-risk' : (health < 70 ? 'showing early warning signals' : 'in healthy territory')} with ${declining ? `a ${Math.abs(mauDelta)}% decline` : `${mauDelta}% growth`} in monthly active users, ${seatPct}% seat utilization, and an NPS of ${account.nps}.`,
-    confidence: account.tickets_30d < 5 ? 'limited' : health < 30 ? 'high' : health < 50 ? 'medium' : 'high',
-    confidenceReason: account.tickets_30d < 5 ? 'Low support signal volume' : undefined,
-    risks: critical || health < 50 ? [
-      { title: 'Accelerating MAU Decline', description: `${Math.abs(mauDelta)}% drop over 5 months — engagement falling across all cohorts.`, severity: 'Critical' },
-      { title: 'Severe Seat Underutilization', description: `${100 - seatPct}% of licensed seats are inactive — value perception eroding.`, severity: 'High' },
-      { title: 'Elevated Support Burden', description: `${account.tickets_30d} open tickets in 30d · NPS ${account.nps}`, severity: 'High' },
-    ] : [],
-    // ... rest stays same
-  };
-}
+  if (type === 'health') {
+    return {
+      summary: `${account.name} is ${critical ? 'critically at-risk' : (health < 70 ? 'showing early warning signals' : 'in healthy territory')} with ${declining ? `a ${Math.abs(mauDelta)}% decline` : `${mauDelta}% growth`} in monthly active users, ${seatPct}% seat utilization, and an NPS of ${account.nps}.`,
+      confidence: account.tickets_30d < 5 ? 'limited' : health < 30 ? 'high' : health < 50 ? 'medium' : 'high',
+      confidenceReason: account.tickets_30d < 5 ? 'Low support signal volume' : undefined,
+      risks: critical || health < 50 ? [
+        { title: 'Accelerating MAU Decline', description: `${Math.abs(mauDelta)}% drop over 5 months — engagement falling across all cohorts.`, severity: 'Critical' },
+        { title: 'Severe Seat Underutilization', description: `${100 - seatPct}% of licensed seats are inactive — value perception eroding.`, severity: 'High' },
+        { title: 'Elevated Support Burden', description: `${account.tickets_30d} open tickets in 30d · NPS ${account.nps}`, severity: 'High' },
+      ] : [],
       positives: health >= 50 && account.nps >= 50 ? [
-  { title: 'Stable executive sponsorship', description: `${account.exec} engaged via QBR in the last cycle.` },
-  { title: 'Strong NPS Performance', description: `NPS ${account.nps} indicates promoter-level satisfaction.` },
-] : health >= 50 ? [
-  { title: 'Stable executive sponsorship', description: `${account.exec} engaged via QBR in the last cycle.` },
-] : [],
+        { title: 'Stable executive sponsorship', description: `${account.exec} engaged via QBR in the last cycle.` },
+        { title: 'Strong NPS Performance', description: `NPS ${account.nps} indicates promoter-level satisfaction.` },
+      ] : health >= 50 ? [
+        { title: 'Stable executive sponsorship', description: `${account.exec} engaged via QBR in the last cycle.` },
+      ] : [],
       recommendation: {
         title: critical ? 'Escalate to executive sponsor' : 'Schedule expansion-readiness review',
         description: critical
