@@ -28,14 +28,12 @@ export default function ThemeToggle() {
     <button
       type="button"
       className="theme-toggle"
-      role="switch"
-      aria-label="Dark mode"
-      aria-checked={theme === 'dark'}
+      aria-label={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
       title={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
       onClick={toggle}
     >
-      {theme === 'dark' ? <Moon size={16} aria-hidden="true" /> : <Sun size={16} aria-hidden="true" />}
-      <span>{theme === 'dark' ? 'Dark' : 'Light'}</span>
+      {theme === 'dark' ? <Sun size={16} aria-hidden="true" /> : <Moon size={16} aria-hidden="true" />}
+      <span>{theme === 'dark' ? 'Light' : 'Dark'}</span>
     </button>
   );
 }
