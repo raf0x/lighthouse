@@ -168,6 +168,11 @@ button:focus-visible, .acc-row:focus-visible, a:focus-visible, select:focus-visi
 .theme-toggle { display:inline-flex; align-items:center; justify-content:center; gap:8px; min-height:44px; padding:8px 12px; background:var(--surface-1); border:1px solid var(--border-default); border-radius:8px; color:var(--fg-1); font-size:13px; font-weight:600; cursor:pointer; transition:background 150ms ease, border-color 150ms ease; }
 .theme-toggle:hover { background:var(--surface-2); border-color:var(--border-strong); }
 .theme-toggle svg { flex-shrink:0; }
+.theme-toggle-action { display:inline-flex; align-items:center; gap:8px; }
+.theme-toggle-action--to-light { display:none; }
+:root[data-theme="dark"] .theme-toggle-action--to-dark { display:none; }
+:root[data-theme="dark"] .theme-toggle-action--to-light { display:inline-flex; }
+.theme-toggle-screen-reader { position:absolute; width:1px; height:1px; margin:-1px; padding:0; overflow:hidden; clip:rect(0, 0, 0, 0); white-space:nowrap; border:0; }
 .mobile-account-picker { display:none; }
 .portfolio-mobile-list, .portfolio-mobile-tools { display:none; }
 .portfolio-mobile-account { display:block; width:100%; padding:16px; text-align:left; background:var(--surface-1); color:var(--fg-1); border:1px solid var(--border-subtle); border-radius:10px; cursor:pointer; }
