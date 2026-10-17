@@ -52,8 +52,8 @@ html, body { background: var(--bg-base); color: var(--fg-1); font-family: var(--
 .decision-divider { flex:0 0 1px; background:var(--border-subtle); }
 
 /* Portfolio summary and escalation layouts */
-.portfolio-kpis { display:flex; gap:28px; flex-wrap:wrap; margin-top:16px; }
-.portfolio-kpis > div { min-width:0; }
+.portfolio-kpis { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:0; margin-top:22px; background:var(--surface-1); border:1px solid var(--border-subtle); border-radius:10px; overflow:hidden; box-shadow:var(--shadow-card); }
+.portfolio-kpis > div { min-width:0; padding:19px 22px; } .portfolio-kpis > div + div { border-left:1px solid var(--border-subtle); }
 .portfolio-escalations { display:grid; grid-template-columns:repeat(auto-fit, minmax(min(100%, 340px), 1fr)); gap:12px; }
 
 /* ---------- Sidebar / portfolio rows ---------- */
@@ -240,7 +240,7 @@ button:focus-visible, .acc-row:focus-visible, a:focus-visible, select:focus-visi
   .decision-strip { display:grid; grid-template-columns:repeat(2, minmax(0, 1fr)); gap:14px; padding:14px; }
   .decision-divider { display:none; }
   .acc-detail-head { flex-wrap:wrap; }
-  .portfolio-kpis { display:grid; grid-template-columns:repeat(2, minmax(0, 1fr)); gap:16px; }
+  .portfolio-kpis { display:grid; grid-template-columns:repeat(2, minmax(0, 1fr)); gap:0; } .portfolio-kpis > div { padding:16px; } .portfolio-kpis > div:nth-child(3) { border-left:0; border-top:1px solid var(--border-subtle); } .portfolio-kpis > div:nth-child(4) { border-top:1px solid var(--border-subtle); }
   .portfolio-escalations { grid-template-columns:minmax(0, 1fr); }
 
   /* Stack metrics 2x2 instead of 4 across */
@@ -292,3 +292,23 @@ button:focus-visible, .acc-row:focus-visible, a:focus-visible, select:focus-visi
   .metric-strip { grid-template-columns: repeat(2, 1fr); }
   .app-grid { grid-template-columns: 240px 1fr; }
 }
+
+
+/* Editorial depth: light-only refinement, dark theme keeps its existing structure. */
+:root:not([data-theme="dark"]) .card--elevated {
+  background:#E6EEE8;
+  border-color:#C9D9CD;
+  box-shadow:none;
+}
+:root:not([data-theme="dark"]) .thinking,
+:root:not([data-theme="dark"]) .summary {
+  background:#F5F8F5;
+  box-shadow:none;
+}
+:root:not([data-theme="dark"]) .acc-row--selected {
+  border-color:var(--beam-500);
+  background:#E6EEE8;
+  box-shadow:none;
+}
+:root:not([data-theme="dark"]) .brand-tagline { color:var(--beam-600); }
+:root:not([data-theme="dark"]) .decision-strip { border-left:3px solid var(--beam-500); background:#F5F8F5; }
