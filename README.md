@@ -1,267 +1,67 @@
-# 🗼 Lighthouse
+# Lighthouse
 
-<div align="center">
+**An independent Customer Success and account-intelligence application.**
 
-![Next.js](https://img.shields.io/badge/Next.js-15-black?logo=next.js)
-![React](https://img.shields.io/badge/React-19-61DAFB?logo=react)
-![TypeScript](https://img.shields.io/badge/TypeScript-5-3178C6?logo=typescript)
-![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-3-38BDF8?logo=tailwindcss)
-![Claude AI](https://img.shields.io/badge/Claude_AI-Anthropic-orange)
-![MIT License](https://img.shields.io/badge/License-MIT-green)
+Lighthouse explores a problem familiar from managing enterprise accounts: how to see which customer relationships need attention, understand the signals behind that priority, and prepare a useful next action.
 
-### An AI-powered analytics dashboard for understanding, monitoring, and exploring data through intelligent insights.
+[Open the working demo](https://lighthouse-alpha-two.vercel.app/) · [See the project on rlemor.com](https://rlemor.com/projects#lighthouse)
 
-**🌐 Live Demo:** https://lighthouse-alpha-two.vercel.app/
+![Actual Lighthouse account-intelligence dashboard, showing example portfolio information](https://rlemor.com/projects/lighthouse/overview-desktop.webp)
 
-</div>
+*Actual application interface with illustrative account data. This is not a live customer portfolio.*
 
----
+## The problem
 
-# Overview
+Customer information is often scattered across usage trends, support activity, renewal dates, account history, and individual notes. A busy account manager needs a way to notice changes and decide where to focus without treating a single score as the whole relationship.
 
-**Lighthouse** is a modern analytics platform designed to transform raw data into actionable insights.
+## What the demo demonstrates
 
-Rather than presenting users with static dashboards full of charts, Lighthouse combines interactive data visualization with AI-powered analysis to help users understand what is happening, why it matters, and what to do next.
+- **Accounts:** an account workspace with health signals, risk indicators, usage information, and context for follow-up.
+- **Portfolio:** a consolidated view of account health, renewal exposure, and prioritization across a sample portfolio.
+- **AI-assisted analysis:** account health analysis and executive briefing workflows, using an Anthropic integration when configured.
+- **Light and dark themes:** a light-default interface with an optional dark theme and saved preference.
+- **Responsive layouts:** desktop and mobile presentations of the same account-management workflow.
 
-Built with modern web technologies and optimized for performance, Lighthouse focuses on delivering a fast, intuitive, and visually engaging experience.
+The sample records and calculated indicators are for demonstration. Lighthouse is not connected to an employer's CRM or real client data.
 
----
+## Product decisions
 
-# Why I Built It
+The goal is not to replace a Customer Success manager's judgment. The interface is designed to make scattered signals easier to inspect, distinguish risk from context, and turn a portfolio review into a clearer next conversation.
 
-Traditional dashboards often overwhelm users with numbers while leaving the interpretation up to them.
+This is an **independent working demo**, not a claim of enterprise adoption or validated customer outcomes.
 
-I wanted to build something different.
+## Implementation
 
-Lighthouse explores the idea that dashboards should do more than display information—they should help explain it.
+- Next.js App Router, React, and TypeScript
+- Recharts for data visualization
+- Lucide icons and CSS styling
+- Anthropic SDK for the optional AI endpoint
+- Vercel for the live demo
 
-By combining modern frontend development with AI-generated insights, the project experiments with a more intelligent approach to analytics.
+The account dataset and health-score logic live in the application source. The AI endpoint requires a configured API key.
 
----
+## Run locally
 
-# Features
-
-### 📊 Interactive Dashboards
-
-Visualize complex datasets through responsive charts and intuitive layouts.
-
----
-
-### 🤖 AI-Powered Insights
-
-Leverages Anthropic's Claude API to generate contextual explanations and summaries from available data. :contentReference[oaicite:0]{index=0}
-
----
-
-### 📈 Rich Data Visualizations
-
-Interactive charts built with Recharts provide a clean, responsive experience across devices. :contentReference[oaicite:1]{index=1}
-
----
-
-### ⚡ Fast Modern UI
-
-Built with Next.js 15 and React 19 for excellent performance and developer experience. :contentReference[oaicite:2]{index=2}
-
----
-
-### 📱 Fully Responsive
-
-Designed to work seamlessly across desktop, tablet, and mobile devices.
-
----
-
-### 🎨 Clean Interface
-
-A minimalist design focused on readability, usability, and reducing cognitive load.
-
----
-
-# Screenshots
-
-> Replace these placeholders with screenshots from your application.
-
-| Dashboard | Analytics |
-|------------|-----------|
-| ![](docs/dashboard.png) | ![](docs/analytics.png) |
-
-| AI Insights | Mobile |
-|--------------|--------|
-| ![](docs/insights.png) | ![](docs/mobile.png) |
-
----
-
-# Technology Stack
-
-## Frontend
-
-- Next.js 15
-- React 19
-- TypeScript
-
-## Styling
-
-- Tailwind CSS
-
-## Charts
-
-- Recharts
-
-## AI
-
-- Anthropic Claude SDK
-
-## Icons
-
-- Lucide React
-
-## Deployment
-
-- Vercel
-
-These dependencies are reflected in the project's lockfile, including Next.js, React, Recharts, Lucide React, and the Anthropic SDK. :contentReference[oaicite:3]{index=3}
-
----
-
-# Architecture
-
-```
-User
-      │
-      ▼
-Next.js Frontend
-      │
-      ├──────────► Interactive Charts
-      │
-      ├──────────► Dashboard Components
-      │
-      └──────────► Claude AI
-                     │
-                     ▼
-             AI-generated Insights
-```
-
----
-
-# Project Structure
-
-```
-src/
-│
-├── app/
-├── components/
-├── hooks/
-├── lib/
-├── services/
-├── utils/
-├── types/
-└── styles/
-```
-
-*(Adjust to match your actual folder structure if needed.)*
-
----
-
-# Engineering Goals
-
-This project explores several areas of modern frontend engineering:
-
-- Building highly responsive dashboards
-- Creating reusable UI components
-- Presenting complex information clearly
-- Integrating AI into user workflows
-- Maintaining excellent performance with React Server Components
-- Designing interfaces that prioritize clarity over visual clutter
-
----
-
-# Local Development
-
-Clone the repository
+Requires Node.js and npm.
 
 ```bash
-git clone https://github.com/raf0x/lighthouse.git
-```
-
-Install dependencies
-
-```bash
-npm install
-```
-
-Run the development server
-
-```bash
+npm ci
 npm run dev
 ```
 
-Open
+Open [http://localhost:3000](http://localhost:3000).
 
+To enable the Anthropic-backed analysis endpoint, configure `ANTHROPIC_API_KEY` in a local environment file. Do not commit credentials.
+
+For a production build:
+
+```bash
+npm run build
+npm run start
 ```
-http://localhost:3000
-```
 
----
+## About
 
-# Roadmap
+Built by **Rafael Lemor**, whose background is in Customer Success, account management, commercial relationships, and operations. Lighthouse grew out of his interest in building practical tools for the kinds of decisions he has handled professionally.
 
-Future improvements include:
-
-- 🔐 User authentication
-- ☁️ Saved dashboards
-- 📤 Export reports
-- 📄 PDF generation
-- 📈 Additional visualization types
-- 🤖 More advanced AI recommendations
-- 🌙 Dark mode
-- ⚙️ Dashboard customization
-- 📱 Progressive Web App support
-- 🔄 Real-time data updates
-
----
-
-# Lessons Learned
-
-Building Lighthouse strengthened my experience in:
-
-- Next.js App Router
-- TypeScript
-- AI API integration
-- Dashboard design
-- Responsive layouts
-- Component architecture
-- Data visualization
-- Performance optimization
-
----
-
-# Contributing
-
-Contributions, ideas, and feedback are welcome.
-
-If you'd like to contribute:
-
-1. Fork the repository
-2. Create a feature branch
-3. Commit your changes
-4. Open a Pull Request
-
----
-
-# License
-
-Released under the MIT License.
-
----
-
-# Author
-
-**Rafael Lemor**
-
-Frontend Developer • Product Designer • AI Enthusiast
-
-If you found this project interesting, consider giving it a ⭐ on GitHub.
-
----
-
-> Lighthouse is an independent personal project built for experimentation, learning, and exploring modern approaches to analytics, AI, and frontend development.
+[Explore Rafael's work](https://rlemor.com/work)
