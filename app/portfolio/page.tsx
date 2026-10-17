@@ -314,7 +314,6 @@ export default function PortfolioPage() {
                 type="button"
                 className="portfolio-mobile-account"
                 onClick={() => router.push(`/?account=${acc.id}`)}
-                aria-label={`Open ${acc.name}, health ${acc.health} out of 100`}
               >
                 <span className="portfolio-mobile-account-head">
                   <strong>{acc.name}</strong>
