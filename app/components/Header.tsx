@@ -4,6 +4,7 @@ import * as React from 'react';
 import { IconLogo } from './icons';
 import { usePathname, useRouter } from 'next/navigation';
 import type { Account } from './types';
+import ThemeToggle from './ThemeToggle';
 
 export default function Header({ accounts }: { accounts: Account[] }) {
   const totalArr = accounts.reduce((s, a) => s + a.arr, 0);
@@ -20,9 +21,9 @@ export default function Header({ accounts }: { accounts: Account[] }) {
         </div>
       </div>
 
-      <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+      <div className="header-controls">
         {/* Navigation */}
-        <nav style={{ display: 'flex', gap: 8, marginRight: 16 }}>
+        <nav className="primary-nav" aria-label="Main navigation">
           <button
             onClick={() => router.push('/')}
             className={pathname === '/' ? 'btn btn--secondary' : 'btn btn--ghost'}
@@ -54,6 +55,7 @@ export default function Header({ accounts }: { accounts: Account[] }) {
             <span style={{ color: 'var(--fg-1)', fontSize: 12, fontWeight: 600, fontFamily: 'var(--font-mono)' }}>${(totalArr / 1_000_000).toFixed(2)}M</span>
           </div>
         </div>
+        <ThemeToggle />
       </div>
     </header>
   );
