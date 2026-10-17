@@ -10,7 +10,7 @@ const MAUChart: React.FC<{ values: number[] }> = ({ values }) => {
   const min = Math.min(...values), max = Math.max(...values);
   const range = max - min || 1;
   const trending = values[values.length - 1] < values[0];
-  const stroke = trending ? '#FF6B6B' : '#3DDC97';
+  const stroke = trending ? 'var(--critical-fg)' : 'var(--healthy-fg)';
   const points: [number, number][] = values.map((v, i) => {
     const x = P + (i / (values.length - 1)) * (W - P * 2);
     const y = H - P - ((v - min) / range) * (H - P * 2);
@@ -28,13 +28,13 @@ const MAUChart: React.FC<{ values: number[] }> = ({ values }) => {
         </linearGradient>
       </defs>
       {[0.25, 0.5, 0.75].map(t => (
-        <line key={t} x1={P} y1={P + t * (H - P * 2)} x2={W - P} y2={P + t * (H - P * 2)} stroke="#1A2640" strokeWidth="1" />
+        <line key={t} x1={P} y1={P + t * (H - P * 2)} x2={W - P} y2={P + t * (H - P * 2)} stroke="var(--border-default)" strokeWidth="1" />
       ))}
       <path d={areaD} fill="url(#mauArea)" />
       <path d={pathD} fill="none" stroke={stroke} strokeWidth="2" />
       {points.map((p, i) => (<circle key={`d-${i}`} cx={p[0]} cy={p[1]} r="3.5" fill={stroke} />))}
-      {points.map((p, i) => (<text key={`m-${i}`} x={p[0]} y={H - 12} fill="#8C99B5" fontSize="11" fontFamily="Geist Mono, monospace" textAnchor="middle">{months[i]}</text>))}
-      {points.map((p, i) => (<text key={`v-${i}`} x={p[0]} y={p[1] - 10} fill="#C6CFE2" fontSize="10" fontFamily="Geist Mono, monospace" textAnchor="middle">{values[i]}</text>))}
+      {points.map((p, i) => (<text key={`m-${i}`} x={p[0]} y={H - 12} fill="var(--fg-3)" fontSize="11" fontFamily="Geist Mono, monospace" textAnchor="middle">{months[i]}</text>))}
+      {points.map((p, i) => (<text key={`v-${i}`} x={p[0]} y={p[1] - 10} fill="var(--fg-2)" fontSize="10" fontFamily="Geist Mono, monospace" textAnchor="middle">{values[i]}</text>))}
     </svg>
   );
 };
@@ -77,7 +77,7 @@ export default function AgentResponse({ analysis, account, type }: Props) {
           {analysis.risks.map((r, i) => (
             <div key={i} className="risk-item" style={{
               borderLeftColor: r.severity === 'Critical' ? 'var(--critical-fg)' : r.severity === 'High' ? 'var(--high-fg)' : 'var(--medium-fg)',
-              background: r.severity === 'Critical' ? 'rgba(255,92,92,0.05)' : r.severity === 'High' ? 'rgba(255,155,71,0.05)' : 'rgba(255,209,102,0.05)',
+              background: r.severity === 'Critical' ? 'var(--critical-bg)' : r.severity === 'High' ? 'var(--high-bg)' : 'var(--medium-bg)',
             }}>
               <div>
                 <div className="title">{r.title}</div>

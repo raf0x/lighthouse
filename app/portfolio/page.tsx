@@ -161,7 +161,7 @@ export default function PortfolioPage() {
             </h2>
           </div>
 
-          <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+          <table className="portfolio-desktop-table" style={{ width: '100%', borderCollapse: 'collapse' }}>
             <thead>
               <tr style={{ borderBottom: '1px solid var(--border-subtle)', background: 'var(--surface-inset)' }}>
                 <th style={{ padding: '12px 24px', textAlign: 'left' }}>
@@ -296,6 +296,34 @@ export default function PortfolioPage() {
               })}
             </tbody>
           </table>
+          <div className="portfolio-mobile-tools">
+            <label htmlFor="lighthouse-portfolio-sort">Sort accounts</label>
+            <select id="lighthouse-portfolio-sort" value={sortBy} onChange={e => handleSort(e.target.value as SortKey)}>
+              <option value="health">Customer health</option>
+              <option value="renewal">Renewal date</option>
+              <option value="arr">ARR</option>
+              <option value="delta">Usage trend</option>
+            </select>
+          </div>
+          <div className="portfolio-mobile-list" aria-label="Portfolio accounts">
+            {sorted.map(acc => (
+              <button
+                key={acc.id}
+                type="button"
+                className="portfolio-mobile-account"
+                onClick={() => router.push(`/?account=${acc.id}`)}
+                aria-label={`Open ${acc.name}, health ${acc.health} out of 100`}
+              >
+                <span className="portfolio-mobile-account-head">
+                  <strong>{acc.name}</strong>
+                  <span className="portfolio-mobile-account-health" style={{ color: acc.band === 'critical' ? 'var(--critical-fg)' : acc.band === 'high' ? 'var(--high-fg)' : acc.band === 'watch' ? 'var(--medium-fg)' : 'var(--healthy-fg)' }}>
+                    {acc.health}/100
+                  </span>
+                </span>
+                <span className="portfolio-mobile-account-meta">{acc.industry} · ${(acc.arr / 1000).toFixed(0)}K ARR · {acc.daysToRenewal} days to renewal</span>
+              </button>
+            ))}
+          </div>
         </div>
       </div>
     </div>

@@ -16,6 +16,14 @@ export default function Home() {
     <div className="app-canvas">
       <div className="app-shell">
         <Header accounts={accounts} />
+        <div className="mobile-account-picker">
+          <label htmlFor="lighthouse-mobile-account">Selected account</label>
+          <select id="lighthouse-mobile-account" value={selectedId} onChange={e => setSelectedId(e.target.value)}>
+            {sorted.map(acc => (
+              <option key={acc.id} value={acc.id}>{acc.name}</option>
+            ))}
+          </select>
+        </div>
         <div className="app-grid">
           <PortfolioSidebar accounts={accounts} selectedId={selectedId} onSelect={setSelectedId} />
           <div>
