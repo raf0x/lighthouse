@@ -4,6 +4,7 @@ import * as React from 'react';
 import { accounts, calculateHealthScore, healthBand } from '@/app/lib/lighthouse';
 import { IconAlert, IconTrendUp, IconTrendDown } from '@/app/components/icons';
 import { useRouter } from 'next/navigation';
+import Header from '@/app/components/Header';
 
 type SortKey = 'health' | 'arr' | 'renewal' | 'delta';
 
@@ -72,6 +73,7 @@ export default function PortfolioPage() {
   return (
     <div className="app-canvas">
       <div className="app-shell">
+        <Header accounts={accounts} />
         <div style={{ marginBottom: 32 }}>
           <h1 style={{ fontSize: 40, fontWeight: 600, color: 'var(--fg-1)', marginBottom: 8 }}>
             Portfolio Overview
