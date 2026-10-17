@@ -78,7 +78,7 @@ export default function PortfolioPage() {
           <h1 style={{ fontSize: 40, fontWeight: 600, color: 'var(--fg-1)', marginBottom: 8 }}>
             Portfolio Overview
           </h1>
-          <div style={{ display: 'flex', gap: 32, marginTop: 16 }}>
+          <div className="portfolio-kpis">
             <div>
               <div className="eyebrow" style={{ marginBottom: 4 }}>Total Accounts</div>
               <div style={{ fontSize: 32, fontWeight: 600, color: 'var(--fg-1)', fontFamily: 'var(--font-mono)' }}>
@@ -115,7 +115,7 @@ export default function PortfolioPage() {
               </h2>
               <span className="pill pill--critical">{escalations.length}</span>
             </div>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(340px, 1fr))', gap: 12 }}>
+            <div className="portfolio-escalations">
               {escalations.map(acc => (
                 <button
                   key={acc.id}

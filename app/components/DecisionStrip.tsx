@@ -27,37 +27,29 @@ export default function DecisionStrip({ account }: { account: Account }) {
                    renewalRisk === 'Medium' ? 'var(--medium-fg)' : 'var(--healthy-fg)';
 
   return (
-    <div style={{
-      display: 'flex',
-      gap: 16,
-      padding: '16px 20px',
-      background: 'var(--surface-inset)',
-      border: '1px solid var(--border-subtle)',
-      borderRadius: 12,
-      marginBottom: 24,
-    }}>
+    <div className="decision-strip">
       <div style={{ flex: 1 }}>
         <div className="eyebrow" style={{ marginBottom: 6 }}>Renewal Risk</div>
         <div style={{ fontSize: 18, fontWeight: 700, color: riskColor }}>{renewalRisk}</div>
       </div>
-      <div style={{ width: 1, background: 'var(--border-subtle)' }} />
+      <div className="decision-divider" aria-hidden="true" />
       <div style={{ flex: 1 }}>
         <div className="eyebrow" style={{ marginBottom: 6 }}>Confidence</div>
         <div style={{ fontSize: 18, fontWeight: 700, color: 'var(--beam-300)', fontFamily: 'var(--font-mono)' }}>
           {confidence}%
         </div>
       </div>
-      <div style={{ width: 1, background: 'var(--border-subtle)' }} />
+      <div className="decision-divider" aria-hidden="true" />
       <div style={{ flex: 1.5 }}>
         <div className="eyebrow" style={{ marginBottom: 6 }}>Primary Driver</div>
         <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--fg-1)' }}>{primaryDriver}</div>
       </div>
-      <div style={{ width: 1, background: 'var(--border-subtle)' }} />
+      <div className="decision-divider" aria-hidden="true" />
       <div style={{ flex: 1.5 }}>
         <div className="eyebrow" style={{ marginBottom: 6 }}>Recommended Motion</div>
         <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--fg-1)' }}>{motion}</div>
       </div>
-      <div style={{ width: 1, background: 'var(--border-subtle)' }} />
+      <div className="decision-divider" aria-hidden="true" />
       <div style={{ flex: 1 }}>
         <div className="eyebrow" style={{ marginBottom: 6 }}>Urgency Window</div>
         <div style={{ fontSize: 14, fontWeight: 700, color: health < 50 ? 'var(--critical-fg)' : 'var(--fg-1)', fontFamily: 'var(--font-mono)' }}>

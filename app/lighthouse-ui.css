@@ -42,8 +42,19 @@ html, body { background: var(--bg-base); color: var(--fg-1); font-family: var(--
 @keyframes lhpulse { 0%,100% { opacity: 0.5; } 50% { opacity: 1; } }
 
 /* ---------- Layout grid ---------- */
-.app-grid { display:grid; grid-template-columns:280px 1fr; gap:20px; align-items:flex-start; }
-@media (max-width: 900px) { .app-grid { grid-template-columns: 1fr; } }
+.app-grid { display:grid; grid-template-columns:280px minmax(0, 1fr); gap:20px; align-items:flex-start; }
+.app-grid > div, .card { min-width:0; }
+@media (max-width: 900px) { .app-grid { grid-template-columns: minmax(0, 1fr); } }
+
+/* Account decision context */
+.decision-strip { display:flex; gap:16px; padding:16px 20px; background:var(--surface-inset); border:1px solid var(--border-subtle); border-radius:12px; margin-bottom:24px; }
+.decision-strip > div { min-width:0; }
+.decision-divider { flex:0 0 1px; background:var(--border-subtle); }
+
+/* Portfolio summary and escalation layouts */
+.portfolio-kpis { display:flex; gap:28px; flex-wrap:wrap; margin-top:16px; }
+.portfolio-kpis > div { min-width:0; }
+.portfolio-escalations { display:grid; grid-template-columns:repeat(auto-fit, minmax(min(100%, 340px), 1fr)); gap:12px; }
 
 /* ---------- Sidebar / portfolio rows ---------- */
 .sidebar { padding:18px; }
@@ -226,8 +237,14 @@ button:focus-visible, .acc-row:focus-visible, a:focus-visible, select:focus-visi
   .acc-subtitle { font-size: 13px; }
   .acc-score-block .score { font-size: 40px; }
   
+  .decision-strip { display:grid; grid-template-columns:repeat(2, minmax(0, 1fr)); gap:14px; padding:14px; }
+  .decision-divider { display:none; }
+  .acc-detail-head { flex-wrap:wrap; }
+  .portfolio-kpis { display:grid; grid-template-columns:repeat(2, minmax(0, 1fr)); gap:16px; }
+  .portfolio-escalations { grid-template-columns:minmax(0, 1fr); }
+
   /* Stack metrics 2x2 instead of 4 across */
-  .metric-strip { grid-template-columns: repeat(2, 1fr); gap: 10px; }
+  .metric-strip { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
   .metric { padding: 12px; }
   .metric-value { font-size: 20px; }
   .metric-eyebrow { font-size: 9px; }
@@ -253,16 +270,7 @@ button:focus-visible, .acc-row:focus-visible, a:focus-visible, select:focus-visi
   /* Portfolio page - hide table, show cards */
   .portfolio-desktop-table { display: none; }
   
-  /* Portfolio stats stack */
-  div[style*="display: flex; gap: 32px"] { 
-    flex-direction: column; 
-    gap: 16px !important; 
-  }
-  
-  /* Escalation cards stack */
-  div[style*="grid-template-columns: repeat(auto-fit"] {
-    grid-template-columns: 1fr !important;
-  }
+  /* Portfolio KPIs and escalations have explicit responsive layouts above. */
   
   /* Reduce all h1 sizes */
   h1 { font-size: 28px !important; }
