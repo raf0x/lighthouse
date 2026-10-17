@@ -4,6 +4,7 @@ import * as React from 'react';
 import { accounts, calculateHealthScore, healthBand } from '@/app/lib/lighthouse';
 import { IconAlert, IconTrendUp, IconTrendDown } from '@/app/components/icons';
 import { useRouter } from 'next/navigation';
+import Header from '@/app/components/Header';
 
 type SortKey = 'health' | 'arr' | 'renewal' | 'delta';
 
@@ -72,11 +73,12 @@ export default function PortfolioPage() {
   return (
     <div className="app-canvas">
       <div className="app-shell">
+        <Header accounts={accounts} />
         <div style={{ marginBottom: 32 }}>
           <h1 style={{ fontSize: 40, fontWeight: 600, color: 'var(--fg-1)', marginBottom: 8 }}>
             Portfolio Overview
           </h1>
-          <div style={{ display: 'flex', gap: 32, marginTop: 16 }}>
+          <div className="portfolio-kpis">
             <div>
               <div className="eyebrow" style={{ marginBottom: 4 }}>Total Accounts</div>
               <div style={{ fontSize: 32, fontWeight: 600, color: 'var(--fg-1)', fontFamily: 'var(--font-mono)' }}>
@@ -113,7 +115,7 @@ export default function PortfolioPage() {
               </h2>
               <span className="pill pill--critical">{escalations.length}</span>
             </div>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(340px, 1fr))', gap: 12 }}>
+            <div className="portfolio-escalations">
               {escalations.map(acc => (
                 <button
                   key={acc.id}
@@ -161,7 +163,7 @@ export default function PortfolioPage() {
             </h2>
           </div>
 
-          <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+          <table className="portfolio-desktop-table" style={{ width: '100%', borderCollapse: 'collapse' }}>
             <thead>
               <tr style={{ borderBottom: '1px solid var(--border-subtle)', background: 'var(--surface-inset)' }}>
                 <th style={{ padding: '12px 24px', textAlign: 'left' }}>
@@ -296,6 +298,33 @@ export default function PortfolioPage() {
               })}
             </tbody>
           </table>
+          <div className="portfolio-mobile-tools">
+            <label htmlFor="lighthouse-portfolio-sort">Sort accounts</label>
+            <select id="lighthouse-portfolio-sort" value={sortBy} onChange={e => handleSort(e.target.value as SortKey)}>
+              <option value="health">Customer health</option>
+              <option value="renewal">Renewal date</option>
+              <option value="arr">ARR</option>
+              <option value="delta">Usage trend</option>
+            </select>
+          </div>
+          <div className="portfolio-mobile-list" aria-label="Portfolio accounts">
+            {sorted.map(acc => (
+              <button
+                key={acc.id}
+                type="button"
+                className="portfolio-mobile-account"
+                onClick={() => router.push(`/?account=${acc.id}`)}
+              >
+                <span className="portfolio-mobile-account-head">
+                  <strong>{acc.name}</strong>
+                  <span className="portfolio-mobile-account-health" style={{ color: acc.band === 'critical' ? 'var(--critical-fg)' : acc.band === 'high' ? 'var(--high-fg)' : acc.band === 'watch' ? 'var(--medium-fg)' : 'var(--healthy-fg)' }}>
+                    {acc.health}/100
+                  </span>
+                </span>
+                <span className="portfolio-mobile-account-meta">{acc.industry} · ${(acc.arr / 1000).toFixed(0)}K ARR · {acc.daysToRenewal} days to renewal</span>
+              </button>
+            ))}
+          </div>
         </div>
       </div>
     </div>
