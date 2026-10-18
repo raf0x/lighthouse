@@ -92,6 +92,8 @@ NPS: ${account.nps}
 
 ${portfolioContext}
 
+Ground the briefing strictly in the supplied account data. Separate observed metrics from proposed actions. Do not invent quantified forecasts, recovery percentages, health-score improvements, ROI, probabilities, or deadlines that cannot be calculated from these inputs. If a future outcome is uncertain, describe it as an unvalidated possibility rather than a numerical prediction. A recommendation is not evidence that it will succeed.
+
 Return ONLY this JSON:
 {
   "summary": "Executive-level account status summary (2-3 sentences)",
