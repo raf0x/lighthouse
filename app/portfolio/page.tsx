@@ -12,6 +12,9 @@ export default function PortfolioPage() {
   const router = useRouter();
   const [sortBy, setSortBy] = React.useState<SortKey>('health');
   const [sortAsc, setSortAsc] = React.useState(true);
+  const renewalLabel = (days: number, compact = false) =>
+    days < 0 ? (compact ? `${Math.abs(days)}d overdue` : `${Math.abs(days)} days overdue`) :
+    days === 0 ? 'Due today' : (compact ? `${days}d to renewal` : `${days} days to renewal`);
 
   const portfolioData = accounts.map(acc => {
     const health = calculateHealthScore(acc);
@@ -144,7 +147,7 @@ export default function PortfolioPage() {
                   <div style={{ fontSize: 12, color: 'var(--fg-2)', display: 'flex', gap: 16 }}>
                     <span>${(acc.arr / 1000).toFixed(0)}K ARR</span>
                     <span>•</span>
-                    <span>{acc.daysToRenewal}d to renewal</span>
+                    <span>{renewalLabel(acc.daysToRenewal, true)}</span>
                     <span>•</span>
                     <span style={{ color: 'var(--critical-fg)' }}>
                       {acc.mauDelta < 0 ? '↓' : '↑'} {Math.abs(Math.round(acc.mauDelta))}% MAU
@@ -283,7 +286,7 @@ export default function PortfolioPage() {
                             color: acc.daysToRenewal < 90 ? 'var(--critical-fg)' : 'var(--fg-2)',
                           }}
                         >
-                          {acc.daysToRenewal}d
+                          {renewalLabel(acc.daysToRenewal, true)}
                         </div>
                         <div style={{ fontSize: 10, color: 'var(--fg-4)', marginTop: 2 }}>
                           {new Date(acc.contract_end).toLocaleDateString('en-US', { month: 'short', year: 'numeric' })}
@@ -321,7 +324,7 @@ export default function PortfolioPage() {
                     {acc.health}/100
                   </span>
                 </span>
-                <span className="portfolio-mobile-account-meta">{acc.industry} · ${(acc.arr / 1000).toFixed(0)}K ARR · {acc.daysToRenewal} days to renewal</span>
+                <span className="portfolio-mobile-account-meta">{acc.industry} · ${(acc.arr / 1000).toFixed(0)}K ARR · {renewalLabel(acc.daysToRenewal)}</span>
               </button>
             ))}
           </div>
