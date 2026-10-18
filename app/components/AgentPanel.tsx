@@ -19,10 +19,12 @@ export default function AgentPanel({ account }: { account: Account }) {
   const [activeType, setActiveType] = React.useState<AnalysisType | null>(null);
   const [loading, setLoading] = React.useState(false);
   const [analysis, setAnalysis] = React.useState<Analysis | null>(null);
+  const [source, setSource] = React.useState<'ai' | 'demo' | null>(null);
 
   React.useEffect(() => {
     setAnalysis(null);
     setActiveType(null);
+    setSource(null);
   }, [account.id]);
 
   React.useEffect(() => {
@@ -40,7 +42,9 @@ export default function AgentPanel({ account }: { account: Account }) {
     setActiveType(type);
     setLoading(true);
     setAnalysis(null);
+    setSource(null);
     let result: Analysis | null = null;
+    let usedAI = false;
     try {
       const r = await fetch('/api/analyze', {
         method: 'POST',
@@ -48,7 +52,10 @@ export default function AgentPanel({ account }: { account: Account }) {
         body: JSON.stringify({ account, type }),
       });
       const data = await r.json();
-      if (r.ok && data.analysis) result = data.analysis as Analysis;
+      if (r.ok && data.analysis) {
+        result = data.analysis as Analysis;
+        usedAI = true;
+      }
     } catch (err) {
       console.warn('/api/analyze failed, using mock', err);
     }
@@ -56,6 +63,7 @@ export default function AgentPanel({ account }: { account: Account }) {
       await new Promise(r => setTimeout(r, 800));
       result = mockAnalysis(account, type);
     }
+    setSource(usedAI ? 'ai' : 'demo');
     setAnalysis(result);
     setLoading(false);
   };
@@ -128,7 +136,14 @@ export default function AgentPanel({ account }: { account: Account }) {
       )}
 
       {!loading && analysis && activeType && (
-        <AgentResponse analysis={analysis} account={account} type={activeType} />
+        <>
+          <p role="status" style={{ fontSize: 12, lineHeight: 1.5, color: 'var(--fg-3)', marginBottom: 12 }}>
+            {source === 'demo'
+              ? 'Demo example generated from fictional account data. The live AI request was unavailable.'
+              : 'AI-generated analysis of fictional account data. Recommendations and future outcomes require human validation.'}
+          </p>
+          <AgentResponse analysis={analysis} account={account} type={activeType} />
+        </>
       )}
     </div>
   );
