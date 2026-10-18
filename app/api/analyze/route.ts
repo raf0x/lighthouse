@@ -92,6 +92,8 @@ NPS: ${account.nps}
 
 ${portfolioContext}
 
+Use only the supplied account data for factual claims. The health score and percentile are demo indicators, not validated churn probabilities. Separate observed signals from possible explanations and recommended next steps. Do not invent recovery percentages, expected health-score improvements, ARR outcomes, churn deadlines, probabilities, or other quantitative forecasts. Do not assign an owner or a due date unless one is provided. When the cause of a signal is unknown, recommend investigating it instead of claiming a cause. All opportunities are hypotheses for human review, not proven outcomes.
+
 Return ONLY this JSON:
 {
   "summary": "Executive-level account status summary (2-3 sentences)",
