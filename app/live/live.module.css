@@ -166,3 +166,21 @@
 .shell[data-mode="light"] .reviewContent strong,.shell[data-mode="light"] .accountName{color:#142f40}
 .shell[data-mode="light"] .agentStatus{filter:saturate(1.2)}
 .shell[data-mode="light"] .metric strong{color:#102d3c}
+
+
+/* Light-mode definition: slightly heavier field and panel outlines, without affecting dark mode. */
+.shell[data-mode="light"] .dashboard,
+.shell[data-mode="light"] .metric,
+.shell[data-mode="light"] .networkPanel,
+.shell[data-mode="light"] .feed,
+.shell[data-mode="light"] .review,
+.shell[data-mode="light"] .bottomPanel,
+.shell[data-mode="light"] .agent,
+.shell[data-mode="light"] .networkDetail,
+.shell[data-mode="light"] .activeTag,
+.shell[data-mode="light"] .controls button,
+.shell[data-mode="light"] .controls select,
+.shell[data-mode="light"] .themeButton,
+.shell[data-mode="light"] .reviewButton {
+  border-width: 1.5px;
+}
