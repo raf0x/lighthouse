@@ -3,3 +3,80 @@
 @keyframes spin{to{transform:rotate(360deg)}}@keyframes breathe{50%{opacity:.55;box-shadow:0 0 0 7px rgba(96,221,178,.03)}}@keyframes agentGlow{50%{box-shadow:0 0 0 5px color-mix(in srgb,var(--agent-color) 6%,transparent),0 0 44px color-mix(in srgb,var(--agent-color) 31%,transparent)}}
 @media(max-width:1150px){.frame{padding:0 25px}.topStatus{display:none}.introRight{display:none}.mainGrid{grid-template-columns:minmax(0,1.5fr) minmax(300px,.95fr)}.metrics{grid-template-columns:repeat(2,minmax(0,1fr))}.networkPanel{min-height:540px}.agent{width:92px;padding:6px;gap:5px}.agentSymbol{width:21px;height:25px;font-size:16px}.agentText small{font-size:7px}.agentText strong{font-size:9px}.nowProcessing{display:none}}@media(max-width:800px){.topbar{height:auto;padding:16px 0;flex-wrap:wrap}.nav{order:3;width:100%;justify-content:center}.nav a{flex:1;text-align:center}.intro{padding:38px 0 31px}.intro h1{font-size:clamp(33px,6vw,46px)}.dashboard{padding:14px}.dashboardTop{align-items:flex-start;flex-direction:column}.mainGrid,.bottomGrid{grid-template-columns:1fr}.networkPanel{min-height:535px}.network{min-height:420px}.sidePanel{grid-template-columns:1fr 1fr;grid-template-rows:1fr}.feedList{max-height:230px}.bottomPanel{min-height:225px}.footer{flex-direction:column;gap:10px}.footer p:last-child{text-align:left}}@media(max-width:560px){.frame{padding:0 12px}.brand{font-size:13px}.intro h1{font-size:34px}.intro p{font-size:12px}.dashboard{padding:10px;border-radius:10px}.dashboardTop{padding:9px 7px 14px}.controls{flex-wrap:wrap}.titleGroup{gap:8px}.titleGroup h2{font-size:16px}.sectionIndex{font-size:8px}.metrics{gap:6px}.metric{padding:12px 11px;min-height:92px}.metric>span{font-size:8px}.metric strong{font-size:26px}.metric>div{align-items:flex-start;flex-direction:column;gap:5px;margin-top:8px}.spark{width:58px;right:7px;bottom:10px;height:22px}.mainGrid,.bottomGrid{gap:7px}.panelHeading{padding:15px 12px 13px}.panelHeading h3{font-size:14px}.panelOverline{font-size:8px}.activeTag{font-size:7px;padding:6px}.networkPanel{min-height:460px}.network{min-height:352px}.agent{width:79px;min-height:40px;padding:5px;gap:4px;border-radius:7px}.agentSymbol{width:18px;height:22px;font-size:13px}.agentText strong{font-size:8px}.agentText small{font-size:7px}.agentStatus{font-size:7px;right:3px;top:1px}.centerHub{width:99px;height:99px}.hubOrbit{inset:-8px}.hubGlyph{height:38px;width:38px;border-radius:11px;margin-bottom:7px}.hubGlyph span{font-size:26px}.centerHub strong{font-size:8px}.centerHub small{font-size:5px}.networkDetail{left:7px;bottom:7px;padding:7px;min-width:154px}.networkDetail strong{font-size:9px}.networkDetail small{font-size:8px}.networkFooter{padding:10px 9px;gap:10px;font-size:8px}.sidePanel{grid-template-columns:1fr;grid-template-rows:auto auto;gap:7px}.feedList{max-height:260px}.scenarioNote{padding:10px 12px}.reviewContent{padding:0 12px 14px}.reviewButton{margin:0 12px 14px;width:calc(100% - 24px)}.accountsList{margin:0 12px 13px}.accountRow{grid-template-columns:17px minmax(90px,1fr) 60px 24px;gap:7px}.chartWrap{padding:0 12px}.chartBottom{padding:7px 12px 16px 29px;font-size:7px}.timelineTop{font-size:8px}.timelineTop span:nth-child(2){display:none}.footer{padding:24px 5px 35px}.footer p:first-child{white-space:normal}}
 @media(prefers-reduced-motion:reduce){.shell *,.shell *:before,.shell *:after{animation:none!important;transition:none!important;scroll-behavior:auto!important}}
+
+/* V2: continuous display containment and mobile-first agent composition. */
+.shell{width:100%;max-width:100%;overflow-x:clip}
+.frame,.dashboard,.dashboardTop,.mainGrid,.bottomGrid,.networkPanel,.sidePanel,.feed,.review,.bottomPanel{min-width:0;max-width:100%}
+.networkPanel{contain:layout paint}
+.network{overflow:hidden}
+.intro h1{overflow-wrap:normal}
+.metric{overflow:hidden}
+.metric>div{min-width:0;flex-wrap:wrap}
+.metric strong{min-width:0}
+.feedList li{min-width:0}
+.feedList li>div{min-width:0;overflow-wrap:anywhere}
+.reviewContent>div{min-width:0}
+.accountName{min-width:0}
+.footer{min-width:0}
+@media(max-width:800px){
+  .dashboardTop{gap:16px}
+  .controls{max-width:100%;row-gap:9px}
+  .metric strong{font-size:clamp(23px,3.5vw,32px)}
+}
+@media(max-width:600px){
+  .frame{padding-inline:14px}
+  .topbar{gap:14px}
+  .nav{width:100%;min-width:0;padding:4px;gap:3px}
+  .nav a{min-width:0;padding:10px 4px;font-size:11px;white-space:nowrap}
+  .intro{padding-block:35px 27px}
+  .intro h1{font-size:clamp(30px,8vw,40px);letter-spacing:-.045em}
+  .intro h1 em{display:inline}
+  .dashboard{padding:10px}
+  .dashboardTop{padding:10px 7px 17px}
+  .controls{width:100%;display:grid;grid-template-columns:minmax(0,1fr) auto auto;gap:8px}
+  .selectWrap{min-width:0;overflow:hidden}
+  .selectWrap select{min-width:0;width:100%;height:36px}
+  .controlButton{height:36px;justify-content:center}
+  .speedControl{justify-content:flex-end}
+  .speedControl select{height:36px}
+  .metrics{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+  .metric{min-height:109px;padding:13px 12px}
+  .metric>div{gap:6px}
+  .metric strong{font-size:clamp(24px,7vw,31px)}
+  .metricTiny,.metricUp,.metricOrange,.metricBlue{font-size:8px!important}
+  .networkPanel{min-height:0}
+  .network{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));grid-template-rows:repeat(4,57px);gap:9px;align-content:end;padding:146px 11px 65px;min-height:503px;overflow:hidden}
+  .networkGrid{inset:0}
+  .wires{display:none}
+  .centerHub{top:77px;left:50%;width:116px;height:116px}
+  .hubGlyph{height:42px;width:42px}
+  .hubGlyph span{font-size:30px}
+  .centerHub strong{font-size:9px}
+  .centerHub small{font-size:6px}
+  .agent,.agent:hover,.agentSelected{position:relative!important;left:auto!important;top:auto!important;transform:none!important;width:100%;height:57px;min-height:0;padding:9px 10px;gap:9px;box-shadow:none}
+  .agentActive{box-shadow:0 0 0 1px var(--agent-color),inset 0 0 19px color-mix(in srgb,var(--agent-color) 8%,transparent)}
+  .agentSymbol{width:29px;height:29px;font-size:19px}
+  .agentText strong{font-size:11px}
+  .agentText small{font-size:9px}
+  .agentStatus{top:6px;right:7px;font-size:9px}
+  .networkLabel{top:12px;left:14px}
+  .networkDetail{left:11px;right:11px;bottom:12px;width:auto;min-width:0;justify-content:center}
+  .networkFooter{flex-wrap:wrap;padding:12px 13px;gap:8px 18px}
+  .nowProcessing{display:block;flex-basis:100%;max-width:100%;margin:2px 0 0}
+  .sidePanel{grid-template-columns:minmax(0,1fr)}
+  .feedList{max-height:260px}
+  .panelHeading{align-items:flex-start}
+  .footer p{overflow-wrap:anywhere}
+}
+@media(max-width:370px){
+  .frame{padding-inline:9px}
+  .dashboard{padding:7px}
+  .metric{padding:11px 9px}
+  .metric strong{font-size:24px}
+  .network{gap:7px;padding-inline:7px}
+  .agent{padding:7px;gap:5px}
+  .agentText strong{font-size:10px}
+  .agentText small{font-size:8px}
+  .agentSymbol{width:24px;flex-basis:24px}
+  .activeTag{font-size:7px}
+}
