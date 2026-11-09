@@ -397,3 +397,30 @@
   .beaconSweep::before,.beaconBeam,.hubGlyph{animation:none!important}
   .hubGlyph{transform:none}
 }
+
+
+/* Match the color-coded primary navigation: dashboard, accounts, portfolio. */
+.nav{gap:7px;background:transparent;border-color:transparent}
+.nav a,.shell[data-mode="light"] .nav a{
+  color:#fff;
+  font-size:12px;
+  font-weight:750;
+  border:1.5px solid transparent;
+  border-radius:8px;
+  padding:10px 14px;
+  box-shadow:inset 0 1px rgba(255,255,255,.18),0 2px 7px rgba(13,40,60,.12);
+  transition:filter .18s,transform .18s,box-shadow .18s;
+}
+.nav a.navDashboard,.shell[data-mode="light"] .nav a.navDashboard{background:#087e78;border-color:#066963;color:white}
+.nav a.navAccounts,.shell[data-mode="light"] .nav a.navAccounts{background:#305ebf;border-color:#234c9f;color:white}
+.nav a.navPortfolio,.shell[data-mode="light"] .nav a.navPortfolio{background:#853fb0;border-color:#6c2c95;color:white}
+.nav a:hover,.shell[data-mode="light"] .nav a:hover{filter:brightness(1.1);transform:translateY(-1px);color:white}
+.nav a[aria-current="page"],.shell[data-mode="light"] .nav a[aria-current="page"]{
+  color:white;
+  box-shadow:0 0 0 2px var(--deep),0 0 0 4px rgba(109,171,181,.6),inset 0 1px rgba(255,255,255,.2);
+}
+.nav a:focus-visible{outline:3px solid #79dbc8;outline-offset:3px}
+@media(max-width:600px){
+  .nav{gap:6px;width:100%;padding:4px 1px}
+  .nav a,.shell[data-mode="light"] .nav a{min-width:0;flex:1;padding:10px 5px;font-size:11px}
+}

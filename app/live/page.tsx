@@ -207,7 +207,7 @@ export default function LiveDashboard() {
         <header className={styles.topbar}>
           <Link href="/" className={styles.brand} aria-label="Lighthouse home"><span className={styles.brandIcon}>✳</span><span>LIGHTHOUSE<small>ACCOUNT INTELLIGENCE</small></span></Link>
           <nav className={styles.nav} aria-label="Dashboard navigation">
-            <Link href="/">Accounts</Link><Link href="/portfolio">Portfolio</Link><Link href="/live" aria-current="page">Dashboard</Link>
+            <Link href="/live" aria-current="page" className={styles.navDashboard}>Dashboard</Link><Link href="/" className={styles.navAccounts}>Accounts</Link><Link href="/portfolio" className={styles.navPortfolio}>Portfolio</Link>
           </nav>
           <div className={styles.topRight}>
             <div className={styles.topStatus}><span className={styles.liveDot} /> SIMULATION ONLINE <span className={styles.dividerText}>/</span> 08 NODES</div>
