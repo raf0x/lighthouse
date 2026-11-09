@@ -4,8 +4,8 @@ import * as React from 'react';
 import Link from 'next/link';
 import {
   Activity, ArrowDownRight, ArrowRight, ArrowUpRight, Check, ChevronDown,
-  CirclePause, CirclePlay, Clock3, Command, Gauge, Layers3, Pause, Play,
-  RotateCcw, ShieldCheck, Sparkles, Zap
+  Clock3, Pause, Play,
+  ShieldCheck, Zap
 } from 'lucide-react';
 import { accounts, calculateHealthScore } from '@/app/lib/lighthouse';
 import styles from './live.module.css';
@@ -104,7 +104,7 @@ function Network({ active, visited, selected, onSelect, reduced }: {
           key={agent.id}
           type="button"
           className={`${styles.agent} ${isActive ? styles.agentActive : ''} ${selected === agent.id ? styles.agentSelected : ''}`}
-          style={{ left: `${agent.x}%`, top: `${agent.y}%`, ['--agent-color' as string]: agent.color } as React.CSSProperties}
+          style={{ left: `clamp(48px, ${agent.x}%, calc(100% - 48px))`, top: `${agent.y}%`, ['--agent-color' as string]: agent.color } as React.CSSProperties}
           aria-pressed={selected === agent.id} onClick={() => onSelect(selected === agent.id ? null : agent.id)}
           aria-label={`${agent.name}, ${agent.role}, ${isActive ? 'processing' : isVisited ? 'completed' : 'standby'}. View details`}
         >
@@ -139,12 +139,19 @@ export default function LiveDashboard() {
   const [selectedAgent, setSelectedAgent] = React.useState<AgentId | null>(null);
   const [approved, setApproved] = React.useState(false);
   const [motionReduced, setMotionReduced] = React.useState(false);
-  const maxTick = 24;
-  const stage = Math.min(Math.floor(tick / 4), 5);
-  const scene = scenarios[scenario];
+  const cycleLength = 24;
+  const cycle = Math.floor(tick / cycleLength);
+  const cycleTick = tick % cycleLength;
+  const stage = Math.floor(cycleTick / 4);
+  const activeScenario: ScenarioId = cycle % 2 === 0 ? scenario : scenario === 'risk' ? 'growth' : 'risk';
+  const scene = scenarios[activeScenario];
   const current = scene.events[stage];
-  const visible = scene.events.slice(0, stage + 1);
-  const visited = visible.map(e => e.agent);
+  const visible = Array.from({length: Math.min(6, Math.floor(tick / 4) + 1)}, (_, offset) => {
+    const sequence = Math.floor(tick / 4) - offset;
+    const pastScenario: ScenarioId = Math.floor(sequence / 6) % 2 === 0 ? scenario : scenario === 'risk' ? 'growth' : 'risk';
+    return {event: scenarios[pastScenario].events[sequence % 6], sequence};
+  });
+  const visited = scene.events.slice(0, stage + 1).map(e => e.agent);
   const active = current.agent;
 
   React.useEffect(() => {
@@ -157,22 +164,18 @@ export default function LiveDashboard() {
 
   React.useEffect(() => {
     if (!playing) return;
-    const id = window.setInterval(() => setTick(previous => {
-      if (previous >= maxTick) { setPlaying(false); return previous; }
-      return previous + 1;
-    }), 850 / speed);
+    const id = window.setInterval(() => setTick(previous => previous + 1), 850 / speed);
     return () => window.clearInterval(id);
   }, [playing, speed]);
 
   function changeScenario(next: ScenarioId) {
     setScenario(next); setTick(0); setApproved(false); setSelectedAgent(null); setPlaying(!motionReduced);
   }
-  function restart() { setTick(0); setApproved(false); setPlaying(!motionReduced); }
-  const completed = tick >= maxTick;
-  const healthScore = calculateHealthScore(accounts.find(a => a.name === (scenario === 'risk' ? 'Horizon Retail' : 'Cascade Energy'))!);
-  const healthValue = scenario === 'risk' ? Math.max(0, healthScore + 7 - stage * 2) : Math.min(100, healthScore - 4 + stage);
-  const queueCount = (stage >= 4 ? 1 : 0) + (approved ? 0 : 1);
-  const chartValues = scenario === 'risk'
+  React.useEffect(() => { setApproved(false); }, [cycle]);
+  const healthScore = calculateHealthScore(accounts.find(a => a.name === (activeScenario === 'risk' ? 'Horizon Retail' : 'Cascade Energy'))!);
+  const healthValue = activeScenario === 'risk' ? Math.max(0, healthScore + 7 - stage * 2) : Math.min(100, healthScore - 4 + stage);
+  const queueCount = stage >= 4 && !approved ? 2 : 1;
+  const chartValues = activeScenario === 'risk'
     ? [76, 74, 72, 73, 69, 68 - stage, 66 - stage, 66 - stage * 1.5]
     : [65, 66, 66, 68, 69, 70 + stage, 71 + stage, 73 + stage];
   return (
@@ -199,38 +202,38 @@ export default function LiveDashboard() {
             <div className={styles.controls}>
               <label className={styles.selectWrap}>Scenario <ChevronDown size={12} aria-hidden="true" /><select value={scenario} onChange={e => changeScenario(e.target.value as ScenarioId)} aria-label="Choose simulation scenario"><option value="risk">Renewal watch</option><option value="growth">Expansion opportunity</option></select></label>
               <button type="button" onClick={() => setPlaying(v => !v)} aria-label={playing ? 'Pause simulation' : 'Play simulation'} className={styles.controlButton}>{playing ? <Pause size={15} fill="currentColor" /> : <Play size={15} fill="currentColor" />}<span>{playing ? 'Pause' : 'Play'}</span></button>
-              <button type="button" onClick={restart} className={styles.iconButton} aria-label="Replay simulation"><RotateCcw size={16}/></button>
+              
               <label className={styles.speedControl}>Speed<select value={speed} onChange={e => setSpeed(Number(e.target.value))} aria-label="Simulation speed"><option value={1}>1×</option><option value={2}>2×</option><option value={4}>4×</option></select></label>
             </div>
           </div>
           <div className={styles.metrics} aria-label="Simulated portfolio metrics">
             <div className={styles.metric}><span>PORTFOLIO ARR</span><div><strong>${(totalArr / 1_000_000).toFixed(2)}M</strong><span className={styles.metricTiny}>FICTIONAL</span></div><Sparkline values={[55, 57, 56, 62, 67, 66, 71, 75]}/></div>
             <div className={styles.metric}><span>SIGNALS REVIEWED</span><div><strong>{(128 + tick * 11).toLocaleString('en-US')}</strong><span className={styles.metricUp}><ArrowUpRight size={13}/> {playing ? 'PROCESSING' : 'PAUSED'}</span></div><Sparkline values={[25, 28, 34, 36, 39, 43, 53 + stage, 65 + stage]}/></div>
-            <div className={styles.metric}><span>ACCOUNTS UNDER WATCH</span><div><strong>{scenario === 'risk' ? 2 + (stage >= 3 ? 1 : 0) : 2}</strong><span className={styles.metricOrange}><Activity size={13}/> PRIORITIZED</span></div><Sparkline values={[30, 30, 30, 35, 33, 32, 40 + stage, 40 + stage]} color="#ffab7e"/></div>
+            <div className={styles.metric}><span>ACCOUNTS UNDER WATCH</span><div><strong>{activeScenario === 'risk' ? 2 + (stage >= 3 ? 1 : 0) : 2}</strong><span className={styles.metricOrange}><Activity size={13}/> PRIORITIZED</span></div><Sparkline values={[30, 30, 30, 35, 33, 32, 40 + stage, 40 + stage]} color="#ffab7e"/></div>
             <div className={styles.metric}><span>ACTIONS TO REVIEW</span><div><strong>{queueCount}</strong><span className={styles.metricBlue}><ShieldCheck size={13}/> HUMAN GATE</span></div><Sparkline values={[20, 24, 25, 27, 29, 29 + stage, 30 + stage, 35 + stage]} color="#a5b7ff"/></div>
           </div>
           <div className={styles.mainGrid}>
             <section className={styles.networkPanel} aria-labelledby="networkTitle">
-              <div className={styles.panelHeading}><div><span className={styles.panelOverline}>ORCHESTRATION / 08 SIMULATED ROLES</span><h3 id="networkTitle">Intelligence network</h3></div><span className={styles.activeTag}><span className={styles.liveDot}/> {completed ? 'SEQUENCE COMPLETE' : playing ? 'PROCESSING' : 'PAUSED'}</span></div>
+              <div className={styles.panelHeading}><div><span className={styles.panelOverline}>ORCHESTRATION / 08 SIMULATED ROLES</span><h3 id="networkTitle">Intelligence network</h3></div><span className={styles.activeTag}><span className={styles.liveDot}/> {playing ? 'ALWAYS ON' : 'PAUSED'}</span></div>
               <Network active={active} visited={visited} selected={selectedAgent} onSelect={setSelectedAgent} reduced={motionReduced} />
               <div className={styles.networkFooter}><span><span className={styles.legendDot} style={{background:'#5adbc4'}}/> Active handoff</span><span><span className={styles.legendDot} style={{background:'#7084a5'}}/> Standby</span><span className={styles.nowProcessing}>NOW / {positions[active].name.toUpperCase()} · {current.title}</span></div>
             </section>
             <aside className={styles.sidePanel}>
               <section className={styles.feed} aria-labelledby="feedTitle"><div className={styles.panelHeading}><div><span className={styles.panelOverline}>REALTIME / SCRIPTED</span><h3 id="feedTitle">Signal activity</h3></div><span className={styles.smallCount}>{String(visible.length).padStart(2,'0')} / 06</span></div>
                 <div className={styles.scenarioNote}><Zap size={14}/><span>{scene.kicker}</span></div>
-                <ol className={styles.feedList}>{[...visible].reverse().map((event, reverseIndex) => {
-                  const i = visible.length - 1 - reverseIndex; const agent = positions[event.agent];
+                <ol className={styles.feedList}>{visible.map((entry, reverseIndex) => {
+                  const event = entry.event; const i = entry.sequence; const agent = positions[event.agent];
                   return <li key={i} className={reverseIndex === 0 ? styles.feedCurrent : ''}><span className={styles.feedTrack}><span style={{background:agent.color}}/></span><div><div className={styles.feedTop}><strong>{agent.name}</strong><time>{fmtClock(i * 4)}</time></div><p>{event.title}</p><small>{event.description}</small></div></li>;
                 })}</ol>
               </section>
-              <section className={styles.review} aria-labelledby="reviewTitle"><div className={styles.panelHeading}><div><span className={styles.panelOverline}>HUMAN IN THE LOOP</span><h3 id="reviewTitle">Decision gate</h3></div><ShieldCheck size={17} color="#94b8ff"/></div><div className={styles.reviewContent}><span className={styles.reviewIcon}>{approved ? <Check size={18}/> : <Clock3 size={18}/>}</span><div><strong>{approved ? 'Marked reviewed' : stage >= 4 ? 'Recommendation ready' : 'Awaiting briefing'}</strong><p>{scenario === 'risk' ? 'Horizon Retail' : 'Cascade Energy'} · {approved ? 'Demo item reviewed locally' : 'No outreach sent'}</p></div></div><button className={styles.reviewButton} onClick={() => setApproved(true)} disabled={approved || stage < 4}>{approved ? 'Reviewed in demo' : stage < 4 ? 'Available after analysis' : 'Mark as reviewed'} <ArrowRight size={14}/></button></section>
+              <section className={styles.review} aria-labelledby="reviewTitle"><div className={styles.panelHeading}><div><span className={styles.panelOverline}>HUMAN IN THE LOOP</span><h3 id="reviewTitle">Decision gate</h3></div><ShieldCheck size={17} color="#94b8ff"/></div><div className={styles.reviewContent}><span className={styles.reviewIcon}>{approved ? <Check size={18}/> : <Clock3 size={18}/>}</span><div><strong>{approved ? 'Marked reviewed' : stage >= 4 ? 'Recommendation ready' : 'Awaiting briefing'}</strong><p>{activeScenario === 'risk' ? 'Horizon Retail' : 'Cascade Energy'} · {approved ? 'Demo item reviewed locally' : 'No outreach sent'}</p></div></div><button className={styles.reviewButton} onClick={() => setApproved(true)} disabled={approved || stage < 4}>{approved ? 'Reviewed in demo' : stage < 4 ? 'Available after analysis' : 'Mark as reviewed'} <ArrowRight size={14}/></button></section>
             </aside>
           </div>
           <div className={styles.bottomGrid}>
-            <section className={styles.bottomPanel} aria-labelledby="healthTitle"><div className={styles.panelHeading}><div><span className={styles.panelOverline}>PORTFOLIO / SIGNAL TREND</span><h3 id="healthTitle">Health trajectory</h3></div><span className={styles.chartDelta}>{scenario === 'risk' ? <ArrowDownRight size={16}/> : <ArrowUpRight size={16}/>} {scenario === 'risk' ? 'Watch signals' : 'Positive momentum'}</span></div><div className={styles.chartWrap}><div className={styles.chartAxis}><span>100</span><span>75</span><span>50</span><span>25</span></div><svg className={styles.chart} viewBox="0 0 640 170" preserveAspectRatio="none" role="img" aria-label={`Simulated health trend for ${scenario === 'risk' ? 'Horizon Retail' : 'Cascade Energy'}`}><defs><linearGradient id="chartFill" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stopColor={scenario==='risk'?'#ffab7e':'#60ddc7'} stopOpacity=".23"/><stop offset="1" stopColor="#60ddc7" stopOpacity="0"/></linearGradient></defs>{[16,62,108,154].map(y=><path key={y} d={`M0 ${y} H640`} stroke="#526781" strokeOpacity=".23" strokeDasharray="3 6"/>)}<polygon points={`0,170 ${chartValues.map((v,i)=>`${i*640/7},${170-v*1.72}`).join(' ')} 640,170`} fill="url(#chartFill)"/><polyline points={chartValues.map((v,i)=>`${i*640/7},${170-v*1.72}`).join(' ')} fill="none" stroke={scenario==='risk'?'#ffab7e':'#60ddc7'} strokeWidth="3" vectorEffect="non-scaling-stroke" strokeLinecap="round" strokeLinejoin="round"/><circle cx="640" cy={170-chartValues[7]*1.72} r="5" fill={scenario==='risk'?'#ffab7e':'#60ddc7'}/></svg></div><div className={styles.chartBottom}><span>EARLIER</span><span>{scenario === 'risk' ? 'HORIZON RETAIL' : 'CASCADE ENERGY'} / SAMPLE TREND</span><span>NOW</span></div></section>
-            <section className={styles.bottomPanel} aria-labelledby="priorityTitle"><div className={styles.panelHeading}><div><span className={styles.panelOverline}>SORTED / PRIORITY SIGNALS</span><h3 id="priorityTitle">Accounts to watch</h3></div><Link href="/portfolio" className={styles.openPortfolio}>OPEN PORTFOLIO <ArrowRight size={14}/></Link></div><div className={styles.accountsList}>{sampleAccountNames.map((name,i)=>{const account=accounts.find(a=>a.name===name)!;const score=name===(scenario==='risk'?'Horizon Retail':'Cascade Energy')?healthValue:calculateHealthScore(account);return <div className={styles.accountRow} key={name}><span className={styles.accountRank}>{String(i+1).padStart(2,'0')}</span><span className={styles.accountName}>{name}<small>${Math.round(account.arr/1000)}K ARR</small></span><span className={styles.healthTrack}><span style={{width:`${score}%`,background:score<55?'#ff9d7d':score<70?'#ffcb7f':'#6ee1c2'}}/></span><strong>{score}</strong></div>})}</div></section>
+            <section className={styles.bottomPanel} aria-labelledby="healthTitle"><div className={styles.panelHeading}><div><span className={styles.panelOverline}>PORTFOLIO / SIGNAL TREND</span><h3 id="healthTitle">Health trajectory</h3></div><span className={styles.chartDelta}>{activeScenario === 'risk' ? <ArrowDownRight size={16}/> : <ArrowUpRight size={16}/>} {activeScenario === 'risk' ? 'Watch signals' : 'Positive momentum'}</span></div><div className={styles.chartWrap}><div className={styles.chartAxis}><span>100</span><span>75</span><span>50</span><span>25</span></div><svg className={styles.chart} viewBox="0 0 640 170" preserveAspectRatio="none" role="img" aria-label={`Simulated health trend for ${activeScenario === 'risk' ? 'Horizon Retail' : 'Cascade Energy'}`}><defs><linearGradient id="chartFill" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stopColor={activeScenario==='risk'?'#ffab7e':'#60ddc7'} stopOpacity=".23"/><stop offset="1" stopColor="#60ddc7" stopOpacity="0"/></linearGradient></defs>{[16,62,108,154].map(y=><path key={y} d={`M0 ${y} H640`} stroke="#526781" strokeOpacity=".23" strokeDasharray="3 6"/>)}<polygon points={`0,170 ${chartValues.map((v,i)=>`${i*640/7},${170-v*1.72}`).join(' ')} 640,170`} fill="url(#chartFill)"/><polyline points={chartValues.map((v,i)=>`${i*640/7},${170-v*1.72}`).join(' ')} fill="none" stroke={activeScenario==='risk'?'#ffab7e':'#60ddc7'} strokeWidth="3" vectorEffect="non-scaling-stroke" strokeLinecap="round" strokeLinejoin="round"/><circle cx="640" cy={170-chartValues[7]*1.72} r="5" fill={activeScenario==='risk'?'#ffab7e':'#60ddc7'}/></svg></div><div className={styles.chartBottom}><span>EARLIER</span><span>{activeScenario === 'risk' ? 'HORIZON RETAIL' : 'CASCADE ENERGY'} / SAMPLE TREND</span><span>NOW</span></div></section>
+            <section className={styles.bottomPanel} aria-labelledby="priorityTitle"><div className={styles.panelHeading}><div><span className={styles.panelOverline}>SORTED / PRIORITY SIGNALS</span><h3 id="priorityTitle">Accounts to watch</h3></div><Link href="/portfolio" className={styles.openPortfolio}>OPEN PORTFOLIO <ArrowRight size={14}/></Link></div><div className={styles.accountsList}>{sampleAccountNames.map((name,i)=>{const account=accounts.find(a=>a.name===name)!;const score=name===(activeScenario==='risk'?'Horizon Retail':'Cascade Energy')?healthValue:calculateHealthScore(account);return <div className={styles.accountRow} key={name}><span className={styles.accountRank}>{String(i+1).padStart(2,'0')}</span><span className={styles.accountName}>{name}<small>${Math.round(account.arr/1000)}K ARR</small></span><span className={styles.healthTrack}><span style={{width:`${score}%`,background:score<55?'#ff9d7d':score<70?'#ffcb7f':'#6ee1c2'}}/></span><strong>{score}</strong></div>})}</div></section>
           </div>
-          <div className={styles.timeline}><div className={styles.timelineTop}><span><span className={styles.liveDot}/> {playing ? 'SIMULATION RUNNING' : completed ? 'SEQUENCE COMPLETE' : 'SIMULATION PAUSED'}</span><span>SCENARIO / {scene.label.toUpperCase()}</span><span>{fmtClock(tick)} / {fmtClock(maxTick)}</span></div><div className={styles.timelineTrack} role="progressbar" aria-label="Simulation progress" aria-valuemin={0} aria-valuemax={maxTick} aria-valuenow={tick}><span style={{width:`${tick/maxTick*100}%`}}/></div></div>
+          <div className={styles.timeline}><div className={styles.timelineTop}><span><span className={styles.liveDot}/> {playing ? 'CONTINUOUS SIMULATION' : 'SIMULATION PAUSED'}</span><span>SCENARIO / {scene.label.toUpperCase()}</span><span>{fmtClock(cycleTick)} / {fmtClock(cycleLength)} · LOOP {cycle + 1}</span></div><div className={styles.timelineTrack} role="progressbar" aria-label="Simulation progress" aria-valuemin={0} aria-valuemax={cycleLength} aria-valuenow={cycleTick}><span style={{width:`${cycleTick/cycleLength*100}%`}}/></div></div>
         </section>
         <footer className={styles.footer}><p><span>✳</span> LIGHTHOUSE / INDEPENDENT PRODUCT EXPERIMENT</p><p>All activity is a scripted demonstration using fictional data. The agents shown are visual roles, not independently running AI services. No CRM connection, real-time monitoring or customer outreach.</p></footer>
       </div>
