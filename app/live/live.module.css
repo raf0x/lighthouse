@@ -457,3 +457,21 @@
     padding:16px 12px;
   }
 }
+
+
+/* A first-party presentation surface for the portfolio: real dashboard, no duplicated simulation. */
+.shell[data-embed="true"]{min-height:0;overflow:hidden}
+.shell[data-embed="true"] .frame{padding:12px!important;max-width:1280px!important}
+.shell[data-embed="true"] .topbar,
+.shell[data-embed="true"] .intro,
+.shell[data-embed="true"] .footer{display:none}
+.shell[data-embed="true"] .dashboard{padding:16px}
+.shell[data-embed="true"] .dashboardTop{padding-bottom:13px}
+.shell[data-embed="true"] .metrics{margin-bottom:8px}
+.shell[data-embed="true"] .mainGrid{gap:8px}
+.shell[data-embed="true"] .networkPanel{min-height:520px}
+.shell[data-embed="true"] .network{min-height:390px}
+.shell[data-embed="true"] .bottomGrid,
+.shell[data-embed="true"] .timeline{display:none}
+.shell[data-embed="true"] .controls{display:none}
+.shell[data-embed="true"] .dashboard:before{display:none}
