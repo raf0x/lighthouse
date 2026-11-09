@@ -38,6 +38,13 @@ export default function Header({ accounts }: { accounts: Account[] }) {
           >
             Portfolio
           </button>
+          <button
+            onClick={() => router.push('/live')}
+            className={pathname === '/live' ? 'btn btn--secondary' : 'btn btn--ghost'}
+            style={{ fontSize: 13, padding: '8px 14px' }}
+          >
+            Dashboard
+          </button>
         </nav>
 
         {/* Stats */}
