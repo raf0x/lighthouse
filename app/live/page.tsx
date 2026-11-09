@@ -5,25 +5,26 @@ import Link from 'next/link';
 import {
   Activity, ArrowDownRight, ArrowRight, ArrowUpRight, Check, ChevronDown,
   Clock3, Moon, Pause, Play, Sun,
-  ShieldCheck, Zap
+  AudioLines, Compass, FilePenLine, Radar, ScanSearch, ShieldAlert, ShieldCheck, Network as NetworkIcon, Zap
 } from 'lucide-react';
+import type { LucideIcon } from 'lucide-react';
 import { accounts, calculateHealthScore } from '@/app/lib/lighthouse';
 import styles from './live.module.css';
 
 type AgentId = 'beacon' | 'undertow' | 'waypoint' | 'current' | 'relay' | 'aperture' | 'dispatch' | 'harbor';
 type ScenarioId = 'risk' | 'growth';
 type Event = { agent: AgentId; title: string; description: string; account: string; type: 'signal' | 'analysis' | 'draft' | 'review' };
-type Agent = { id: AgentId; name: string; role: string; color: string; x: number; y: number; glyph: string };
+type Agent = { id: AgentId; name: string; role: string; color: string; x: number; y: number; icon: LucideIcon };
 
 const agents: Agent[] = [
-  { id: 'beacon', name: 'Beacon', role: 'Health', color: '#53dec5', x: 20, y: 20, glyph: '◈' },
-  { id: 'undertow', name: 'Undertow', role: 'Risk', color: '#ff9b79', x: 50, y: 11, glyph: '⌁' },
-  { id: 'waypoint', name: 'Waypoint', role: 'Portfolio', color: '#85acff', x: 80, y: 20, glyph: '◇' },
-  { id: 'current', name: 'Current', role: 'Engagement', color: '#a5e77d', x: 91, y: 53, glyph: '≈' },
-  { id: 'relay', name: 'Relay', role: 'Relationships', color: '#cb9cff', x: 79, y: 85, glyph: '↗' },
-  { id: 'aperture', name: 'Aperture', role: 'Expansion', color: '#ffd179', x: 49, y: 91, glyph: '✳' },
-  { id: 'dispatch', name: 'Dispatch', role: 'Briefings', color: '#f6a4d3', x: 19, y: 84, glyph: '✦' },
-  { id: 'harbor', name: 'Harbor', role: 'Approval', color: '#9dcefa', x: 8, y: 52, glyph: '⬡' },
+  { id: 'beacon', name: 'Beacon', role: 'Health', color: '#15a99e', x: 20, y: 20, icon: Radar },
+  { id: 'undertow', name: 'Undertow', role: 'Risk', color: '#e67c5b', x: 50, y: 11, icon: ShieldAlert },
+  { id: 'waypoint', name: 'Waypoint', role: 'Portfolio', color: '#578ee9', x: 80, y: 20, icon: Compass },
+  { id: 'current', name: 'Current', role: 'Engagement', color: '#60a557', x: 91, y: 53, icon: AudioLines },
+  { id: 'relay', name: 'Relay', role: 'Relationships', color: '#9664d9', x: 79, y: 85, icon: NetworkIcon },
+  { id: 'aperture', name: 'Aperture', role: 'Expansion', color: '#ce9a3a', x: 49, y: 91, icon: ScanSearch },
+  { id: 'dispatch', name: 'Dispatch', role: 'Briefings', color: '#cf70ae', x: 19, y: 84, icon: FilePenLine },
+  { id: 'harbor', name: 'Harbor', role: 'Approval', color: '#5897c9', x: 8, y: 52, icon: ShieldCheck },
 ];
 
 const scenarios: Record<ScenarioId, { label: string; kicker: string; events: Event[] }> = {
@@ -100,17 +101,18 @@ function Network({ active, visited, selected, onSelect, reduced }: {
       {agents.map(agent => {
         const isActive = agent.id === active;
         const isVisited = visited.includes(agent.id);
+        const AgentIcon = agent.icon;
         return <button
           key={agent.id}
           type="button"
           className={`${styles.agent} ${isActive ? styles.agentActive : ''} ${selected === agent.id ? styles.agentSelected : ''}`}
-          style={{ left: `clamp(58px, ${agent.x}%, calc(100% - 58px))`, top: `${agent.y}%`, ['--agent-color' as string]: agent.color } as React.CSSProperties}
+          style={{ left: `clamp(80px, ${agent.x}%, calc(100% - 80px))`, top: `${agent.y}%`, ['--agent-color' as string]: agent.color } as React.CSSProperties}
           aria-pressed={selected === agent.id} onClick={() => onSelect(selected === agent.id ? null : agent.id)}
           aria-label={`${agent.name}, ${agent.role}, ${isActive ? 'processing' : isVisited ? 'completed' : 'standby'}. View details`}
         >
-          <span className={styles.agentSymbol}>{agent.glyph}</span>
+          <span className={styles.agentSymbol} aria-hidden="true"><span className={styles.agentGlyphAura} /><AgentIcon size={28} strokeWidth={1.9} /></span>
           <span className={styles.agentText}><strong>{agent.name}</strong><small>{agent.role}</small></span>
-          <span className={styles.agentStatus} aria-hidden="true">{isActive ? '●' : isVisited ? '✓' : '·'}</span>
+          <span className={styles.agentStatus} aria-hidden="true">{isActive ? <span className={styles.statusPulse} /> : isVisited ? '✓' : '·'}</span>
         </button>;
       })}
       <div className={styles.networkLabel}>NETWORK / 08 NODES</div>
