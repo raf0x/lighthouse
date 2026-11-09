@@ -2,6 +2,7 @@
 
 import * as React from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import {
   Activity, ArrowDownRight, ArrowRight, ArrowUpRight, Check, ChevronDown,
   Clock3, Moon, Pause, Play, Sun,
@@ -93,9 +94,14 @@ function Network({ active, visited, selected, onSelect, reduced }: {
         <circle cx="500" cy="310" r="86" fill="none" stroke="#93b8ff" strokeOpacity=".12" strokeDasharray="2 8" />
         <circle cx="500" cy="310" r="116" fill="none" stroke="#93b8ff" strokeOpacity=".08" />
       </svg>
-      <div className={styles.centerHub} aria-label="Lighthouse coordinator">
-        <div className={styles.hubOrbit} />
-        <div className={styles.hubGlyph}><span>✳</span></div>
+      <div className={styles.beaconSweep} aria-hidden="true"><span className={styles.beaconBeam} /></div>
+      <div className={styles.centerHub} aria-label="Lighthouse intelligence core">
+        <div className={styles.hubOrbit} aria-hidden="true" />
+        <div className={styles.hubGlyph} aria-hidden="true">
+          <span className={styles.logoHalo} />
+          <Image src="/lighthouse-logo.svg" alt="" width={68} height={68} priority className={styles.lighthouseMark} />
+          <span className={styles.logoGlint} />
+        </div>
         <strong>LIGHTHOUSE</strong>
         <small>INTELLIGENCE CORE</small>
       </div>
