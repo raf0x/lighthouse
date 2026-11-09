@@ -317,3 +317,30 @@ button:focus-visible, .acc-row:focus-visible, a:focus-visible, select:focus-visi
 }
 :root:not([data-theme="dark"]) .brand-tagline { color:var(--beam-600); }
 :root:not([data-theme="dark"]) .decision-strip { border-left:3px solid var(--beam-500); background:#F5F8F5; }
+
+
+/* Distinct navigation identities. Works across light and dark themes. */
+.primary-nav .nav-color-btn{
+  min-height:40px;
+  padding:9px 15px;
+  border:1.5px solid transparent;
+  border-radius:9px;
+  color:#fff;
+  font-size:13px;
+  font-weight:750;
+  letter-spacing:.005em;
+  box-shadow:inset 0 1px rgba(255,255,255,.18),0 2px 7px rgba(14,39,68,.13);
+  transition:filter .18s ease,box-shadow .18s ease,transform .18s ease;
+}
+.primary-nav .nav-color-btn--dashboard{background:#087e78;border-color:#066963}
+.primary-nav .nav-color-btn--accounts{background:#305ebf;border-color:#234c9f}
+.primary-nav .nav-color-btn--portfolio{background:#853fb0;border-color:#6c2c95}
+.primary-nav .nav-color-btn:hover:not(:disabled){filter:brightness(1.11);transform:translateY(-1px)}
+.primary-nav .nav-color-btn[aria-current="page"]{
+  box-shadow:0 0 0 2px var(--surface-1),0 0 0 4px currentColor,inset 0 1px rgba(255,255,255,.22);
+}
+.primary-nav .nav-color-btn:focus-visible{outline:3px solid var(--focus-ring);outline-offset:3px}
+@media(max-width:480px){
+  .primary-nav{gap:6px;width:100%;flex-wrap:nowrap;justify-content:center}
+  .primary-nav .nav-color-btn{min-width:0;flex:1;min-height:44px;padding:9px 8px;font-size:12px}
+}
