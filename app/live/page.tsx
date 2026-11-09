@@ -4,7 +4,7 @@ import * as React from 'react';
 import Link from 'next/link';
 import {
   Activity, ArrowDownRight, ArrowRight, ArrowUpRight, Check, ChevronDown,
-  Clock3, Pause, Play,
+  Clock3, Moon, Pause, Play, Sun,
   ShieldCheck, Zap
 } from 'lucide-react';
 import { accounts, calculateHealthScore } from '@/app/lib/lighthouse';
@@ -135,7 +135,8 @@ export default function LiveDashboard() {
   const [scenario, setScenario] = React.useState<ScenarioId>('risk');
   const [tick, setTick] = React.useState(0);
   const [playing, setPlaying] = React.useState(true);
-  const [speed, setSpeed] = React.useState(1);
+  const [speed, setSpeed] = React.useState(3);
+  const [theme, setTheme] = React.useState<'light' | 'dark'>('light');
   const [selectedAgent, setSelectedAgent] = React.useState<AgentId | null>(null);
   const [approved, setApproved] = React.useState(false);
   const [motionReduced, setMotionReduced] = React.useState(false);
@@ -153,6 +154,17 @@ export default function LiveDashboard() {
   });
   const visited = scene.events.slice(0, stage + 1).map(e => e.agent);
   const active = current.agent;
+
+  React.useEffect(() => {
+    setTheme(document.documentElement.dataset.theme === 'dark' ? 'dark' : 'light');
+  }, []);
+
+  function switchTheme() {
+    const next = theme === 'light' ? 'dark' : 'light';
+    setTheme(next);
+    document.documentElement.dataset.theme = next;
+    try { window.localStorage.setItem('lighthouse-theme', next); } catch { /* storage optional */ }
+  }
 
   React.useEffect(() => {
     const media = window.matchMedia('(prefers-reduced-motion: reduce)');
@@ -179,15 +191,21 @@ export default function LiveDashboard() {
     ? [76, 74, 72, 73, 69, 68 - stage, 66 - stage, 66 - stage * 1.5]
     : [65, 66, 66, 68, 69, 70 + stage, 71 + stage, 73 + stage];
   return (
-    <main className={styles.shell}>
+    <main className={styles.shell} data-mode={theme}>
       <div className={styles.ambient} aria-hidden="true" />
       <div className={styles.frame}>
         <header className={styles.topbar}>
           <Link href="/" className={styles.brand} aria-label="Lighthouse home"><span className={styles.brandIcon}>✳</span><span>LIGHTHOUSE<small>ACCOUNT INTELLIGENCE</small></span></Link>
           <nav className={styles.nav} aria-label="Dashboard navigation">
-            <Link href="/">Accounts</Link><Link href="/portfolio">Portfolio</Link><Link href="/live" aria-current="page">Live intelligence</Link>
+            <Link href="/">Accounts</Link><Link href="/portfolio">Portfolio</Link><Link href="/live" aria-current="page">Dashboard</Link>
           </nav>
-          <div className={styles.topStatus}><span className={styles.liveDot} /> SIMULATION ONLINE <span className={styles.dividerText}>/</span> 08 NODES</div>
+          <div className={styles.topRight}>
+            <div className={styles.topStatus}><span className={styles.liveDot} /> SIMULATION ONLINE <span className={styles.dividerText}>/</span> 08 NODES</div>
+            <button type="button" className={styles.themeButton} onClick={switchTheme} aria-label={theme === 'light' ? 'Switch to dark mode' : 'Switch to light mode'} title={theme === 'light' ? 'Switch to dark mode' : 'Switch to light mode'}>
+              {theme === 'light' ? <Moon size={16} aria-hidden="true" /> : <Sun size={16} aria-hidden="true" />}
+              <span>{theme === 'light' ? 'Dark' : 'Light'}</span>
+            </button>
+          </div>
         </header>
         <div className={styles.intro}>
           <div><div className={styles.eyebrow}><span className={styles.eyebrowLine} /> THE INTELLIGENCE ROOM <span> / 001</span></div>
@@ -203,7 +221,7 @@ export default function LiveDashboard() {
               <label className={styles.selectWrap}>Start with <ChevronDown size={12} aria-hidden="true" /><select value={scenario} onChange={e => changeScenario(e.target.value as ScenarioId)} aria-label="Choose simulation scenario"><option value="risk">Renewal watch</option><option value="growth">Expansion</option></select></label>
               <button type="button" onClick={() => setPlaying(v => !v)} aria-label={playing ? 'Pause simulation' : 'Play simulation'} className={styles.controlButton}>{playing ? <Pause size={15} fill="currentColor" /> : <Play size={15} fill="currentColor" />}<span>{playing ? 'Pause' : 'Play'}</span></button>
               
-              <label className={styles.speedControl}>Speed<select value={speed} onChange={e => setSpeed(Number(e.target.value))} aria-label="Simulation speed"><option value={1}>1×</option><option value={2}>2×</option><option value={4}>4×</option></select></label>
+              <label className={styles.speedControl}>Speed<select value={speed} onChange={e => setSpeed(Number(e.target.value))} aria-label="Simulation speed"><option value={1}>1×</option><option value={2}>2×</option><option value={3}>3×</option><option value={4}>4×</option></select></label>
             </div>
           </div>
           <div className={styles.metrics} aria-label="Simulated portfolio metrics">
