@@ -24,27 +24,9 @@ export default function Header({ accounts }: { accounts: Account[] }) {
       <div className="header-controls">
         {/* Navigation */}
         <nav className="primary-nav" aria-label="Main navigation">
-          <button
-            onClick={() => router.push('/')}
-            className={pathname === '/' ? 'btn btn--secondary' : 'btn btn--ghost'}
-            style={{ fontSize: 13, padding: '8px 14px' }}
-          >
-            Accounts
-          </button>
-          <button
-            onClick={() => router.push('/portfolio')}
-            className={pathname === '/portfolio' ? 'btn btn--secondary' : 'btn btn--ghost'}
-            style={{ fontSize: 13, padding: '8px 14px' }}
-          >
-            Portfolio
-          </button>
-          <button
-            onClick={() => router.push('/live')}
-            className={pathname === '/live' ? 'btn btn--secondary' : 'btn btn--ghost'}
-            style={{ fontSize: 13, padding: '8px 14px' }}
-          >
-            Dashboard
-          </button>
+          <button type="button" onClick={() => router.push('/live')} aria-current={pathname === '/live' ? 'page' : undefined} className="btn nav-color-btn nav-color-btn--dashboard">Dashboard</button>
+          <button type="button" onClick={() => router.push('/')} aria-current={pathname === '/' ? 'page' : undefined} className="btn nav-color-btn nav-color-btn--accounts">Accounts</button>
+          <button type="button" onClick={() => router.push('/portfolio')} aria-current={pathname === '/portfolio' ? 'page' : undefined} className="btn nav-color-btn nav-color-btn--portfolio">Portfolio</button>
         </nav>
 
         {/* Stats */}
