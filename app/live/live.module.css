@@ -424,3 +424,36 @@
   .nav{gap:6px;width:100%;padding:4px 1px}
   .nav a,.shell[data-mode="light"] .nav a{min-width:0;flex:1;padding:10px 5px;font-size:11px}
 }
+
+
+/* Shared page geometry: match Accounts and Portfolio outer canvas and content width.
+   Preserve the dashboard's internal responsive grid and natural page height. */
+.shell .frame{
+  width:100%;
+  max-width:1328px; /* 1280px content + 24px side gutters */
+  padding:32px 24px;
+  margin-inline:auto;
+}
+.shell .topbar{
+  height:auto;
+  min-height:64px;
+  padding:0 0 20px;
+  margin-bottom:28px;
+}
+.shell .intro{
+  padding:0 2px 30px;
+}
+@media(max-width:800px){
+  .shell .topbar{
+    min-height:0;
+    padding:0 0 16px;
+    margin-bottom:24px;
+  }
+  .shell .intro{padding:0 2px 24px}
+}
+@media(max-width:768px){
+  .shell .frame{
+    max-width:100%;
+    padding:16px 12px;
+  }
+}
