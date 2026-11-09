@@ -80,3 +80,77 @@
   .agentSymbol{width:24px;flex-basis:24px}
   .activeTag{font-size:7px}
 }
+
+
+/* V3: a considered daylight control room. Default theme is light, with dark retained as an option. */
+.topRight{display:flex;align-items:center;justify-content:flex-end;gap:18px;min-width:0}
+.themeButton{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:35px;padding:0 12px;border-radius:8px;border:1px solid var(--line);background:rgba(118,146,185,.09);color:inherit;font-size:11px;font-weight:600;white-space:nowrap;transition:background .2s,border-color .2s}
+.themeButton:hover{border-color:#77a69e}
+.shell[data-mode="light"]{--ink:#182f3d;--muted:#53697a;--line:rgba(40,76,100,.16);--panel:#fff;--deep:#f0f5f5;background:#f2f6f6;color:var(--ink)}
+.shell[data-mode="light"] .ambient{background:radial-gradient(ellipse 54% 35% at 48% 16%,rgba(91,180,183,.13),transparent 75%),radial-gradient(ellipse 45% 30% at 96% 58%,rgba(119,171,211,.10),transparent 75%)}
+.shell[data-mode="light"] .brandIcon{background:linear-gradient(145deg,#dcf3ee,#dceaf5);border-color:#abd4d1;color:#13796c;box-shadow:0 0 30px rgba(50,145,141,.08)}
+.shell[data-mode="light"] .brand small,.shell[data-mode="light"] .introRight{color:#647d8d}
+.shell[data-mode="light"] .nav{background:#e5eeef;border-color:#d5e1e3}
+.shell[data-mode="light"] .nav a{color:#536d7c}
+.shell[data-mode="light"] .nav a:hover{color:#15384c;background:#dce8e9}
+.shell[data-mode="light"] .nav a[aria-current="page"]{background:#fff;color:#135a59;box-shadow:0 1px 4px rgba(35,65,81,.09)}
+.shell[data-mode="light"] .topStatus{color:#276f65}
+.shell[data-mode="light"] .themeButton{color:#35556a;background:#fff;border-color:#d2e0e3}
+.shell[data-mode="light"] .themeButton:hover{background:#e4f2f1}
+.shell[data-mode="light"] .eyebrow,.shell[data-mode="light"] .panelOverline{color:#387d76}
+.shell[data-mode="light"] .eyebrowLine{background:#388e84}
+.shell[data-mode="light"] .eyebrow>span:last-child,.shell[data-mode="light"] .sectionIndex{color:#718899}
+.shell[data-mode="light"] .intro h1 em{color:#377f86}
+.shell[data-mode="light"] .intro p{color:#576f7f}
+.shell[data-mode="light"] .previewTag{color:#466c79}
+.shell[data-mode="light"] .dashboard{background:linear-gradient(130deg,#fff,#f8fbfb 62%,#f1f8f7);border-color:#d6e2e5;box-shadow:0 30px 70px rgba(29,69,82,.09),inset 0 1px #fff}
+.shell[data-mode="light"] .dashboard:before{background:linear-gradient(90deg,transparent,#4bafa1,transparent)}
+.shell[data-mode="light"] .controls button,.shell[data-mode="light"] .controls select{background:#f3f8f8;border-color:#d4e1e4;color:#294657}
+.shell[data-mode="light"] .controls button:hover:not(:disabled),.shell[data-mode="light"] .controls select:hover{border-color:#7baea8}
+.shell[data-mode="light"] .selectWrap,.shell[data-mode="light"] .speedControl{color:#536d7c}
+.shell[data-mode="light"] .metric{background:linear-gradient(155deg,#fff,#f4faf9);border-color:#dde8e9;box-shadow:0 3px 12px rgba(37,73,81,.025)}
+.shell[data-mode="light"] .metric>span,.shell[data-mode="light"] .metricTiny{color:#597485}
+.shell[data-mode="light"] .metricUp{color:#217965}
+.shell[data-mode="light"] .metricOrange{color:#ae6239}
+.shell[data-mode="light"] .metricBlue{color:#5e64b4}
+.shell[data-mode="light"] .networkPanel,.shell[data-mode="light"] .feed,.shell[data-mode="light"] .review,.shell[data-mode="light"] .bottomPanel{background:#fff;border-color:#dce6e8}
+.shell[data-mode="light"] .activeTag{background:#e6f6ef;border-color:#c1e6d9;color:#287361}
+.shell[data-mode="light"] .networkGrid{opacity:.65;background-image:linear-gradient(rgba(86,137,156,.08) 1px,transparent 1px),linear-gradient(90deg,rgba(86,137,156,.08) 1px,transparent 1px)}
+.shell[data-mode="light"] .centerHub{background:radial-gradient(circle at 48% 35%,#f0fcfa,#d8ebee 90%);border-color:#a6d5d4;box-shadow:0 0 0 8px rgba(57,158,150,.04),0 12px 45px rgba(44,121,131,.14),inset 0 0 24px rgba(104,171,170,.10)}
+.shell[data-mode="light"] .hubOrbit{border-color:rgba(69,145,153,.35)}
+.shell[data-mode="light"] .hubGlyph{background:linear-gradient(140deg,#d0f0e9,#c0e7e5);border-color:#a3d6ce;color:#137970;box-shadow:0 0 25px rgba(36,131,128,.10)}
+.shell[data-mode="light"] .centerHub small{color:#5e7884}
+.shell[data-mode="light"] .agent{background:rgba(255,255,255,.97);border-color:rgba(90,132,148,.28);color:#263f50;box-shadow:0 4px 15px rgba(48,88,104,.09)}
+.shell[data-mode="light"] .agent:hover,.shell[data-mode="light"] .agentSelected{border-color:var(--agent-color)}
+.shell[data-mode="light"] .agentActive{background:#f4fcfb;border-color:var(--agent-color);box-shadow:0 0 0 3px rgba(31,137,128,.06),0 3px 28px rgba(33,122,126,.12)}
+.shell[data-mode="light"] .agentSymbol{background:color-mix(in srgb,var(--agent-color) 13%,white);color:color-mix(in srgb,var(--agent-color) 70%,#163e59)}
+.shell[data-mode="light"] .agentText small{color:#647c8d}
+.shell[data-mode="light"] .networkLabel{color:#668795}
+.shell[data-mode="light"] .networkDetail{background:rgba(255,255,255,.96);border-color:#d7e4e7;box-shadow:0 3px 10px rgba(40,76,99,.06)}
+.shell[data-mode="light"] .networkDetail small{color:#607a88}
+.shell[data-mode="light"] .networkDetail button{color:#42687b}
+.shell[data-mode="light"] .networkFooter{color:#577184}
+.shell[data-mode="light"] .nowProcessing{color:#376c6e}
+.shell[data-mode="light"] .smallCount,.shell[data-mode="light"] .feedTop time{color:#698392}
+.shell[data-mode="light"] .scenarioNote{background:#eaf5f4;color:#466a71}
+.shell[data-mode="light"] .scenarioNote svg{color:#22877b}
+.shell[data-mode="light"] .feedTrack:after{background:#d7e4e7}
+.shell[data-mode="light"] .feedTop strong{color:#32766e}
+.shell[data-mode="light"] .feedList p{color:#263f4e}
+.shell[data-mode="light"] .feedList small,.shell[data-mode="light"] .reviewContent p{color:#667f8d}
+.shell[data-mode="light"] .reviewIcon{background:#eaf1fc;color:#5473a8}
+.shell[data-mode="light"] .reviewButton{background:#e3f5ef;border-color:#a4d5c7;color:#226b59}
+.shell[data-mode="light"] .reviewButton:disabled{background:#f4f7f8;border-color:#dde6e9;color:#7c919a}
+.shell[data-mode="light"] .chartDelta{color:#6a7882}
+.shell[data-mode="light"] .chartAxis,.shell[data-mode="light"] .chartBottom{color:#77909f}
+.shell[data-mode="light"] .openPortfolio{color:#20796f!important}
+.shell[data-mode="light"] .accountRank{color:#728a98}
+.shell[data-mode="light"] .accountName small{color:#6b8392}
+.shell[data-mode="light"] .healthTrack{background:#dce7e7}
+.shell[data-mode="light"] .timelineTop{color:#607b89}
+.shell[data-mode="light"] .timelineTop span:first-child{color:#257a69}
+.shell[data-mode="light"] .timelineTrack{background:#e1eaec}
+.shell[data-mode="light"] .footer{color:#627b88}
+.shell[data-mode="light"] .footer p:first-child span{color:#257e73}
+@media(max-width:800px){.topRight{margin-left:auto}.topStatus{display:none}.themeButton{padding:0 11px}}
+@media(max-width:600px){.topRight{margin-left:auto}.themeButton{min-height:32px}.shell[data-mode="light"] .agent{box-shadow:0 1px 6px rgba(40,83,92,.07)}}
