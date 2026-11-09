@@ -143,6 +143,10 @@ function Sparkline({ values, color = '#64ddc5' }: { values: number[]; color?: st
 
 export default function LiveDashboard() {
   const [scenario, setScenario] = React.useState<ScenarioId>('risk');
+  const [embedded, setEmbedded] = React.useState(false);
+  React.useEffect(() => {
+    setEmbedded(new URLSearchParams(window.location.search).get('embed') === '1');
+  }, []);
   const [tick, setTick] = React.useState(0);
   const [playing, setPlaying] = React.useState(true);
   const [speed, setSpeed] = React.useState(3);
@@ -201,7 +205,7 @@ export default function LiveDashboard() {
     ? [76, 74, 72, 73, 69, 68 - stage, 66 - stage, 66 - stage * 1.5]
     : [65, 66, 66, 68, 69, 70 + stage, 71 + stage, 73 + stage];
   return (
-    <main className={styles.shell} data-mode={theme}>
+    <main className={styles.shell} data-mode={theme} data-embed={embedded ? "true" : undefined}>
       <div className={styles.ambient} aria-hidden="true" />
       <div className={styles.frame}>
         <header className={styles.topbar}>
