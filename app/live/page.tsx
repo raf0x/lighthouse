@@ -67,6 +67,7 @@ function Network({ active, visited, selected, onSelect, reduced }: {
 }) {
   const selectedAgent = selected ? positions[selected] : positions[active];
   return (
+    <>
     <div className={styles.network}>
       <div className={styles.networkGrid} aria-hidden="true" />
       <svg className={styles.wires} viewBox="0 0 1000 620" preserveAspectRatio="none" aria-hidden="true">
@@ -116,12 +117,13 @@ function Network({ active, visited, selected, onSelect, reduced }: {
         </button>;
       })}
       <div className={styles.networkLabel}>NETWORK / 08 NODES</div>
+    </div>
       <div className={styles.networkDetail} aria-live="polite">
         <span className={styles.detailDot} style={{ background: selectedAgent.color }} />
         <span><strong>{selectedAgent.name}</strong><small>{selectedAgent.role} · {active === selectedAgent.id ? 'Processing simulation event' : visited.includes(selectedAgent.id) ? 'Step completed' : 'Standby'}</small></span>
         {selected && <button onClick={() => onSelect(null)} aria-label="Close agent details">×</button>}
       </div>
-    </div>
+    </>
   );
 }
 
