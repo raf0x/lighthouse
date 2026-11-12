@@ -80,7 +80,6 @@ function Network({ active, visited, selected, onSelect, reduced, paused, caseAge
   const activeRole = positions[active];
   const lightningFrames = [0, 1.6, 3.5, 0].map(phase => electricPath(activeRole, phase));
   const lightningValues = lightningFrames.join(';');
-  const secondaryPath = electricPath(activeRole, 2.3, 24);
   const detailRef = React.useRef<HTMLElement>(null);
   React.useLayoutEffect(() => {
     if (!selected || !detailRef.current) return;
@@ -126,7 +125,6 @@ function Network({ active, visited, selected, onSelect, reduced, paused, caseAge
           <path className={styles.electricCore} d={lightningFrames[0]}>
             {!reduced && <animate attributeName="d" values={lightningValues} dur=".42s" repeatCount="indefinite" />}
           </path>
-          <path className={styles.electricBranch} d={secondaryPath} />
           {!reduced && <circle className={styles.electricParticle} r="5" fill="#ffffff">
             <animateMotion dur="1.1s" repeatCount="indefinite" path={lightningFrames[0]} />
           </circle>}
