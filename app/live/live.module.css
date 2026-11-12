@@ -663,3 +663,6 @@
   .accountKpis dd{min-height:0;text-align:center}
   .metric>div{align-items:center}
 }
+.shell .feedList li{opacity:1}
+.shell .panelOverline{color:var(--muted)}
+.shell .nowProcessing{max-width:100%;white-space:normal;overflow:visible;text-overflow:clip}

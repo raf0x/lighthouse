@@ -101,7 +101,7 @@ function Network({ active, visited, selected, onSelect, reduced, paused, caseAge
           key={agent.id}
           type="button"
           className={`${styles.agent} ${isActive ? styles.agentActive : ''} ${selected === agent.id ? styles.agentSelected : ''}`}
-          style={{ left: `clamp(80px, ${agent.x}%, calc(100% - 80px))`, top: `${agent.y}%`, ['--agent-color' as string]: agent.color } as React.CSSProperties}
+          style={{ left: `clamp(92px, ${agent.x}%, calc(100% - 92px))`, top: `${agent.y}%`, ['--agent-color' as string]: agent.color } as React.CSSProperties}
           aria-pressed={selected === agent.id} onClick={() => onSelect(selected === agent.id ? null : agent.id)}
           aria-label={`${agent.name}, ${roleLabel(agent)}, ${isActive ? (agent.id === 'harbor' ? (reviewed ? 'reviewed locally' : 'awaiting human review') : paused ? 'paused on this step' : 'simulating') : isVisited ? 'completed' : (caseAgents.includes(agent.id) ? 'up next in this case' : 'not used in this case')}. View details`}
         >
