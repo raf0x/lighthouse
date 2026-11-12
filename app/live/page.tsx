@@ -353,7 +353,7 @@ export default function LiveDashboard() {
         <footer className={styles.footer}><p><span>✳</span> LIGHTHOUSE / INDEPENDENT PRODUCT EXPERIMENT</p><p>All activity is a scripted demonstration using fictional data. The agents shown are visual roles, not independently running AI services. No CRM connection, real-time monitoring or customer outreach.</p></footer>
       </div>
       {!embedded && showFloatingControls && (
-        <nav className={styles.floatingControls} aria-label="Floating simulation controls">
+        <div className={styles.floatingControls} role="group" aria-label="Floating simulation controls">
           <label className={styles.floatingSelect}>
             <span className={styles.srOnly}>Account or portfolio tour</span>
             <select
@@ -392,7 +392,7 @@ export default function LiveDashboard() {
           >
             {theme === 'light' ? <Moon size={18} aria-hidden="true" /> : <Sun size={18} aria-hidden="true" />}
           </button>
-        </nav>
+        </div>
       )}
     </main>
   );
