@@ -1558,3 +1558,25 @@
     text-align: center;
   }
 }
+
+/* Phone-only active role: stronger typography, without a competing second pill. */
+@media (max-width:699px) {
+  .stageHeadline .agentTitle {
+    font-family:var(--font-geist),Geist,system-ui,sans-serif;
+    font-size:clamp(20px,5.6vw,24px);
+    font-weight:780;
+    letter-spacing:-.035em;
+    line-height:1.22;
+    color:#087e78;
+    gap:10px;
+  }
+  .stageHeadline .agentTitleDot {
+    width:9px;
+    height:9px;
+    flex-basis:9px;
+    box-shadow:0 0 0 4px rgba(8,126,120,.11);
+  }
+  .shell[data-mode="dark"] .stageHeadline .agentTitle {
+    color:#72dfd0;
+  }
+}
