@@ -1342,16 +1342,10 @@
     stroke-width:2;
     filter:drop-shadow(0 0 5px #b4f9ff);
   }
-  .desktopNetwork .electricParticle{
-    filter:drop-shadow(0 0 7px #79e6ff);
-  }
 }
 @keyframes mobileArcSurge{
   from{opacity:.50}
   to{opacity:1}
-}
-@keyframes mobileArcDash{
-  to{stroke-dashoffset:-58}
 }
 @media(max-width:699px) and (prefers-reduced-motion:reduce){
   .desktopNetwork .electricAura{animation:none!important}
