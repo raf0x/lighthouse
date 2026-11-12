@@ -553,3 +553,23 @@
 .interactionHint{margin:0 18px 12px;font-size:11px;line-height:1.6;color:var(--muted)}
 .storyCard:hover{border-color:var(--account-color);background:color-mix(in srgb,var(--panel) 92%,var(--account-color))}
 @media(max-width:600px){.accountKpis{grid-template-columns:1fr}.accountKpis>div{display:grid;grid-template-columns:1fr auto;gap:4px 12px}.accountKpis dd{grid-column:2;grid-row:1 / span 2;margin:0;text-align:right}.accountKpis>div>span{grid-column:1}.storyContext>span:first-child{align-items:flex-start}.accountIdentity{align-items:flex-start}}
+
+/* Full-tile identities, not just a colored edge; stable KPI label baselines. */
+.storyCard,.storyCard[data-current="true"],.storyCard:hover{
+  background:color-mix(in srgb,var(--deep) 72%,var(--account-color));
+}
+.shell[data-mode="light"] .storyCard,
+.shell[data-mode="light"] .storyCard[data-current="true"],
+.shell[data-mode="light"] .storyCard:hover{
+  background:color-mix(in srgb,white 78%,var(--account-color));
+}
+.storyCard:hover{box-shadow:inset 0 0 0 1px var(--account-color)}
+.storyCard[data-current="true"]{box-shadow:inset 3px 0 var(--account-color)}
+.accountKpis>div{display:flex;flex-direction:column}
+.accountKpis dd{min-height:49px}
+.accountKpis>div>span{margin-top:auto;padding-top:6px}
+@media(max-width:600px){
+  .accountKpis>div{display:grid;grid-template-columns:1fr auto}
+  .accountKpis dd{min-height:0}
+  .accountKpis>div>span{margin-top:0;padding-top:0}
+}
