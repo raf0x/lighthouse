@@ -42,63 +42,26 @@ export function bandColor(band: Band): string {
 export function mockAnalysis(account: Account, type: AnalysisType): Analysis {
   const seatPct = Math.round((account.seats_active / account.seats_total) * 100);
   const mauDelta = Math.round(((account.mau[4] - account.mau[0]) / account.mau[0]) * 100);
-  const declining = mauDelta < 0;
   const health = calculateHealthScore(account);
-  const critical = health < 30;
-
-  if (type === 'health') {
-    return {
-      summary: `${account.name} is ${critical ? 'critically at-risk' : (health < 70 ? 'showing early warning signals' : 'in healthy territory')} with ${declining ? `a ${Math.abs(mauDelta)}% decline` : `${mauDelta}% growth`} in monthly active users, ${seatPct}% seat utilization, and an NPS of ${account.nps}.`,
-      confidence: account.tickets_30d < 5 ? 'limited' : health < 30 ? 'high' : health < 50 ? 'medium' : 'high',
-      confidenceReason: account.tickets_30d < 5 ? 'Low support signal volume' : undefined,
-      risks: critical || health < 50 ? [
-        { title: 'Accelerating MAU Decline', description: `${Math.abs(mauDelta)}% drop over 5 months — engagement falling across all cohorts.`, severity: 'Critical' },
-        { title: 'Severe Seat Underutilization', description: `${100 - seatPct}% of licensed seats are inactive — value perception eroding.`, severity: 'High' },
-        { title: 'Elevated Support Burden', description: `${account.tickets_30d} open tickets in 30d · NPS ${account.nps}`, severity: 'High' },
-      ] : [],
-      positives: health >= 50 && account.nps >= 50 ? [
-        { title: 'Stable executive sponsorship', description: `${account.exec} engaged via QBR in the last cycle.` },
-        { title: 'Strong NPS Performance', description: `NPS ${account.nps} indicates promoter-level satisfaction.` },
-      ] : health >= 50 ? [
-        { title: 'Stable executive sponsorship', description: `${account.exec} engaged via QBR in the last cycle.` },
-      ] : [],
-      recommendation: {
-        title: critical ? 'Escalate to executive sponsor' : 'Schedule expansion-readiness review',
-        description: critical
-          ? `${account.exec} has not been in active contact since the last QBR (${account.last_qbr}). A direct executive ask now is the highest-leverage move before renewal conversations begin.`
-          : `${account.name} shows expansion-ready signals. Propose a value review to confirm budget and timeline for FY25.`,
-        cta: critical ? 'View Action Plan' : 'Open Expansion Brief',
-      },
-    };
-  }
-
-  if (type === 'expansion') {
-    return {
-      summary: `${account.name} has ${critical ? 'limited near-term expansion capacity' : 'two material expansion paths'} given current usage patterns and industry benchmark.`,
-      opportunities: [
-        { title: 'Seat True-up', business_case: `Active users have plateaued ${seatPct < 80 ? 'below' : 'near'} contracted seat count — true-up clauses are due at renewal.`, arr_lift: `+$${Math.round(account.arr * 0.18 / 1000)}K`, approach: 'Anchor on contractual true-up; surface usage data in the QBR deck.' },
-        { title: 'Premium Tier Upgrade', business_case: `${account.industry} cohort accounts on premium see 2.1× the NPS uplift of standard.`, arr_lift: `+$${Math.round(account.arr * 0.32 / 1000)}K`, approach: 'Pilot premium for 90 days against a single business unit.' },
-      ],
-    };
-  }
-
-  if (type === 'briefing') {
-    return {
-      summary: `${account.name} (${account.industry}) — ARR $${(account.arr / 1000).toFixed(0)}K, health ${health}/100. ${critical ? 'IMMEDIATE intervention recommended.' : (health < 70 ? 'On watch list.' : 'Performing in line with portfolio.')}`,
-      risks: critical ? [{ title: 'Renewal at risk', description: 'Renewal cycle begins in 90 days against falling engagement.', severity: 'Critical' }] : [],
-      opportunities: !critical ? [{ title: 'Premium tier expansion', description: `Industry cohort suggests upside of $${Math.round(account.arr * 0.32 / 1000)}K.` }] : [],
-      next_actions: [
-        critical ? 'Executive escalation within 48 hours' : 'Confirm expansion budget',
-        'Schedule QBR with sponsor',
-        'Surface usage report ahead of next renewal touch',
-      ],
-    };
-  }
-
+  const summary = `${account.name}: sample health ${health}/100 (${bandLabel(health)}), ${seatPct}% seats active, NPS ${account.nps}, and ${account.tickets_30d} tickets in the sample 30-day window. Usage changes ${mauDelta > 0 ? '+' : ''}${mauDelta}% across five sample periods; these figures do not establish a cause or predict renewal.`;
+  const nextActions = [
+    `Ask ${account.exec.split(',')[0]} to validate the sample signals and identify one current priority.`,
+    health < 70 ? 'Agree on one adoption or support recovery milestone before discussing expansion.' : 'Confirm value delivered and unmet needs before discussing expansion.',
+    'Validate contract dates, budget, and decision makers with the customer; no current deadline is inferred from historical fields.',
+  ];
+  if (type === 'email') return {
+    subject: `Account review — ${account.name}`,
+    body: `Hi ${account.exec.split(',')[0]},\n\nIn this fictional example, ${seatPct}% of seats are active and usage changes ${mauDelta}% across five sample periods. I would like to understand whether these figures reflect your team's experience and which outcome matters most to you next.\n\nCould we review the context and agree on one useful next step?\n\nBest,\nThe CSM team`,
+  };
+  if (type === 'expansion') return {
+    summary: `${summary} Pricing, budget, and purchase intent are not supplied, so no ARR lift is estimated.`,
+    opportunities: [{ title: health < 70 ? 'Validate value before expansion' : 'Explore unmet needs', business_case: 'A discovery conversation is a hypothesis to test, not an identified sales opportunity.', approach: nextActions[1] }],
+  };
+  if (type === 'briefing') return { summary, next_actions: nextActions };
   return {
-    subject: critical ? `Velocity check — ${account.name} renewal preparation` : `Q2 partnership review — ${account.name}`,
-    body: critical
-      ? `Hi ${account.exec.split(',')[0]},\n\nIt's been since ${account.last_qbr} that we last connected formally, and I wanted to flag a few patterns we're seeing on the ${account.name} account before the renewal cycle ramps up.\n\nMonthly active users have declined ${Math.abs(mauDelta)}% over the last five months, and seat utilization is sitting at ${seatPct}%. I'd like to put 30 minutes on the calendar this week to walk through the data and align on a path forward — including any blockers from your side we should know about.\n\nI'll send a few times shortly. Thanks for the partnership.\n\nBest,\nthe CSM team`
-      : `Hi ${account.exec.split(',')[0]},\n\nQuick note as we approach the next QBR — the ${account.name} engagement continues to track well, with MAU up ${mauDelta}% and NPS of ${account.nps}.\n\nWe think there's a clear case for expanding into the Premium tier next cycle. Would you have 20 minutes in the next two weeks to review?\n\nBest,\nthe CSM team`,
+    summary,
+    risks: mauDelta < 0 ? [{ title: 'Sample usage decline', description: `${Math.abs(mauDelta)}% fewer monthly active users between the first and last sample periods. The cause is unknown.`, severity: 'Medium' }] : [],
+    positives: mauDelta >= 0 ? [{ title: 'Sample usage growth', description: `${mauDelta}% more monthly active users between the first and last sample periods. Validate continued value with the customer.` }] : [],
+    recommendation: { title: 'Validate the story with the customer', description: nextActions.join(' ') },
   };
 }

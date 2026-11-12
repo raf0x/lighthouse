@@ -41,6 +41,6 @@ export function getStory(id: CaseId) {
     { agent: 'waypoint', title: 'Attention priority explained', description: `Health ${score}/100; prioritize a fact-finding conversation.`, input: 'Health assessment and recovery rationale', output: 'Prepare a recovery brief, with an account owner responsible for the next decision.' },
     { agent: 'dispatch', title: 'Recovery briefing drafted', description: recommendation, input: 'Account evidence and recovery rationale', output: recommendation },
   );
-  events.push({ agent: 'harbor', title: 'Human review requested', description: 'Review this fictional recommendation locally. Nothing is sent or saved to a CRM.', input: recommendation, output: 'A person decides whether to act. Demo review is local and resets on each loop.' });
+  events.push({ agent: 'harbor', title: 'Human review requested', description: 'Review this fictional recommendation locally. Nothing is sent or saved to a CRM.', input: recommendation, output: 'A person decides whether to act. Demo review is local, remains available across loops and resets when this page reloads.' });
   return { account, score, utilization, change, evidence, usage, growth, label, recommendation, events };
 }

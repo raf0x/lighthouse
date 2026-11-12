@@ -701,3 +701,32 @@
 .accountKpis>div:nth-child(n+2)>span{
  grid-column:1;grid-row:3;align-self:end;margin:0;padding:0;
 }
+
+/* Identity accents stay categorical; health numbers carry labeled ordinal bands. */
+.shell[data-mode] .storyCard,.shell[data-mode] .storyCard[data-current="true"],.shell[data-mode] .storyCard:hover{
+ background:var(--deep);border-top:3px solid var(--account-color);
+}
+.shell[data-mode] .storyCard[data-current="true"]{box-shadow:inset 3px 0 var(--account-color)}
+.shell[data-mode] .storyCard:hover{background:color-mix(in srgb,var(--deep) 95%,var(--account-color))}
+.storyCard strong small{color:var(--muted);font-weight:600}
+.shell[data-mode] .accountKpis [data-concern="true"] dd,
+.shell[data-mode] .accountKpis [data-concern="true"]>span{color:var(--ink)}
+.shell[data-mode] .accountKpis [data-primary-concern="true"] dd,
+.shell[data-mode] .accountKpis [data-primary-concern="true"]>span{color:var(--high-fg)}
+/* Nonparticipants remain readable and clickable without competing with the case. */
+.shell .agentOutsideCase{border-style:dashed;box-shadow:none;background:var(--deep)}
+.agentOutsideCase .agentSymbol{filter:grayscale(1);opacity:.55}
+.shell .agentOutsideCase .agentText strong{color:var(--muted)}
+.shell .agentOutsideCase .outsideCaseLabel{font-size:10px;font-style:italic}
+.agentOutsideCase:hover,.agentOutsideCase.agentSelected{border-color:var(--muted)}
+.panelOverline>span{display:inline-block;white-space:nowrap}
+.reviewBrief,.reviewHint{margin:0 20px 16px;color:var(--muted);font-size:13px;line-height:1.6}
+.reviewHint{font-size:12px}
+@media(max-width:600px){
+ .controls{grid-template-columns:1fr 1fr}
+ .selectWrap{grid-column:1/-1;overflow:visible}
+ .selectWrap select{flex:1;width:auto;min-width:0}
+ .speedControl{justify-content:flex-end}
+ .panelHeading{flex-wrap:wrap}
+ .reviewBrief,.reviewHint{margin-inline:12px}
+}

@@ -9,8 +9,8 @@ import type { Account, Analysis, AnalysisType } from './types';
 type TabDef = { type: AnalysisType; label: string; Icon: React.FC<{ size?: number }>; thinking: string };
 
 const AGENT_TABS: TabDef[] = [
-  { type: 'health',    label: 'AI Health Analysis', Icon: IconRobot,    thinking: 'Reviewing usage, support, and engagement signals…' },
-  { type: 'expansion', label: 'Expansion Plays',    Icon: IconTrendUp,  thinking: 'Identifying expansion paths and modeling ARR lift…' },
+  { type: 'health',    label: 'Analyze sample health', Icon: IconRobot,    thinking: 'Reviewing usage, support, and engagement signals…' },
+  { type: 'expansion', label: 'Expansion Plays',    Icon: IconTrendUp,  thinking: 'Reviewing fictional usage signals for discovery questions…' },
   { type: 'briefing',  label: 'Executive Briefing', Icon: IconBriefing, thinking: 'Synthesizing executive summary with strategic recommendations…' },
   { type: 'email',     label: 'Draft Email',        Icon: IconMail,     thinking: 'Composing personalized outreach based on recent activity…' },
 ];
@@ -19,9 +19,12 @@ export default function AgentPanel({ account }: { account: Account }) {
   const [activeType, setActiveType] = React.useState<AnalysisType | null>(null);
   const [loading, setLoading] = React.useState(false);
   const [analysis, setAnalysis] = React.useState<Analysis | null>(null);
+  const requestVersion = React.useRef(0);
   const [source, setSource] = React.useState<'ai' | 'demo' | null>(null);
 
   React.useEffect(() => {
+    requestVersion.current += 1;
+    setLoading(false);
     setAnalysis(null);
     setActiveType(null);
     setSource(null);
@@ -30,6 +33,9 @@ export default function AgentPanel({ account }: { account: Account }) {
   React.useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
+        requestVersion.current += 1;
+        setLoading(false);
+        setSource(null);
         setAnalysis(null);
         setActiveType(null);
       }
@@ -39,6 +45,7 @@ export default function AgentPanel({ account }: { account: Account }) {
   }, []);
 
   const run = async (type: AnalysisType) => {
+    const version = ++requestVersion.current;
     setActiveType(type);
     setLoading(true);
     setAnalysis(null);
@@ -63,6 +70,7 @@ export default function AgentPanel({ account }: { account: Account }) {
       await new Promise(r => setTimeout(r, 800));
       result = mockAnalysis(account, type);
     }
+    if (version !== requestVersion.current) return;
     setSource(usedAI ? 'ai' : 'demo');
     setAnalysis(result);
     setLoading(false);
@@ -78,12 +86,12 @@ export default function AgentPanel({ account }: { account: Account }) {
             width: 28, height: 28, display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
             borderRadius: 8, background: 'var(--agent-bg)', border: '1px solid var(--agent-line)', color: 'var(--beam-300)',
           }}>✦</span>
-          <h3 style={{ fontSize: 16, fontWeight: 600, color: 'var(--fg-1)' }}>AI Intelligence Layer</h3>
-          <span className="pill pill--agent" style={{ marginLeft: 4 }}>Haiku 4.5</span>
+          <h3 style={{ fontSize: 16, fontWeight: 600, color: 'var(--fg-1)' }}>Optional sample analysis</h3>
+          <span className="pill pill--agent" style={{ marginLeft: 4 }}>{source === 'ai' ? 'AI result' : source === 'demo' ? 'Scripted fallback' : 'On demand'}</span>
         </div>
         {analysis && (
           <button className="btn btn--ghost" style={{ padding: '4px 10px', fontSize: 11 }}
-                  onClick={() => { setAnalysis(null); setActiveType(null); }}>
+                  onClick={() => { requestVersion.current += 1; setLoading(false); setSource(null); setAnalysis(null); setActiveType(null); }}>
             Clear (ESC)
           </button>
         )}
@@ -109,10 +117,10 @@ export default function AgentPanel({ account }: { account: Account }) {
           background: 'var(--surface-inset)', border: '1px dashed var(--border-default)', borderRadius: 10,
         }}>
           <div style={{ fontFamily: 'var(--font-display)', fontStyle: 'italic', fontSize: 20, color: 'var(--fg-2)', marginBottom: 8 }}>
-            Pick an agent to begin.
+            Choose an analysis to request.
           </div>
           <div style={{ fontSize: 13, color: 'var(--fg-3)' }}>
-            Lighthouse will scan <strong style={{ color: 'var(--beam-300)' }}>{account.name}</strong> and surface what's most important.
+            Only the displayed fictional data for <strong style={{ color: 'var(--beam-300)' }}>{account.name}</strong> is sent to the optional AI service when you click. No CRM is scanned. If unavailable, a clearly labeled scripted example appears. Nothing is sent to a customer.
           </div>
         </div>
       )}
@@ -125,13 +133,9 @@ export default function AgentPanel({ account }: { account: Account }) {
               <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--fg-1)' }}>Analyzing {account.name}</div>
               <div style={{ fontFamily: 'var(--font-display)', fontStyle: 'italic', fontSize: 13, color: 'var(--fg-3)', marginTop: 2 }}>{activeMeta.thinking}</div>
             </div>
-            <span className="pill pill--agent" style={{ marginLeft: 'auto' }}>✦ Haiku 4.5</span>
+            <span className="pill pill--agent" style={{ marginLeft: 'auto' }}>Request pending</span>
           </div>
-          <div style={{ marginTop: 14 }}>
-            <div className="thinking-trace thinking-trace--done">▸ tool · pulled 5mo MAU trend · 142ms</div>
-            <div className="thinking-trace thinking-trace--done">▸ tool · queried support tickets (30d) · 88ms</div>
-            <div className="thinking-trace thinking-trace--active">▸ reasoning · weighing signals vs portfolio cohort…</div>
-          </div>
+          <p style={{ marginTop: 14, color: 'var(--fg-2)', fontSize: 13 }}>Requesting an analysis of the static sample only. No background monitoring or external data lookup.</p>
         </div>
       )}
 

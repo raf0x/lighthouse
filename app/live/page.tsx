@@ -9,7 +9,7 @@ import {
   AudioLines, Compass, FilePenLine, Radar, ScanSearch, ShieldAlert, ShieldCheck, Network as NetworkIcon, Zap
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
-import { accounts, calculateHealthScore } from '@/app/lib/lighthouse';
+import { accounts, bandColor, bandLabel, healthBand } from '@/app/lib/lighthouse';
 import styles from './live.module.css';
 import { caseIds, getStory, isCaseId, accountIdentity, type CaseId, type AgentId } from '@/app/lib/live-stories';
 
@@ -38,7 +38,7 @@ const roleDetails: Record<AgentId, { purpose: string; input: string; output: str
 };
 
 function roleLabel(agent: Agent) {
-  return agent.id === 'harbor' ? 'Human gate' : agent.role + ' AI agent';
+  return agent.id === 'harbor' ? 'Human gate' : agent.role;
 }
 
 const positions = Object.fromEntries(agents.map(a => [a.id, a])) as Record<AgentId, Agent>;
@@ -70,6 +70,7 @@ function Network({ active, visited, selected, onSelect, reduced, paused, caseAge
         {agents.map(agent => {
           const x = agent.x * 10; const y = agent.y * 6.2;
           const isActive = active === agent.id;
+          if (!isActive) return null;
           return <g key={agent.id}>
             <path d={`M500 310 Q${(500 + x) / 2} ${(310 + y) / 2 - 30} ${x} ${y}`}
               fill="none" stroke={isActive ? agent.color : 'url(#wire)'} strokeWidth={isActive ? 2.6 : 1.2}
@@ -96,17 +97,18 @@ function Network({ active, visited, selected, onSelect, reduced, paused, caseAge
       {agents.map(agent => {
         const isActive = agent.id === active;
         const isVisited = visited.includes(agent.id);
+        const inCase = caseAgents.includes(agent.id);
         const AgentIcon = agent.icon;
         return <button
           key={agent.id}
           type="button"
-          className={`${styles.agent} ${isActive ? styles.agentActive : ''} ${selected === agent.id ? styles.agentSelected : ''}`}
+          className={`${styles.agent} ${isActive ? styles.agentActive : ''} ${!inCase ? styles.agentOutsideCase : ''} ${selected === agent.id ? styles.agentSelected : ''}`}
           style={{ left: `clamp(92px, ${agent.x}%, calc(100% - 92px))`, top: `clamp(60px, ${agent.y}%, calc(100% - 60px))`, ['--agent-color' as string]: agent.color } as React.CSSProperties}
           aria-pressed={selected === agent.id} onClick={() => onSelect(selected === agent.id ? null : agent.id)}
           aria-label={`${agent.name}, ${roleLabel(agent)}, ${isActive ? (agent.id === 'harbor' ? (reviewed ? 'reviewed locally' : 'awaiting human review') : paused ? 'paused on this step' : 'simulating') : isVisited ? 'completed' : (caseAgents.includes(agent.id) ? 'up next in this case' : 'not used in this case')}. View details`}
         >
           <span className={styles.agentSymbol} aria-hidden="true"><span className={styles.agentGlyphAura} /><AgentIcon size={28} strokeWidth={1.9} /></span>
-          <span className={styles.agentText}><strong>{agent.name}</strong><small>{roleLabel(agent)}</small></span>
+          <span className={styles.agentText}><strong>{agent.name}</strong><small>{roleLabel(agent)}</small>{!inCase && <small className={styles.outsideCaseLabel}>Not in this case</small>}</span>
           <span className={styles.agentStatus} aria-hidden="true">{isActive ? <span className={styles.statusPulse} /> : isVisited ? '✓' : '·'}</span>
         </button>;
       })}
@@ -146,7 +148,7 @@ export default function LiveDashboard() {
       setEmbedded(params.get('embed') === '1');
       const id = params.get('account');
       setPinnedAccount(isCaseId(id) ? id : null);
-      setTick(0); setSelectedAgent(null); setInspectionCase(null); setApproved(false);
+      setTick(0); setSelectedAgent(null); setInspectionCase(null);
     };
     sync(); window.addEventListener('popstate', sync);
     return () => window.removeEventListener('popstate', sync);
@@ -156,7 +158,8 @@ export default function LiveDashboard() {
   const [speed, setSpeed] = React.useState(2);
   const [theme, setTheme] = React.useState<'light' | 'dark'>('light');
   const [selectedAgent, setSelectedAgent] = React.useState<AgentId | null>(null);
-  const [approved, setApproved] = React.useState(false);
+  const [readyCases, setReadyCases] = React.useState<Partial<Record<CaseId, boolean>>>({});
+  const [reviewedCases, setReviewedCases] = React.useState<Partial<Record<CaseId, boolean>>>({});
   const [motionReduced, setMotionReduced] = React.useState(false);
   const cycleLength = 24;
   const cycle = Math.floor(tick / cycleLength);
@@ -167,6 +170,7 @@ export default function LiveDashboard() {
   const account = scene.account;
   const identity = accountIdentity[activeCase];
   const current = scene.events[stage];
+  const approved = Boolean(reviewedCases[activeCase]);
   const visible = scene.events.slice(0, stage + 1).map((event, sequence) => ({ event, sequence })).reverse();
   const visited = scene.events.slice(0, stage).map(e => e.agent);
   const active = current.agent;
@@ -195,10 +199,12 @@ export default function LiveDashboard() {
     const id = window.setInterval(() => setTick(previous => previous + 1), 850 / speed);
     return () => window.clearInterval(id);
   }, [playing, speed]);
-  React.useEffect(() => { setApproved(false); }, [cycle]);
+  React.useEffect(() => {
+    if (stage === 5) setReadyCases(previous => previous[activeCase] ? previous : {...previous, [activeCase]: true});
+  }, [stage, activeCase]);
 
   function chooseAccount(id: CaseId | null) {
-    setPinnedAccount(id); setTick(0); setApproved(false); setSelectedAgent(null); setInspectionCase(null);
+    setPinnedAccount(id); setTick(0); setSelectedAgent(null); setInspectionCase(null);
     const url = new URL(window.location.href);
     if (id) url.searchParams.set('account', id); else url.searchParams.delete('account');
     window.history.pushState({}, '', url);
@@ -206,7 +212,12 @@ export default function LiveDashboard() {
   function inspectAgent(id: AgentId | null) {
     setSelectedAgent(id); setInspectionCase(id ? activeCase : null);
   }
-  const queueCount = stage === 5 && !approved ? 1 : 0;
+  const pendingCases = caseIds.filter(id => readyCases[id] && !reviewedCases[id]);
+  const reviewCase = pendingCases.includes(activeCase) ? activeCase : pendingCases[0] ?? activeCase;
+  const reviewStory = getStory(reviewCase);
+  const reviewReady = Boolean(readyCases[reviewCase]);
+  const reviewDone = Boolean(reviewedCases[reviewCase]);
+  const queueCount = pendingCases.length;
   const chartValues = account.mau;
   return (
     <main className={styles.shell} style={{["--account-color" as string]: identity.color} as React.CSSProperties} data-paused={!playing} data-mode={theme} data-embed={embedded ? "true" : undefined}>
@@ -244,24 +255,24 @@ export default function LiveDashboard() {
           </div>
           <section className={styles.accountStories} aria-label="Fictional account stories">
             <div className={styles.storyHeading}><div><strong>{pinnedAccount ? 'Following ' + account.name : 'Portfolio tour'}</strong><p>{pinnedAccount ? 'This account repeats at your chosen speed. Selecting an agent never stops playback.' : 'Three fictional accounts rotate automatically. Click an account card to follow its story.'}</p></div>{pinnedAccount && <button onClick={() => chooseAccount(null)}>Resume portfolio tour</button>}</div>
-            <div className={styles.storyCards}>{caseIds.map(id => { const item = getStory(id); return <button key={id} className={styles.storyCard} style={{["--account-color" as string]: accountIdentity[id].color} as React.CSSProperties} aria-pressed={pinnedAccount === id} data-current={activeCase === id} onClick={() => chooseAccount(id)}><span className={styles.accountIdentity}><span className={styles.accountBadge} aria-hidden="true">{accountIdentity[id].code}</span>{item.account.name}</span><strong>{item.score}<small>/100 health</small></strong><span>{item.label} · ${(item.account.arr / 1000).toFixed(0)}K ARR</span><small>{pinnedAccount === id ? '✓ FOLLOWING · REPEATING' : activeCase === id ? 'NOW PLAYING · CLICK TO FOLLOW' : 'FOLLOW THIS ACCOUNT →'}</small></button>; })}</div>
+            <div className={styles.storyCards}>{caseIds.map(id => { const item = getStory(id); return <button key={id} className={styles.storyCard} style={{["--account-color" as string]: accountIdentity[id].color} as React.CSSProperties} aria-pressed={pinnedAccount === id} data-current={activeCase === id} onClick={() => chooseAccount(id)}><span className={styles.accountIdentity}><span className={styles.accountBadge} aria-hidden="true">{accountIdentity[id].code}</span>{item.account.name}</span><strong style={{color: bandColor(healthBand(item.score))}}>{item.score}<small>/100 · {bandLabel(item.score)}</small></strong><span>{item.label} · ${(item.account.arr / 1000).toFixed(0)}K ARR</span><small>{pinnedAccount === id ? '✓ FOLLOWING · REPEATING' : activeCase === id ? 'NOW PLAYING · CLICK TO FOLLOW' : 'FOLLOW THIS ACCOUNT →'}</small></button>; })}</div>
             <div className={styles.storyContext}><span><span className={styles.accountBadge} aria-hidden="true">{identity.code}</span> NOW: {account.name} · {scene.label}</span><Link href={`/?account=${account.id}`}>Open account details →</Link></div>
             <dl className={styles.accountKpis}>
-              <div data-concern={identity.concerns.includes('seats')}><dt>SEATS ACTIVE</dt><dd>{scene.utilization}% <small>{account.seats_active}/{account.seats_total} seats</small></dd>{identity.concerns.includes('seats') && <span>Scenario concern</span>}</div>
+              <div data-concern={identity.concerns.includes('seats')} data-primary-concern={identity.concerns.includes('seats')}><dt>SEATS ACTIVE</dt><dd>{scene.utilization}% <small>{account.seats_active}/{account.seats_total} seats</small></dd>{identity.concerns.includes('seats') && <span>Scenario concern</span>}</div>
               <div data-concern={identity.concerns.includes('nps')}><dt>NPS</dt><dd>{account.nps}</dd>{identity.concerns.includes('nps') && <span>Scenario concern</span>}</div>
               <div data-concern={identity.concerns.includes('tickets')}><dt>SUPPORT TICKETS · SAMPLE 30 DAYS</dt><dd>{account.tickets_30d}</dd>{identity.concerns.includes('tickets') && <span>Scenario concern</span>}</div>
             </dl>
             <p className={styles.concernNote}>{identity.rationale} Emphasis is specific to this fictional story, not a universal threshold.</p>
           </section>
           <div className={styles.metrics} aria-label="Simulated portfolio metrics">
-            <div className={styles.metric}><span>PORTFOLIO ARR</span><div><strong>${(totalArr / 1_000_000).toFixed(2)}M</strong><span className={styles.metricTiny}>FICTIONAL</span></div><Sparkline values={[55, 57, 56, 62, 67, 66, 71, 75]}/></div>
-            <div className={styles.metric}><span>CASE STEPS COMPLETE</span><div><strong>{approved ? 6 : stage}</strong><span className={styles.metricUp}><ArrowUpRight size={13}/> {approved ? 'REVIEWED' : stage === 5 ? 'AWAITING REVIEW' : 'OF 6 STEPS'}</span></div><small className={styles.metricCaption}>Five scripted steps, then your review</small></div>
-            <div className={styles.metric}><span>ACCOUNT IN THIS CASE</span><div><strong>{1}</strong><span className={styles.metricOrange}><Activity size={13}/> FICTIONAL</span></div><small className={styles.metricCaption}>{account.name}</small></div>
-            <div className={styles.metric}><span>ACTIONS TO REVIEW</span><div><strong>{queueCount}</strong><span className={styles.metricBlue}><ShieldCheck size={13}/> HUMAN GATE</span></div><small className={styles.metricCaption}>{approved ? "Acknowledged locally. Nothing sent." : "Available at the end of this case"}</small></div>
+            <div className={styles.metric}><span>PORTFOLIO ARR</span><div><strong>${(totalArr / 1_000_000).toFixed(2)}M</strong><span className={styles.metricTiny}>FICTIONAL</span></div><small className={styles.metricCaption}>Sum of eight sample account records</small></div>
+            <div className={styles.metric}><span>CURRENT CASE STEP</span><div><strong>{stage + 1}</strong><span className={styles.metricUp}><ArrowUpRight size={13}/> OF 6 STEPS</span></div><small className={styles.metricCaption}>Five simulated stages, then a human decision</small></div>
+            <div className={styles.metric}><span>CASES IN TOUR</span><div><strong>{caseIds.length}</strong><span className={styles.metricOrange}><Activity size={13}/> FICTIONAL</span></div><small className={styles.metricCaption}>Recovery, value and capacity stories</small></div>
+            <div className={styles.metric}><span>ACTIONS TO REVIEW</span><div><strong>{queueCount}</strong><span className={styles.metricBlue}><ShieldCheck size={13}/> HUMAN GATE</span></div><small className={styles.metricCaption}>{queueCount ? "Ready to review below. Nothing sent." : "Reviews are local to this page session"}</small></div>
           </div>
           <div className={styles.mainGrid}>
             <section className={styles.networkPanel} aria-labelledby="networkTitle">
-              <div className={styles.panelHeading}><div><span className={styles.panelOverline}>7 SIMULATED AI AGENTS / 1 HUMAN GATE</span><h3 id="networkTitle">Intelligence network</h3></div><span className={styles.activeTag}><span className={styles.liveDot}/> {stage === 5 ? 'HUMAN REVIEW' : playing ? 'SIMULATING' : 'PAUSED'}</span></div>
+              <div className={styles.panelHeading}><div><span className={styles.panelOverline}><span>7 SIMULATED AI AGENTS</span> / <span>1 HUMAN GATE</span></span><h3 id="networkTitle">Intelligence network</h3></div><span className={styles.activeTag}><span className={styles.liveDot}/> {stage === 5 ? 'HUMAN REVIEW' : playing ? 'SIMULATING' : 'PAUSED'}</span></div>
               <p className={styles.demoDisclosure}>Scripted demo · fictional accounts · no outreach sent</p>
               <p className={styles.interactionHint}>Select an agent or numbered stage to inspect its evidence. Playback keeps moving.</p>
               <ol className={styles.caseRoute} aria-label="Current case handoff path">{scene.events.map((event, index) => <li key={event.agent} aria-current={stage === index ? 'step' : undefined}><button type="button" onClick={() => inspectAgent(event.agent)}><span>{index + 1}</span>{positions[event.agent].name}{index < scene.events.length - 1 && <ArrowRight size={11} aria-hidden="true" />}</button></li>)}</ol>
@@ -276,13 +287,19 @@ export default function LiveDashboard() {
                   return <li key={i} className={reverseIndex === 0 ? styles.feedCurrent : ''}><span className={styles.feedTrack}><span style={{background:agent.color}}/></span><div><div className={styles.feedTop}><strong>{agent.name}</strong><time>{fmtClock(i * 4)}</time></div><p>{event.title}</p><small>{event.description}</small></div></li>;
                 })}</ol>
               </section>
-              <section className={styles.review} aria-labelledby="reviewTitle"><div className={styles.panelHeading}><div><span className={styles.panelOverline}>HUMAN IN THE LOOP</span><h3 id="reviewTitle">Decision gate</h3></div><ShieldCheck size={17} color="#94b8ff"/></div><div className={styles.reviewContent}><span className={styles.reviewIcon}>{approved ? <Check size={18}/> : <Clock3 size={18}/>}</span><div><strong>{approved ? 'Marked reviewed' : stage === 5 ? 'Recommendation ready' : 'Awaiting briefing'}</strong><p>{account.name} · {approved ? 'Demo item reviewed locally' : 'No outreach sent'}</p></div></div><button className={styles.reviewButton} onClick={() => setApproved(true)} disabled={approved || stage < 5}>{approved ? 'Reviewed in demo' : stage < 5 ? 'Available after analysis' : 'Mark as reviewed'} <ArrowRight size={14}/></button></section>
+              <section className={styles.review} aria-labelledby="reviewTitle">
+                <div className={styles.panelHeading}><div><span className={styles.panelOverline}>HUMAN IN THE LOOP</span><h3 id="reviewTitle">Decision gate</h3></div><ShieldCheck size={17} color="#94b8ff"/></div>
+                <div className={styles.reviewContent}><span className={styles.reviewIcon}>{reviewDone ? <Check size={18}/> : <Clock3 size={18}/>}</span><div><strong>{reviewDone ? 'Marked reviewed' : reviewReady ? 'Recommendation ready' : 'Awaiting briefing'}</strong><p>{reviewStory.account.name} · Nothing sent</p></div></div>
+                {reviewReady && <p className={styles.reviewBrief}>{reviewStory.recommendation}</p>}
+                <button className={styles.reviewButton} onClick={() => setReviewedCases(previous => ({...previous, [reviewCase]: true}))} disabled={reviewDone || !reviewReady}>{reviewDone ? 'Reviewed locally · nothing sent' : reviewReady ? 'Mark reviewed · nothing sent' : 'Available after this case'} <ArrowRight size={14}/></button>
+                <p className={styles.reviewHint}>The tour keeps playing. Completed briefs remain available for review; acknowledgements last until you reload.</p>
+              </section>
             </aside>
           </div>
           <div className={styles.bottomGrid}>
             <section className={styles.bottomPanel} aria-labelledby="usageTitle">
               <div className={styles.panelHeading}><div><span className={styles.panelOverline}>FICTIONAL / FIVE SAMPLE PERIODS</span><h3 id="usageTitle">{account.name} · usage</h3></div></div>
-              <div className={styles.usageChart}><Sparkline values={chartValues} color={scene.growth ? '#41ac99' : '#d88157'} /></div>
+              <div className={styles.usageChart}><Sparkline values={chartValues} color={scene.growth ? 'var(--healthy-fg)' : 'var(--high-fg)'} /></div>
               <p className={styles.storyCopy}>{scene.usage}</p>
               <p className={styles.storyCopy}>Recorded contract date: {account.contract_end}. Historical sample field, not a live renewal countdown.</p>
             </section>

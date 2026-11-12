@@ -43,7 +43,7 @@ export default function Home() {
           <PortfolioSidebar accounts={accounts} selectedId={selectedId} onSelect={selectAccount} />
           <div>
             {isCaseId(selected.id) && <div className="card" style={{marginBottom:16,padding:'14px 18px',display:'flex',flexWrap:'wrap',alignItems:'center',justifyContent:'space-between',gap:12}}>
-              <span>Fictional account · scripted walkthrough · no AI request</span>
+              <span>Scripted walkthrough: no AI requests. Optional analysis below runs only when selected.</span>
               <Link href={`/live?account=${selected.id}`} style={{color:'var(--beam-300)',fontWeight:650}}>Watch {selected.name}’s story →</Link>
             </div>}
             <AccountDetail account={selected} />

@@ -344,3 +344,9 @@ button:focus-visible, .acc-row:focus-visible, a:focus-visible, select:focus-visi
   .primary-nav{gap:6px;width:100%;flex-wrap:nowrap;justify-content:center}
   .primary-nav .nav-color-btn{min-width:0;flex:1;min-height:44px;padding:9px 8px;font-size:12px}
 }
+
+/* Shared navigation uses one selection color; account identity is not navigation. */
+.primary-nav .nav-color-btn { background: transparent; border-color: transparent; color: var(--fg-2); box-shadow: none; }
+.primary-nav .nav-color-btn[aria-current="page"] { background: #087e78; border-color: #066963; color: #fff; box-shadow: none; }
+.primary-nav .nav-color-btn:hover:not(:disabled) { filter: none; background: var(--surface-2); color: var(--fg-1); transform: none; }
+.primary-nav .nav-color-btn[aria-current="page"]:hover { background: #066963; color: #fff; }

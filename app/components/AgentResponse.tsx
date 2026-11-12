@@ -5,7 +5,7 @@ import { IconAlert, IconCheckCircle, IconTrendUp, IconTrendDown, IconZap } from 
 import type { Account, Analysis, AnalysisType } from './types';
 
 const MAUChart: React.FC<{ values: number[] }> = ({ values }) => {
-  const months = ['Feb', 'Mar', 'Apr', 'May', 'Jun'];
+  const months = ['Period 1', 'Period 2', 'Period 3', 'Period 4', 'Period 5'];
   const W = 600, H = 160, P = 36;
   const min = Math.min(...values), max = Math.max(...values);
   const range = max - min || 1;
@@ -49,8 +49,8 @@ export default function AgentResponse({ analysis, account, type }: Props) {
       {analysis.summary && (
         <div className="r-card summary">
           <div className="r-card-title">
-            <span className="pill pill--agent">✦ Agent</span>
-            <span style={{ fontSize: 12, color: 'var(--fg-3)', fontFamily: 'var(--font-mono)' }}>2-sentence summary</span>
+            <span className="pill pill--agent">Analysis</span>
+            <span style={{ fontSize: 12, color: 'var(--fg-3)', fontFamily: 'var(--font-mono)' }}>Review before use</span>
           </div>
           <div className="text">"{analysis.summary}"</div>
         </div>
@@ -61,7 +61,7 @@ export default function AgentResponse({ analysis, account, type }: Props) {
           <div className="r-card-title">
             <IconTrendDown size={16} style={{ color: 'var(--critical-fg)' }} />
             Monthly Active Users
-            <span className="count">5 mo · trailing</span>
+            <span className="count">5 sample periods</span>
           </div>
           <MAUChart values={account.mau} />
         </div>
@@ -142,16 +142,12 @@ export default function AgentResponse({ analysis, account, type }: Props) {
       {analysis.recommendation && (
         <div className="recommend">
           <div className="meta">
-            <span className="pill pill--agent">✦ Agent Recommended</span>
-            <span style={{ fontSize: 11, color: 'var(--fg-3)', fontFamily: 'var(--font-mono)' }}>priority · P0 · 48h SLA</span>
+            <span className="pill pill--agent">Suggested next step</span>
+            <span style={{ fontSize: 11, color: 'var(--fg-3)', fontFamily: 'var(--font-mono)' }}>Human validation required</span>
           </div>
           <div className="title">"{analysis.recommendation.title}"</div>
           <div className="desc">{analysis.recommendation.description}</div>
-          <div className="actions">
-            <button className="btn btn--critical">{analysis.recommendation.cta || 'View Action Plan'} →</button>
-            <button className="btn btn--secondary">Snooze · 24h</button>
-            <span className="arr-saved">est. ARR saved · ${(account.arr / 1000).toFixed(0)}K</span>
-          </div>
+          <p style={{ marginTop: 12, color: 'var(--fg-2)', fontSize: 13 }}>Suggestion only. No action scheduled and no revenue outcome estimated.</p>
         </div>
       )}
 
@@ -162,11 +158,7 @@ export default function AgentResponse({ analysis, account, type }: Props) {
             <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--fg-1)' }}>{analysis.subject}</div>
           </div>
           <div className="email-body">{analysis.body}</div>
-          <div style={{ display: 'flex', gap: 8, padding: '0 18px 18px' }}>
-            <button className="btn btn--primary">Send via Gmail</button>
-            <button className="btn btn--secondary">Edit draft</button>
-            <button className="btn btn--ghost">Regenerate</button>
-          </div>
+          <p style={{ padding: '0 18px 18px', color: 'var(--fg-2)', fontSize: 13 }}>Example draft only. Sending and mailbox connections are not available in this demo.</p>
         </div>
       )}
     </div>
