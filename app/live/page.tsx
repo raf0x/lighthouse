@@ -48,6 +48,28 @@ function fmtClock(seconds: number) {
   return `${String(Math.floor(seconds / 60)).padStart(2, '0')}:${String(seconds % 60).padStart(2, '0')}`;
 }
 
+
+/** Stable, bounded lightning geometry for the phone-sized network only. */
+function electricPath(agent: Agent, phase: number, amplitude = 16) {
+  const x0 = agent.x * 10;
+  const y0 = agent.y * 6.2;
+  const dx = 500 - x0;
+  const dy = 310 - y0;
+  const distance = Math.hypot(dx, dy) || 1;
+  const normalX = -dy / distance;
+  const normalY = dx / distance;
+  let path = `M ${x0} ${y0}`;
+  for (let index = 1; index <= 12; index += 1) {
+    const t = index / 13;
+    const taper = Math.sin(Math.PI * t);
+    const offset = Math.sin(index * 2.43 + phase) * amplitude * taper;
+    const x = x0 + dx * t + normalX * offset;
+    const y = y0 + dy * t + normalY * offset;
+    path += ` L ${x.toFixed(1)} ${y.toFixed(1)}`;
+  }
+  return path + ' L 500 310';
+}
+
 function Network({ active, visited, selected, onSelect, reduced, paused, caseAgents, reviewed, story, inspecting, sampleScore }: {
   active: AgentId; visited: AgentId[]; selected: AgentId | null; onSelect: (agent: AgentId | null) => void; reduced: boolean; paused: boolean; caseAgents: AgentId[]; reviewed: boolean; story: ReturnType<typeof getStory>; inspecting: boolean; sampleScore: number;
 }) {
@@ -55,6 +77,9 @@ function Network({ active, visited, selected, onSelect, reduced, paused, caseAge
   const eventIndex = story.events.findIndex(event => event.agent === selectedAgent.id);
   const detail = story.events[eventIndex];
   const nextRole = story.events[eventIndex + 1];
+  const activeRole = positions[active];
+  const lightningFrames = [0, 1.6, 3.5, 0].map(phase => electricPath(activeRole, phase));
+  const lightningValues = lightningFrames.join(';');
   const detailRef = React.useRef<HTMLElement>(null);
   React.useLayoutEffect(() => {
     if (!selected || !detailRef.current) return;
@@ -90,11 +115,22 @@ function Network({ active, visited, selected, onSelect, reduced, paused, caseAge
             <stop offset="1" stopColor="#65a5e8" stopOpacity=".09" />
           </linearGradient>
         </defs>
+        <g className={styles.mobileTesla} aria-hidden="true">
+          <path className={styles.electricAura} stroke={activeRole.color} d={lightningFrames[0]}>
+            {!reduced && <animate attributeName="d" values={lightningValues} dur=".42s" repeatCount="indefinite" />}
+          </path>
+          <path className={styles.electricBeam} d={lightningFrames[0]}>
+            {!reduced && <animate attributeName="d" values={lightningValues} dur=".42s" repeatCount="indefinite" />}
+          </path>
+          <path className={styles.electricCore} d={lightningFrames[0]}>
+            {!reduced && <animate attributeName="d" values={lightningValues} dur=".42s" repeatCount="indefinite" />}
+          </path>
+        </g>
         {agents.map(agent => {
           const x = agent.x * 10; const y = agent.y * 6.2;
           const isActive = active === agent.id;
           if (!isActive) return null;
-          return <g key={agent.id}>
+          return <g key={agent.id} className={styles.desktopSpoke}>
             <path d={`M500 310 Q${(500 + x) / 2} ${(310 + y) / 2 - 30} ${x} ${y}`}
               fill="none" stroke={isActive ? agent.color : 'url(#wire)'} strokeWidth={isActive ? 2.6 : 1.2}
               strokeDasharray={isActive ? 'none' : '3 8'} opacity={isActive ? .9 : .7} />
@@ -126,7 +162,7 @@ function Network({ active, visited, selected, onSelect, reduced, paused, caseAge
           key={agent.id}
           type="button"
           className={`${styles.agent} ${isActive ? styles.agentActive : ''} ${!inCase ? styles.agentOutsideCase : ''} ${selected === agent.id ? styles.agentSelected : ''}`}
-          style={{ left: `clamp(92px, ${agent.x}%, calc(100% - 92px))`, top: `clamp(60px, ${agent.y}%, calc(100% - 60px))`, ['--agent-color' as string]: agent.color } as React.CSSProperties}
+          style={{ left: `clamp(var(--node-inset), ${agent.x}%, calc(100% - var(--node-inset)))`, top: `clamp(min(var(--node-inset), 60px), ${agent.y}%, calc(100% - min(var(--node-inset), 60px)))`, ['--agent-color' as string]: agent.color } as React.CSSProperties}
           aria-pressed={selected === agent.id} onClick={() => onSelect(selected === agent.id ? null : agent.id)}
           aria-label={`${agent.name}, ${roleLabel(agent)}, ${isActive ? (agent.id === 'harbor' ? (reviewed ? 'reviewed locally' : 'awaiting human review') : paused ? 'paused on this step' : 'simulating') : isVisited ? 'completed' : (caseAgents.includes(agent.id) ? 'up next in this case' : 'not used in this case')}. View details`}
         >
@@ -283,9 +319,29 @@ export default function LiveDashboard() {
             <section className={styles.instrumentStage} aria-labelledby="networkTitle">
               <div className={styles.stageHeadline}>
                 <div>
-                  <span className={styles.stageMicro}>CURRENT CASE STEP <strong>{stage + 1}</strong> / 6</span>
-                  <h3 id="networkTitle">{current.title}</h3>
-                  <p>{account.name} · {stage === 5 ? 'Human decision · nothing sent' : `Stage ${stage + 1} of 6 · scripted handoff`}</p>
+                  <span className={styles.stageMicro}>
+                    <span className={styles.desktopMicro}>CURRENT CASE STEP <strong>{stage + 1}</strong> / 6</span>
+                    <span className={styles.phoneMicro}>
+                      <strong className={styles.phoneAgentsLabel}>AI AGENTS</strong>
+                      <span className={styles.phoneAgentsContext}>
+                        <span className={styles.phoneAgentsMeta}>7 simulated specialists · Harbor is human</span>
+                        <span className={styles.phoneStepInline}>Step {stage + 1} / 6</span>
+                      </span>
+                    </span>
+                  </span>
+                  <h3 id="networkTitle">
+                    <span className={styles.eventTitle}>{current.title}</span>
+                    <span className={styles.agentTitle} aria-live="polite" aria-atomic="true">
+                      <span className={styles.agentTitleDot} style={{ backgroundColor: positions[active].color }} aria-hidden="true" />
+                      {positions[active].name} · {roleLabel(positions[active])}
+                    </span>
+                  </h3>
+                  <p>
+                    <span className={styles.desktopSub}>{account.name} · {stage === 5 ? 'Human decision · nothing sent' : `Stage ${stage + 1} of 6 · scripted handoff`}</span>
+                    <span className={styles.phoneSub}>
+                      {active === 'harbor' ? 'A person decides. Nothing is sent.' : `${current.title}. A person reviews at Harbor.`}
+                    </span>
+                  </p>
                 </div>
                 <span className={styles.stageStatus}><span className={styles.liveDot} />{playing ? 'Playing' : 'Paused'}</span>
               </div>
@@ -326,9 +382,32 @@ export default function LiveDashboard() {
                 <details className={styles.offCaseDetails}><summary>Other specialists in the network</summary><p>{agents.filter(agent => !scene.events.some(event => event.agent === agent.id)).map(agent => agent.name).join(' · ') || 'Every specialist has a stage in this case.'}</p></details>
               </div>
               <div className={styles.stageFooter}>
-                <span>{selectedAgent ? `Inspecting ${positions[selectedAgent].name} · ${getStory(inspectionCase ?? activeCase).account.name}` : `Following ${positions[active].name}`}</span>
+                <span className={styles.desktopFollowing}>{selectedAgent ? `Inspecting ${positions[selectedAgent].name} · ${getStory(inspectionCase ?? activeCase).account.name}` : `Following ${positions[active].name}`}</span>
                 {selectedAgent && <button type="button" onClick={() => inspectAgent(null)}>Return to live stage</button>}
                 <span className={styles.stageFootnote}>Tour now: {account.name}</span>
+                <div className={styles.phoneCast} aria-label="Specialists in this fictional case">
+                  <ol className={styles.phoneCastList}>
+                    {scene.events.map((event, index) => {
+                      const role = positions[event.agent];
+                      return <li key={event.agent}>
+                        <button
+                          type="button"
+                          data-playing={active === event.agent}
+                          data-selected={selectedAgent === event.agent && inspectionCase === activeCase}
+                          data-human={event.agent === 'harbor'}
+                          aria-pressed={selectedAgent === event.agent && inspectionCase === activeCase}
+                          aria-label={`Inspect ${role.name}, ${roleLabel(role)}, stage ${index + 1}. Playback continues.`}
+                          onClick={() => inspectAgent(selectedAgent === event.agent && inspectionCase === activeCase ? null : event.agent)}
+                        >
+                          <span className={styles.phoneCastNumber}>{index + 1}</span>
+                          <span>{role.name}{event.agent === 'harbor' && <span className={styles.phoneHumanLabel}> · human</span>}</span>
+                        </button>
+                      </li>;
+                    })}
+                  </ol>
+                  <p className={styles.phoneIdle}>Idle · {agents.filter(role => !scene.events.some(event => event.agent === role.id)).map(role => role.name).join(' · ')}</p>
+                  {selectedAgent && <p className={styles.phoneInspectionState}>Inspecting {positions[selectedAgent].name} · {getStory(inspectionCase ?? activeCase).account.name}. Tour now: {account.name}.</p>}
+                </div>
               </div>
             </section>
             <aside className={styles.instrumentRail} aria-label="Account and decision context">
