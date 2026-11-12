@@ -1446,3 +1446,45 @@
     border-top:1px solid var(--line);
   }
 }
+
+
+/* Phone-only hierarchy: make the agents' identity unmistakable. */
+@media(max-width:699px){
+  .stageHeadline .phoneMicro{
+    display:flex;
+    flex-direction:column;
+    align-items:flex-start;
+    gap:4px;
+    letter-spacing:normal;
+  }
+  .stageHeadline .phoneAgentsLabel{
+    display:inline-flex;
+    align-items:center;
+    gap:8px;
+    font-family:var(--font-geist),Geist,system-ui,sans-serif;
+    font-size:16px;
+    font-weight:800;
+    line-height:1.15;
+    letter-spacing:.075em;
+    color:#087e78;
+  }
+  .stageHeadline .phoneAgentsLabel::before{
+    content:"";
+    width:3px;
+    height:15px;
+    flex:none;
+    border-radius:2px;
+    background:currentColor;
+  }
+  .stageHeadline .phoneAgentsContext{
+    display:block;
+    font-size:11px;
+    font-weight:500;
+    line-height:1.45;
+    letter-spacing:0;
+    color:var(--muted);
+  }
+  .shell[data-mode="dark"] .stageHeadline .phoneAgentsLabel{
+    color:#6fe2cd;
+  }
+}
