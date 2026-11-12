@@ -799,3 +799,6 @@
  .compactMeta strong{font-size:12px}
  .compactMeta small{font-size:9px}
 }
+
+/* The portfolio embed is network-first and does not repeat the account selector. */
+.shell[data-embed="true"] .compactStories{display:none}
