@@ -255,23 +255,46 @@ export default function LiveDashboard() {
               <label className={styles.speedControl}>Speed<select value={speed} onChange={e => setSpeed(Number(e.target.value))} aria-label="Simulation speed"><option value={1}>1×</option><option value={2}>2×</option><option value={4}>4×</option></select></label>
             </div>
           </div>
-          <section className={styles.accountStories} aria-label="Fictional account stories">
-            <div className={styles.storyHeading}><div><strong>{pinnedAccount ? 'Following ' + account.name : 'Portfolio tour'}</strong><p>{pinnedAccount ? 'This account repeats at your chosen speed. Selecting an agent never stops playback.' : 'Three fictional accounts rotate automatically. Click an account card to follow its story.'}</p></div>{pinnedAccount && <button onClick={() => chooseAccount(null)}>Resume portfolio tour</button>}</div>
-            <div className={styles.storyCards}>{caseIds.map(id => { const item = getStory(id); return <button key={id} className={styles.storyCard} style={{["--account-color" as string]: accountIdentity[id].color} as React.CSSProperties} aria-pressed={pinnedAccount === id} data-current={activeCase === id} onClick={() => chooseAccount(id)}><span className={styles.accountIdentity}><span className={styles.accountBadge} aria-hidden="true">{accountIdentity[id].code}</span>{item.account.name}</span><strong style={{color: bandColor(healthBand(item.score))}}>{item.score}<small>/100 · {bandLabel(item.score)}</small></strong><span>{item.label} · ${(item.account.arr / 1000).toFixed(0)}K ARR</span><small>{pinnedAccount === id ? '✓ FOLLOWING · REPEATING' : activeCase === id ? 'NOW PLAYING · CLICK TO FOLLOW' : 'FOLLOW THIS ACCOUNT →'}</small></button>; })}</div>
-            <div className={styles.storyContext}><span><span className={styles.accountBadge} aria-hidden="true">{identity.code}</span> NOW: {account.name} · {scene.label}</span><Link href={`/?account=${account.id}`}>Open account details →</Link></div>
-            <dl className={styles.accountKpis}>
-              <div data-concern={identity.concerns.includes('seats')} data-primary-concern={identity.concerns.includes('seats')}><dt>SEATS ACTIVE</dt><dd>{scene.utilization}% <small>{account.seats_active}/{account.seats_total} seats</small></dd>{identity.concerns.includes('seats') && <span>Scenario concern</span>}</div>
-              <div data-concern={identity.concerns.includes('nps')}><dt>NPS</dt><dd>{account.nps}</dd>{identity.concerns.includes('nps') && <span>Scenario concern</span>}</div>
-              <div data-concern={identity.concerns.includes('tickets')}><dt>SUPPORT TICKETS · SAMPLE 30 DAYS</dt><dd>{account.tickets_30d}</dd>{identity.concerns.includes('tickets') && <span>Scenario concern</span>}</div>
-            </dl>
-            <p className={styles.concernNote}>{identity.rationale} Emphasis is specific to this fictional story, not a universal threshold.</p>
+          <section className={styles.compactStories} aria-label="Fictional account stories">
+            <div className={styles.compactStoryHeader}>
+              <div>
+                <strong>{pinnedAccount ? 'Following ' + account.name : 'Portfolio tour'}</strong>
+                <p>{pinnedAccount ? 'This fictional account repeats. Agent inspection never pauses playback.' : 'Three fictional accounts rotate automatically. Select one to follow its story.'}</p>
+              </div>
+              {pinnedAccount && <button type="button" className={styles.resumeTour} onClick={() => chooseAccount(null)}>Resume tour</button>}
+            </div>
+            <div className={styles.compactSelectors}>
+              {caseIds.map(id => {
+                const item = getStory(id);
+                return <button key={id} type="button" className={styles.compactSelector} style={{["--account-color" as string]: accountIdentity[id].color} as React.CSSProperties} data-current={activeCase === id} aria-pressed={pinnedAccount === id} onClick={() => chooseAccount(id)} aria-label={`Follow ${item.account.name}, sample health ${item.score} of 100, ${bandLabel(item.score)}`}>
+                  <span className={styles.compactAccountName}><span className={styles.compactIdentity} aria-hidden="true" />{item.account.name}</span>
+                  <span className={styles.compactAccountScore}><strong>{item.score}</strong><small>/100 · {bandLabel(item.score)}</small></span>
+                  <span className={styles.compactAccountStatus}>{pinnedAccount === id ? 'Following · repeating' : activeCase === id ? 'Now playing · select to follow' : 'Select to follow'}</span>
+                </button>;
+              })}
+            </div>
+            <div className={styles.focusSummary}>
+              <div className={styles.focusSummaryHeading}>
+                <div>
+                  <span className={styles.focusEyebrow}>CURRENT FICTIONAL CASE</span>
+                  <h3>{account.name} <span>· {scene.label}</span></h3>
+                </div>
+                <Link href={`/?account=${account.id}`}>Open account details →</Link>
+              </div>
+              <dl className={styles.focusSignals}>
+                <div data-concern={identity.concerns.includes('seats')}><dt>Seats active</dt><dd>{scene.utilization}%</dd><small>{account.seats_active}/{account.seats_total} seats</small></div>
+                <div data-concern={identity.concerns.includes('nps')}><dt>NPS</dt><dd>{account.nps}</dd><small>{identity.concerns.includes('nps') ? 'Scenario concern' : 'Sample value'}</small></div>
+                <div data-concern={identity.concerns.includes('tickets')}><dt>Support tickets</dt><dd>{account.tickets_30d}</dd><small>Sample 30 days</small></div>
+              </dl>
+              <p className={styles.focusContext}>{identity.rationale} Emphasis belongs to this fictional story, not a universal threshold.</p>
+            </div>
+            <div className={styles.compactMeta} aria-label="Portfolio simulation summary">
+              <span>Portfolio ARR <strong>${(totalArr / 1_000_000).toFixed(2)}M</strong> <small>fictional · eight accounts</small></span>
+              <span>CURRENT CASE STEP <strong>{stage + 1}</strong> <small>of 6 steps</small></span>
+              <span>CASES IN TOUR <strong>{caseIds.length}</strong> <small>fictional</small></span>
+              <span>ACTIONS TO REVIEW <strong>{queueCount}</strong> <small>human gate · nothing sent</small></span>
+            </div>
           </section>
-          <div className={styles.metrics} aria-label="Simulated portfolio metrics">
-            <div className={styles.metric}><span>PORTFOLIO ARR</span><div><strong>${(totalArr / 1_000_000).toFixed(2)}M</strong><span className={styles.metricTiny}>FICTIONAL</span></div><small className={styles.metricCaption}>Sum of eight sample account records</small></div>
-            <div className={styles.metric}><span>CURRENT CASE STEP</span><div><strong>{stage + 1}</strong><span className={styles.metricUp}><ArrowUpRight size={13}/> OF 6 STEPS</span></div><small className={styles.metricCaption}>Five simulated stages, then a human decision</small></div>
-            <div className={styles.metric}><span>CASES IN TOUR</span><div><strong>{caseIds.length}</strong><span className={styles.metricOrange}><Activity size={13}/> FICTIONAL</span></div><small className={styles.metricCaption}>Recovery, value and capacity stories</small></div>
-            <div className={styles.metric}><span>ACTIONS TO REVIEW</span><div><strong>{queueCount}</strong><span className={styles.metricBlue}><ShieldCheck size={13}/> HUMAN GATE</span></div><small className={styles.metricCaption}>{queueCount ? "Ready to review below. Nothing sent." : "Reviews are local to this page session"}</small></div>
-          </div>
           <div className={styles.mainGrid}>
             <section className={styles.networkPanel} aria-labelledby="networkTitle">
               <div className={styles.panelHeading}><div><span className={styles.panelOverline}><span>7 SIMULATED AI AGENTS</span> / <span>1 HUMAN GATE</span></span><h3 id="networkTitle">Intelligence network</h3></div><span className={styles.activeTag}><span className={styles.liveDot}/> {stage === 5 ? 'HUMAN REVIEW' : playing ? 'SIMULATING' : 'PAUSED'}</span></div>
