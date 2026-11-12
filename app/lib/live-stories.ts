@@ -3,6 +3,11 @@ import { accounts, calculateHealthScore } from './lighthouse';
 export type AgentId = 'beacon' | 'undertow' | 'waypoint' | 'current' | 'relay' | 'aperture' | 'dispatch' | 'harbor';
 export const caseIds = ['ACC003', 'ACC007', 'ACC008'] as const;
 export type CaseId = typeof caseIds[number];
+export const accountIdentity: Record<CaseId, { color: string; code: string; concerns: ('seats' | 'nps' | 'tickets')[]; rationale: string }> = {
+  ACC003: { color: '#8b5cf6', code: 'VH', concerns: ['seats', 'nps', 'tickets'], rationale: 'This adoption-recovery story flags low seat use, NPS 28 and support load alongside a 22% usage decline.' },
+  ACC007: { color: '#df9637', code: 'HR', concerns: ['seats'], rationale: 'This value-recovery story focuses on 480 inactive seats and a 12% usage decline.' },
+  ACC008: { color: '#279ab5', code: 'CE', concerns: [], rationale: 'This capacity-discovery story highlights strong adoption; expansion remains a hypothesis to validate.' },
+};
 export type StoryEvent = { agent: AgentId; title: string; description: string; input: string; output: string };
 export function isCaseId(value: string | null): value is CaseId {
   return caseIds.some(id => id === value);

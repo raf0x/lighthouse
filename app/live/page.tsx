@@ -11,7 +11,7 @@ import {
 import type { LucideIcon } from 'lucide-react';
 import { accounts, calculateHealthScore } from '@/app/lib/lighthouse';
 import styles from './live.module.css';
-import { caseIds, getStory, isCaseId, type CaseId, type AgentId } from '@/app/lib/live-stories';
+import { caseIds, getStory, isCaseId, accountIdentity, type CaseId, type AgentId } from '@/app/lib/live-stories';
 
 type Agent = { id: AgentId; name: string; role: string; color: string; x: number; y: number; icon: LucideIcon };
 
@@ -115,7 +115,7 @@ function Network({ active, visited, selected, onSelect, reduced, paused, caseAge
       <section className={styles.networkDetail} aria-label="Selected role details" onKeyDown={e => { if (e.key === 'Escape') onSelect(null); }}>
         <div className={styles.detailHeading}>
           <span className={styles.detailDot} style={{ background: selectedAgent.color }} />
-          <span><small>{inspecting ? "INSPECTING" : "FOLLOWING CURRENT STAGE"} · {story.account.name}</small><strong>{selectedAgent.name} · {roleLabel(selectedAgent)}</strong><small>{roleDetails[selectedAgent.id].purpose} · {inspecting ? 'Pinned inspection; playback continues' : selectedAgent.id === 'harbor' ? (reviewed ? 'Reviewed locally' : 'Human review step') : paused ? 'Paused on this step' : 'Scripted stage'}</small></span>
+          <span><small><span className={styles.inspectionBadge} style={{borderColor: accountIdentity[story.account.id as CaseId].color}}>{accountIdentity[story.account.id as CaseId].code}</span> {inspecting ? "INSPECTING" : "FOLLOWING CURRENT STAGE"} · {story.account.name}</small><strong>{selectedAgent.name} · {roleLabel(selectedAgent)}</strong><small>{roleDetails[selectedAgent.id].purpose} · {inspecting ? 'Pinned inspection; playback continues' : selectedAgent.id === 'harbor' ? (reviewed ? 'Reviewed locally' : 'Human review step') : paused ? 'Paused on this step' : 'Scripted stage'}</small></span>
           {selected && <button onClick={() => onSelect(null)} aria-label="Follow active role">×</button>}
         </div>
         <dl className={styles.roleFacts}>
@@ -153,7 +153,7 @@ export default function LiveDashboard() {
   }, []);
   const [tick, setTick] = React.useState(0);
   const [playing, setPlaying] = React.useState(true);
-  const [speed, setSpeed] = React.useState(3);
+  const [speed, setSpeed] = React.useState(2);
   const [theme, setTheme] = React.useState<'light' | 'dark'>('light');
   const [selectedAgent, setSelectedAgent] = React.useState<AgentId | null>(null);
   const [approved, setApproved] = React.useState(false);
@@ -165,6 +165,7 @@ export default function LiveDashboard() {
   const activeCase = pinnedAccount ?? caseIds[cycle % caseIds.length];
   const scene = getStory(activeCase);
   const account = scene.account;
+  const identity = accountIdentity[activeCase];
   const current = scene.events[stage];
   const visible = scene.events.slice(0, stage + 1).map((event, sequence) => ({ event, sequence })).reverse();
   const visited = scene.events.slice(0, stage).map(e => e.agent);
@@ -208,7 +209,7 @@ export default function LiveDashboard() {
   const queueCount = stage === 5 && !approved ? 1 : 0;
   const chartValues = account.mau;
   return (
-    <main className={styles.shell} data-paused={!playing} data-mode={theme} data-embed={embedded ? "true" : undefined}>
+    <main className={styles.shell} style={{["--account-color" as string]: identity.color} as React.CSSProperties} data-paused={!playing} data-mode={theme} data-embed={embedded ? "true" : undefined}>
       <div className={styles.ambient} aria-hidden="true" />
       <div className={styles.frame}>
         <header className={styles.topbar}>
@@ -238,13 +239,19 @@ export default function LiveDashboard() {
               <label className={styles.selectWrap}>Account <ChevronDown size={12} aria-hidden="true" /><select value={pinnedAccount ?? "tour"} onChange={e => chooseAccount(isCaseId(e.target.value) ? e.target.value : null)} aria-label="Choose account or portfolio tour"><option value="tour">Portfolio tour</option>{caseIds.map(id => <option value={id} key={id}>{getStory(id).account.name}</option>)}</select></label>
               <button type="button" onClick={() => setPlaying(v => !v)} aria-label={playing ? 'Pause simulation' : 'Play simulation'} className={styles.controlButton}>{playing ? <Pause size={15} fill="currentColor" /> : <Play size={15} fill="currentColor" />}<span>{playing ? 'Pause' : 'Play'}</span></button>
               
-              <label className={styles.speedControl}>Speed<select value={speed} onChange={e => setSpeed(Number(e.target.value))} aria-label="Simulation speed"><option value={1}>1×</option><option value={2}>2×</option><option value={3}>3×</option><option value={4}>4×</option></select></label>
+              <label className={styles.speedControl}>Speed<select value={speed} onChange={e => setSpeed(Number(e.target.value))} aria-label="Simulation speed"><option value={1}>1×</option><option value={2}>2×</option><option value={4}>4×</option></select></label>
             </div>
           </div>
           <section className={styles.accountStories} aria-label="Fictional account stories">
-            <div className={styles.storyHeading}><div><strong>{pinnedAccount ? 'Following ' + account.name : 'Portfolio tour'}</strong><p>{pinnedAccount ? 'This account repeats at your chosen speed. Selecting an agent never stops playback.' : 'Three fictional accounts rotate automatically. Select an account to follow its story.'}</p></div>{pinnedAccount && <button onClick={() => chooseAccount(null)}>Resume portfolio tour</button>}</div>
-            <div className={styles.storyCards}>{caseIds.map(id => { const item = getStory(id); return <button key={id} className={styles.storyCard} aria-pressed={pinnedAccount === id} data-current={activeCase === id} onClick={() => chooseAccount(id)}><span>{item.account.name}</span><strong>{item.score}<small>/100 health</small></strong><span>{item.label} · ${(item.account.arr / 1000).toFixed(0)}K ARR</span><small>{activeCase === id ? 'NOW PLAYING' : 'FOLLOW THIS ACCOUNT'}</small></button>; })}</div>
-            <div className={styles.storyContext}><span>NOW: {account.name} · {scene.label}</span><span>{scene.utilization}% seats active · NPS {account.nps} · {account.tickets_30d} support tickets</span><Link href={`/?account=${account.id}`}>Open account details →</Link></div>
+            <div className={styles.storyHeading}><div><strong>{pinnedAccount ? 'Following ' + account.name : 'Portfolio tour'}</strong><p>{pinnedAccount ? 'This account repeats at your chosen speed. Selecting an agent never stops playback.' : 'Three fictional accounts rotate automatically. Click an account card to follow its story.'}</p></div>{pinnedAccount && <button onClick={() => chooseAccount(null)}>Resume portfolio tour</button>}</div>
+            <div className={styles.storyCards}>{caseIds.map(id => { const item = getStory(id); return <button key={id} className={styles.storyCard} style={{["--account-color" as string]: accountIdentity[id].color} as React.CSSProperties} aria-pressed={pinnedAccount === id} data-current={activeCase === id} onClick={() => chooseAccount(id)}><span className={styles.accountIdentity}><span className={styles.accountBadge} aria-hidden="true">{accountIdentity[id].code}</span>{item.account.name}</span><strong>{item.score}<small>/100 health</small></strong><span>{item.label} · ${(item.account.arr / 1000).toFixed(0)}K ARR</span><small>{pinnedAccount === id ? '✓ FOLLOWING · REPEATING' : activeCase === id ? 'NOW PLAYING · CLICK TO FOLLOW' : 'FOLLOW THIS ACCOUNT →'}</small></button>; })}</div>
+            <div className={styles.storyContext}><span><span className={styles.accountBadge} aria-hidden="true">{identity.code}</span> NOW: {account.name} · {scene.label}</span><Link href={`/?account=${account.id}`}>Open account details →</Link></div>
+            <dl className={styles.accountKpis}>
+              <div data-concern={identity.concerns.includes('seats')}><dt>SEATS ACTIVE</dt><dd>{scene.utilization}% <small>{account.seats_active}/{account.seats_total} seats</small></dd>{identity.concerns.includes('seats') && <span>! Scenario concern</span>}</div>
+              <div data-concern={identity.concerns.includes('nps')}><dt>NPS</dt><dd>{account.nps}</dd>{identity.concerns.includes('nps') && <span>! Scenario concern</span>}</div>
+              <div data-concern={identity.concerns.includes('tickets')}><dt>SUPPORT TICKETS · SAMPLE 30 DAYS</dt><dd>{account.tickets_30d}</dd>{identity.concerns.includes('tickets') && <span>! Scenario concern</span>}</div>
+            </dl>
+            <p className={styles.concernNote}>{identity.rationale} Emphasis is specific to this fictional story, not a universal threshold.</p>
           </section>
           <div className={styles.metrics} aria-label="Simulated portfolio metrics">
             <div className={styles.metric}><span>PORTFOLIO ARR</span><div><strong>${(totalArr / 1_000_000).toFixed(2)}M</strong><span className={styles.metricTiny}>FICTIONAL</span></div><Sparkline values={[55, 57, 56, 62, 67, 66, 71, 75]}/></div>
@@ -256,6 +263,7 @@ export default function LiveDashboard() {
             <section className={styles.networkPanel} aria-labelledby="networkTitle">
               <div className={styles.panelHeading}><div><span className={styles.panelOverline}>7 SIMULATED AI AGENTS / 1 HUMAN GATE</span><h3 id="networkTitle">Intelligence network</h3></div><span className={styles.activeTag}><span className={styles.liveDot}/> {stage === 5 ? 'HUMAN REVIEW' : playing ? 'SIMULATING' : 'PAUSED'}</span></div>
               <p className={styles.demoDisclosure}>Scripted demo · fictional accounts · no outreach sent</p>
+              <p className={styles.interactionHint}>Select an agent or numbered stage to inspect its evidence. Playback keeps moving.</p>
               <ol className={styles.caseRoute} aria-label="Current case handoff path">{scene.events.map((event, index) => <li key={event.agent} aria-current={stage === index ? 'step' : undefined}><button type="button" onClick={() => inspectAgent(event.agent)}><span>{index + 1}</span>{positions[event.agent].name}{index < scene.events.length - 1 && <ArrowRight size={11} aria-hidden="true" />}</button></li>)}</ol>
               <Network active={active} visited={visited} selected={selectedAgent} onSelect={inspectAgent} reduced={motionReduced || !playing} paused={!playing} caseAgents={scene.events.map(event => event.agent)} reviewed={approved} story={getStory(inspectionCase ?? activeCase)} inspecting={selectedAgent !== null} />
               <div className={styles.networkFooter}><span><span className={styles.legendDot} style={{background:'#5adbc4'}}/> Current step</span><span><span className={styles.legendDot} style={{background:'#7084a5'}}/> Other roles</span><span className={styles.nowProcessing}>NOW / {positions[active].name.toUpperCase()} · {current.title}</span></div>

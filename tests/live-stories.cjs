@@ -7,7 +7,7 @@ require.extensions['.ts'] = (module, filename) => {
     compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 },
   }).outputText, filename);
 };
-const { caseIds, getStory, isCaseId } = require('../app/lib/live-stories.ts');
+const { caseIds, getStory, isCaseId, accountIdentity } = require('../app/lib/live-stories.ts');
 const { accounts, calculateHealthScore } = require('../app/lib/lighthouse.ts');
 assert.equal(accounts.reduce((sum, account) => sum + account.arr, 0), 4010000);
 assert.equal(isCaseId('unrelated'), false);
@@ -26,3 +26,10 @@ for (const id of caseIds) {
   assert.ok(story.usage.includes(story.account.mau.join(' → ')));
 }
 console.log('PASS: all 3 stories match source accounts, scores, utilization, trends, six-stage handoffs, and $4.01M portfolio.');
+
+assert.equal(new Set(caseIds.map(id => accountIdentity[id].color)).size, 3);
+assert.equal(new Set(caseIds.map(id => accountIdentity[id].code)).size, 3);
+assert.deepEqual(accountIdentity.ACC003.concerns, ['seats', 'nps', 'tickets']);
+assert.deepEqual(accountIdentity.ACC007.concerns, ['seats']);
+assert.deepEqual(accountIdentity.ACC008.concerns, []);
+console.log('PASS: distinct account identities and explicitly scoped scenario concerns.');
