@@ -48,8 +48,8 @@ function fmtClock(seconds: number) {
   return `${String(Math.floor(seconds / 60)).padStart(2, '0')}:${String(seconds % 60).padStart(2, '0')}`;
 }
 
-function Network({ active, visited, selected, onSelect, reduced, paused, caseAgents, reviewed, story, inspecting }: {
-  active: AgentId; visited: AgentId[]; selected: AgentId | null; onSelect: (agent: AgentId | null) => void; reduced: boolean; paused: boolean; caseAgents: AgentId[]; reviewed: boolean; story: ReturnType<typeof getStory>; inspecting: boolean;
+function Network({ active, visited, selected, onSelect, reduced, paused, caseAgents, reviewed, story, inspecting, sampleScore }: {
+  active: AgentId; visited: AgentId[]; selected: AgentId | null; onSelect: (agent: AgentId | null) => void; reduced: boolean; paused: boolean; caseAgents: AgentId[]; reviewed: boolean; story: ReturnType<typeof getStory>; inspecting: boolean; sampleScore: number;
 }) {
   const selectedAgent = selected ? positions[selected] : positions[active];
   const eventIndex = story.events.findIndex(event => event.agent === selectedAgent.id);
@@ -67,6 +67,16 @@ function Network({ active, visited, selected, onSelect, reduced, paused, caseAge
             <stop offset="1" stopColor="#65a5e8" stopOpacity=".09" />
           </linearGradient>
         </defs>
+        <polyline
+          points={caseAgents.map(id => `${positions[id].x * 10},${positions[id].y * 6.2}`).join(' ')}
+          fill="none" stroke="#7aafb6" strokeWidth="2" strokeOpacity=".24"
+          strokeDasharray="4 9" strokeLinecap="round" strokeLinejoin="round"
+        />
+        <polyline
+          points={caseAgents.slice(0, visited.length + 1).map(id => `${positions[id].x * 10},${positions[id].y * 6.2}`).join(' ')}
+          fill="none" stroke="#54b4ad" strokeWidth="2.5" strokeOpacity=".75"
+          strokeLinecap="round" strokeLinejoin="round"
+        />
         {agents.map(agent => {
           const x = agent.x * 10; const y = agent.y * 6.2;
           const isActive = active === agent.id;
@@ -84,15 +94,15 @@ function Network({ active, visited, selected, onSelect, reduced, paused, caseAge
         <circle cx="500" cy="310" r="116" fill="none" stroke="#93b8ff" strokeOpacity=".08" />
       </svg>
       <div className={styles.beaconSweep} aria-hidden="true"><span className={styles.beaconBeam} /></div>
-      <div className={styles.centerHub} aria-label="Lighthouse intelligence core">
+      <div className={styles.centerHub} aria-label={`Lighthouse. Current fictional account health score ${sampleScore} out of 100`}>
         <div className={styles.hubOrbit} aria-hidden="true" />
         <div className={styles.hubGlyph} aria-hidden="true">
           <span className={styles.logoHalo} />
           <Image src="/lighthouse-logo.svg" alt="" width={68} height={68} priority className={styles.lighthouseMark} />
           <span className={styles.logoGlint} />
         </div>
-        <strong>LIGHTHOUSE</strong>
-        <small>INTELLIGENCE CORE</small>
+        <strong className={styles.hubScore}>{sampleScore}<small>/100</small></strong>
+        <small>SAMPLE HEALTH</small>
       </div>
       {agents.map(agent => {
         const isActive = agent.id === active;
@@ -239,7 +249,7 @@ export default function LiveDashboard() {
       <div className={styles.ambient} aria-hidden="true" />
       <div className={styles.frame}>
         <header className={styles.topbar}>
-          <Link href="/" className={styles.brand} aria-label="Lighthouse home"><span className={styles.brandIcon}>✳</span><span>LIGHTHOUSE<small>ACCOUNT INTELLIGENCE</small></span></Link>
+          <Link href="/" className={styles.brand} aria-label="Lighthouse home"><span className={styles.brandIcon}><Image src="/lighthouse-logo.svg" alt="" width={27} height={27} /></span><span>LIGHTHOUSE<small>ACCOUNT INTELLIGENCE</small></span></Link>
           <nav className={styles.nav} aria-label="Dashboard navigation">
             <Link href="/live" aria-current="page" className={styles.navDashboard}>Dashboard</Link><Link href="/" className={styles.navAccounts}>Accounts</Link><Link href="/portfolio" className={styles.navPortfolio}>Portfolio</Link>
           </nav>
@@ -278,7 +288,7 @@ export default function LiveDashboard() {
                 <span className={styles.stageStatus}><span className={styles.liveDot} />{playing ? 'Playing' : 'Paused'}</span>
               </div>
               <div className={styles.desktopNetwork}>
-                <Network active={active} visited={visited} selected={selectedAgent} onSelect={inspectAgent} reduced={motionReduced || !playing} paused={!playing} caseAgents={scene.events.map(event => event.agent)} reviewed={approved} story={getStory(inspectionCase ?? activeCase)} inspecting={selectedAgent !== null} />
+                <Network active={active} visited={visited} selected={selectedAgent} onSelect={inspectAgent} reduced={motionReduced || !playing} paused={!playing} caseAgents={scene.events.map(event => event.agent)} reviewed={approved} story={getStory(inspectionCase ?? activeCase)} inspecting={selectedAgent !== null} sampleScore={scene.score} />
               </div>
               <div className={styles.mobileJourney} aria-label="Ordered account case stages">
                 <ol className={styles.mobileSteps}>
@@ -350,7 +360,7 @@ export default function LiveDashboard() {
           </details>
           <p className={styles.instrumentEthics}>Seven simulated specialist roles and one human review gate. Fictional data, scripted stages, no autonomous monitoring, and no customer outreach.</p>
         </section>
-        <footer className={styles.footer}><p><span>✳</span> LIGHTHOUSE / INDEPENDENT PRODUCT EXPERIMENT</p><p>All activity is a scripted demonstration using fictional data. The agents shown are visual roles, not independently running AI services. No CRM connection, real-time monitoring or customer outreach.</p></footer>
+        <footer className={styles.footer}><p>LIGHTHOUSE / INDEPENDENT PRODUCT EXPERIMENT</p><p>Fictional accounts and scripted specialist roles. No CRM connection, autonomous monitoring or customer outreach.</p></footer>
       </div>
       {!embedded && showFloatingControls && (
         <div className={styles.floatingControls} role="group" aria-label="Floating simulation controls">
