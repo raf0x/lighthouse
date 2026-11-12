@@ -321,7 +321,10 @@ export default function LiveDashboard() {
                 <div>
                   <span className={styles.stageMicro}>
                     <span className={styles.desktopMicro}>CURRENT CASE STEP <strong>{stage + 1}</strong> / 6</span>
-                    <span className={styles.phoneMicro}>SIMULATED AI SPECIALISTS · STEP <strong>{stage + 1}</strong> / 6</span>
+                    <span className={styles.phoneMicro}>
+                      <strong className={styles.phoneAgentsLabel}>AI AGENTS</strong>
+                      <span className={styles.phoneAgentsContext}>7 simulated specialists · Harbor is human · Step {stage + 1} / 6</span>
+                    </span>
                   </span>
                   <h3 id="networkTitle">
                     <span className={styles.eventTitle}>{current.title}</span>
