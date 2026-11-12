@@ -57,6 +57,18 @@ function Network({ active, visited, selected, onSelect, reduced, paused, caseAge
   const nextRole = story.events[eventIndex + 1];
   return (
     <>
+      {selected && <section className={styles.networkDetail} aria-label="Selected role details" onKeyDown={e => { if (e.key === 'Escape') onSelect(null); }}>
+        <div className={styles.detailHeading}>
+          <span className={styles.detailDot} style={{ background: selectedAgent.color }} />
+          <span><small><span className={styles.inspectionBadge} style={{borderColor: accountIdentity[story.account.id as CaseId].color}}>{accountIdentity[story.account.id as CaseId].code}</span> {inspecting ? "INSPECTING" : "FOLLOWING CURRENT STAGE"} · {story.account.name}</small><strong>{selectedAgent.name} · {roleLabel(selectedAgent)}</strong><small>{roleDetails[selectedAgent.id].purpose} · {inspecting ? 'Pinned inspection; playback continues' : selectedAgent.id === 'harbor' ? (reviewed ? 'Reviewed locally' : 'Human review step') : paused ? 'Paused on this step' : 'Scripted stage'}</small></span>
+          {selected && <button onClick={() => onSelect(null)} aria-label="Follow active role">×</button>}
+        </div>
+        <dl className={styles.roleFacts}>
+          <div><dt>ACCOUNT EVIDENCE</dt><dd>{detail?.input ?? "This role is not used in this account’s story."}</dd></div>
+          <div><dt>{inspecting ? "PREVIEW OF SCRIPTED OUTPUT" : "SCRIPTED OUTPUT"}</dt><dd>{detail?.output ?? roleDetails[selectedAgent.id].purpose}</dd></div>
+          <div><dt>NEXT HANDOFF</dt><dd>{detail ? nextRole ? positions[nextRole.agent].name + " · " + nextRole.title : "Human decision only. Nothing sent." : "Not in this case."}</dd></div>
+        </dl>
+      </section>}
     <div className={styles.network}>
       <div className={styles.networkGrid} aria-hidden="true" />
       <svg className={styles.wires} viewBox="0 0 1000 620" preserveAspectRatio="none" aria-hidden="true">
@@ -67,16 +79,6 @@ function Network({ active, visited, selected, onSelect, reduced, paused, caseAge
             <stop offset="1" stopColor="#65a5e8" stopOpacity=".09" />
           </linearGradient>
         </defs>
-        <polyline
-          points={caseAgents.map(id => `${positions[id].x * 10},${positions[id].y * 6.2}`).join(' ')}
-          fill="none" stroke="#7aafb6" strokeWidth="2" strokeOpacity=".24"
-          strokeDasharray="4 9" strokeLinecap="round" strokeLinejoin="round"
-        />
-        <polyline
-          points={caseAgents.slice(0, visited.length + 1).map(id => `${positions[id].x * 10},${positions[id].y * 6.2}`).join(' ')}
-          fill="none" stroke="#54b4ad" strokeWidth="2.5" strokeOpacity=".75"
-          strokeLinecap="round" strokeLinejoin="round"
-        />
         {agents.map(agent => {
           const x = agent.x * 10; const y = agent.y * 6.2;
           const isActive = active === agent.id;
@@ -101,7 +103,7 @@ function Network({ active, visited, selected, onSelect, reduced, paused, caseAge
           <Image src="/lighthouse-logo.svg" alt="" width={68} height={68} priority className={styles.lighthouseMark} />
           <span className={styles.logoGlint} />
         </div>
-        <strong className={styles.hubScore}>{sampleScore}<small>/100</small></strong>
+        <strong className={styles.hubScore} style={{color:bandColor(healthBand(sampleScore))}}>{sampleScore}<small>/100</small></strong>
         <small>SAMPLE HEALTH</small>
       </div>
       {agents.map(agent => {
@@ -119,22 +121,12 @@ function Network({ active, visited, selected, onSelect, reduced, paused, caseAge
         >
           <span className={styles.agentSymbol} aria-hidden="true"><span className={styles.agentGlyphAura} /><AgentIcon size={28} strokeWidth={1.9} /></span>
           <span className={styles.agentText}><strong>{agent.name}</strong><small>{roleLabel(agent)}</small></span>
+          {inCase && <span className={styles.agentSequence} aria-hidden="true">{caseAgents.indexOf(agent.id) + 1}</span>}
           <span className={styles.agentStatus} aria-hidden="true">{isActive ? <span className={styles.statusPulse} /> : isVisited ? '✓' : '·'}</span>
         </button>;
       })}
     </div>
-      {selected && <section className={styles.networkDetail} aria-label="Selected role details" onKeyDown={e => { if (e.key === 'Escape') onSelect(null); }}>
-        <div className={styles.detailHeading}>
-          <span className={styles.detailDot} style={{ background: selectedAgent.color }} />
-          <span><small><span className={styles.inspectionBadge} style={{borderColor: accountIdentity[story.account.id as CaseId].color}}>{accountIdentity[story.account.id as CaseId].code}</span> {inspecting ? "INSPECTING" : "FOLLOWING CURRENT STAGE"} · {story.account.name}</small><strong>{selectedAgent.name} · {roleLabel(selectedAgent)}</strong><small>{roleDetails[selectedAgent.id].purpose} · {inspecting ? 'Pinned inspection; playback continues' : selectedAgent.id === 'harbor' ? (reviewed ? 'Reviewed locally' : 'Human review step') : paused ? 'Paused on this step' : 'Scripted stage'}</small></span>
-          {selected && <button onClick={() => onSelect(null)} aria-label="Follow active role">×</button>}
-        </div>
-        <dl className={styles.roleFacts}>
-          <div><dt>ACCOUNT EVIDENCE</dt><dd>{detail?.input ?? "This role is not used in this account’s story."}</dd></div>
-          <div><dt>{inspecting ? "PREVIEW OF SCRIPTED OUTPUT" : "SCRIPTED OUTPUT"}</dt><dd>{detail?.output ?? roleDetails[selectedAgent.id].purpose}</dd></div>
-          <div><dt>NEXT HANDOFF</dt><dd>{detail ? nextRole ? positions[nextRole.agent].name + " · " + nextRole.title : "Human decision only. Nothing sent." : "Not in this case."}</dd></div>
-        </dl>
-      </section>}
+
     </>
   );
 }
@@ -166,8 +158,6 @@ export default function LiveDashboard() {
   const [playing, setPlaying] = React.useState(true);
   const [speed, setSpeed] = React.useState(2);
   const [theme, setTheme] = React.useState<'light' | 'dark'>('light');
-  const [showFloatingControls, setShowFloatingControls] = React.useState(false);
-  const controlsRef = React.useRef<HTMLDivElement>(null);
   const [selectedAgent, setSelectedAgent] = React.useState<AgentId | null>(null);
   const [readyCases, setReadyCases] = React.useState<Partial<Record<CaseId, string>>>({});
   const [playbackRun, setPlaybackRun] = React.useState(0);
@@ -205,17 +195,6 @@ export default function LiveDashboard() {
     update();
     media.addEventListener('change', update);
     return () => media.removeEventListener('change', update);
-  }, []);
-
-  React.useEffect(() => {
-    const element = controlsRef.current;
-    if (!element || !('IntersectionObserver' in window)) return;
-    // The dock replaces, rather than competes with, the inline controls.
-    const observer = new IntersectionObserver(([entry]) => {
-      setShowFloatingControls(!entry.isIntersecting && entry.boundingClientRect.bottom < 0);
-    }, { threshold: 0 });
-    observer.observe(element);
-    return () => observer.disconnect();
   }, []);
 
   React.useEffect(() => {
@@ -271,7 +250,7 @@ export default function LiveDashboard() {
         <section className={styles.dashboard} aria-label="Live intelligence simulation">
           <div className={styles.dashboardTop}>
             <div className={styles.titleGroup}><h2>Intelligence network</h2><span className={styles.currentCaseTag}>{account.name} · {scene.label}</span></div>
-            <div className={styles.controls} ref={controlsRef}>
+            <div className={styles.controls}>
               <label className={styles.selectWrap}>Account <ChevronDown size={12} aria-hidden="true" /><select value={pinnedAccount ?? "tour"} onChange={e => chooseAccount(isCaseId(e.target.value) ? e.target.value : null)} aria-label="Choose account or portfolio tour"><option value="tour">Portfolio tour</option>{caseIds.map(id => <option value={id} key={id}>{getStory(id).account.name}</option>)}</select></label>
               <button type="button" onClick={() => setPlaying(v => !v)} aria-label={playing ? 'Pause simulation' : 'Play simulation'} className={styles.controlButton}>{playing ? <Pause size={15} fill="currentColor" /> : <Play size={15} fill="currentColor" />}<span>{playing ? 'Pause' : 'Play'}</span></button>
               <label className={styles.speedControl}>Speed<select value={speed} onChange={e => setSpeed(Number(e.target.value))} aria-label="Simulation speed"><option value={1}>1×</option><option value={2}>2×</option><option value={4}>4×</option></select></label>
@@ -283,7 +262,7 @@ export default function LiveDashboard() {
                 <div>
                   <span className={styles.stageMicro}>CURRENT CASE STEP <strong>{stage + 1}</strong> / 6</span>
                   <h3 id="networkTitle">{current.title}</h3>
-                  <p>{account.name} · {positions[active].name} {active === 'harbor' ? 'awaits a person’s review' : 'is the active scripted specialist'}</p>
+                  <p>{account.name} · {stage === 5 ? 'Human decision · nothing sent' : `Stage ${stage + 1} of 6 · scripted handoff`}</p>
                 </div>
                 <span className={styles.stageStatus}><span className={styles.liveDot} />{playing ? 'Playing' : 'Paused'}</span>
               </div>
@@ -370,48 +349,6 @@ export default function LiveDashboard() {
         </section>
         <footer className={styles.footer}><p>LIGHTHOUSE / INDEPENDENT PRODUCT EXPERIMENT</p><p>Fictional accounts and scripted specialist roles. No CRM connection, autonomous monitoring or customer outreach.</p></footer>
       </div>
-      {!embedded && showFloatingControls && (
-        <div className={styles.floatingControls} role="group" aria-label="Floating simulation controls">
-          <label className={styles.floatingSelect}>
-            <span className={styles.srOnly}>Account or portfolio tour</span>
-            <select
-              value={pinnedAccount ?? 'tour'}
-              onChange={e => chooseAccount(isCaseId(e.target.value) ? e.target.value : null)}
-              aria-label="Floating account or portfolio tour selection"
-            >
-              <option value="tour">Portfolio tour</option>
-              {caseIds.map(id => <option key={id} value={id}>{getStory(id).account.name}</option>)}
-            </select>
-            <ChevronDown size={13} aria-hidden="true" />
-          </label>
-          <button
-            type="button"
-            className={styles.floatingPlay}
-            onClick={() => setPlaying(value => !value)}
-            aria-label={playing ? 'Pause simulation' : 'Play simulation'}
-            title={playing ? 'Pause simulation' : 'Play simulation'}
-          >
-            {playing ? <Pause size={17} fill="currentColor" aria-hidden="true" /> : <Play size={17} fill="currentColor" aria-hidden="true" />}
-            <span className={styles.floatingPlayLabel}>{playing ? 'Pause' : 'Play'}</span>
-          </button>
-          <label className={styles.floatingSpeed}>
-            <span className={styles.srOnly}>Simulation speed</span>
-            <select value={speed} onChange={e => setSpeed(Number(e.target.value))} aria-label="Floating simulation speed">
-              <option value={1}>1×</option><option value={2}>2×</option><option value={4}>4×</option>
-            </select>
-          </label>
-          <span className={styles.floatingDivider} aria-hidden="true" />
-          <button
-            type="button"
-            className={styles.floatingTheme}
-            onClick={switchTheme}
-            aria-label={theme === 'light' ? 'Switch to dark mode' : 'Switch to light mode'}
-            title={theme === 'light' ? 'Switch to dark mode' : 'Switch to light mode'}
-          >
-            {theme === 'light' ? <Moon size={18} aria-hidden="true" /> : <Sun size={18} aria-hidden="true" />}
-          </button>
-        </div>
-      )}
     </main>
   );
 }
