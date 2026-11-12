@@ -1072,3 +1072,9 @@
  .mobileStep[data-human="true"]{background:color-mix(in srgb,var(--panel) 85%,#d8ded3);border-style:solid}
  .mobileStep[data-human="true"] .mobileStepTitle strong{color:var(--ink)}
 }
+
+
+.mobilePinned{margin-top:8px;padding:12px;border:1px solid #4a9f9a;border-radius:7px;background:var(--panel);color:var(--ink)}
+.mobilePinned strong{font-size:12px}
+.mobilePinned p{font-size:11px;color:var(--muted);line-height:1.6;margin:7px 0}
+.mobilePinned button{min-height:40px;padding:8px 10px;background:var(--deep);color:var(--ink);border:1px solid var(--line);border-radius:5px;font-size:12px}
