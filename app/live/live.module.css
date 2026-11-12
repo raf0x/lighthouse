@@ -501,3 +501,9 @@
 }
 .metricCaption{display:block;margin-top:12px;font-size:10px;line-height:1.5;color:var(--muted)}
 .shell[data-embed="true"] .controls{display:flex}
+.demoDisclosure{margin:0 18px 12px;font-size:11px;line-height:1.5;color:var(--muted)}
+.caseRoute{display:flex;flex-wrap:wrap;gap:5px;margin:0 18px 8px;padding:0;list-style:none}
+.caseRoute button{display:flex;gap:5px;align-items:center;border:1px solid var(--line);border-radius:5px;padding:6px;background:transparent;color:var(--muted);font-size:10px}
+.caseRoute button span{font-size:9px;opacity:.8}
+.caseRoute li[aria-current="step"] button{color:var(--ink);border-color:#4ba99a;background:rgba(74,181,157,.13)}
+@media(max-width:600px){.caseRoute button{min-height:36px}.agentText small{font-size:9px;word-break:normal}.agentSymbol{width:34px;height:34px;flex-basis:34px}}

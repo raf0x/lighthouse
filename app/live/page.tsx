@@ -78,8 +78,8 @@ function fmtClock(seconds: number) {
   return `${String(Math.floor(seconds / 60)).padStart(2, '0')}:${String(seconds % 60).padStart(2, '0')}`;
 }
 
-function Network({ active, visited, selected, onSelect, reduced, paused }: {
-  active: AgentId; visited: AgentId[]; selected: AgentId | null; onSelect: (agent: AgentId | null) => void; reduced: boolean; paused: boolean;
+function Network({ active, visited, selected, onSelect, reduced, paused, caseAgents, reviewed }: {
+  active: AgentId; visited: AgentId[]; selected: AgentId | null; onSelect: (agent: AgentId | null) => void; reduced: boolean; paused: boolean; caseAgents: AgentId[]; reviewed: boolean;
 }) {
   const selectedAgent = selected ? positions[selected] : positions[active];
   return (
@@ -130,7 +130,7 @@ function Network({ active, visited, selected, onSelect, reduced, paused }: {
           className={`${styles.agent} ${isActive ? styles.agentActive : ''} ${selected === agent.id ? styles.agentSelected : ''}`}
           style={{ left: `clamp(80px, ${agent.x}%, calc(100% - 80px))`, top: `${agent.y}%`, ['--agent-color' as string]: agent.color } as React.CSSProperties}
           aria-pressed={selected === agent.id} onClick={() => onSelect(selected === agent.id ? null : agent.id)}
-          aria-label={`${agent.name}, ${roleLabel(agent)}, ${isActive ? (agent.id === 'harbor' ? 'awaiting human review' : paused ? 'paused on this step' : 'simulating') : isVisited ? 'completed' : 'not in the current step'}. View details`}
+          aria-label={`${agent.name}, ${roleLabel(agent)}, ${isActive ? (agent.id === 'harbor' ? (reviewed ? 'reviewed locally' : 'awaiting human review') : paused ? 'paused on this step' : 'simulating') : isVisited ? 'completed' : (caseAgents.includes(agent.id) ? 'up next in this case' : 'not used in this case')}. View details`}
         >
           <span className={styles.agentSymbol} aria-hidden="true"><span className={styles.agentGlyphAura} /><AgentIcon size={28} strokeWidth={1.9} /></span>
           <span className={styles.agentText}><strong>{agent.name}</strong><small>{roleLabel(agent)}</small></span>
@@ -142,7 +142,7 @@ function Network({ active, visited, selected, onSelect, reduced, paused }: {
       <section className={styles.networkDetail} aria-label="Selected role details" onKeyDown={e => { if (e.key === 'Escape') onSelect(null); }}>
         <div className={styles.detailHeading}>
           <span className={styles.detailDot} style={{ background: selectedAgent.color }} />
-          <span><strong>{selectedAgent.name} · {roleLabel(selectedAgent)}</strong><small>{roleDetails[selectedAgent.id].purpose} · {active === selectedAgent.id ? (selectedAgent.id === 'harbor' ? 'Human review step' : paused ? 'Paused on this step' : 'Simulating this step') : visited.includes(selectedAgent.id) ? 'Step completed' : 'Not active in this step'}</small></span>
+          <span><strong>{selectedAgent.name} · {roleLabel(selectedAgent)}</strong><small>{roleDetails[selectedAgent.id].purpose} · {active === selectedAgent.id ? (selectedAgent.id === 'harbor' ? (reviewed ? 'Reviewed locally' : 'Human review step') : paused ? 'Paused on this step' : 'Simulating this step') : visited.includes(selectedAgent.id) ? 'Step completed' : (caseAgents.includes(selectedAgent.id) ? 'Up next in this case' : 'Not used in this case')}</small></span>
           {selected && <button onClick={() => onSelect(null)} aria-label="Follow active role">×</button>}
         </div>
         <dl className={styles.roleFacts}>
@@ -265,7 +265,9 @@ export default function LiveDashboard() {
           <div className={styles.mainGrid}>
             <section className={styles.networkPanel} aria-labelledby="networkTitle">
               <div className={styles.panelHeading}><div><span className={styles.panelOverline}>7 SIMULATED AI AGENTS / 1 HUMAN GATE</span><h3 id="networkTitle">Intelligence network</h3></div><span className={styles.activeTag}><span className={styles.liveDot}/> {stage === 5 ? 'HUMAN REVIEW' : playing ? 'SIMULATING' : 'PAUSED'}</span></div>
-              <Network active={active} visited={visited} selected={selectedAgent} onSelect={id => { setSelectedAgent(id); if (id) setPlaying(false); }} reduced={motionReduced || !playing} paused={!playing} />
+              <p className={styles.demoDisclosure}>Scripted demo · fictional accounts · no outreach sent</p>
+              <ol className={styles.caseRoute} aria-label="Current case handoff path">{scene.events.map((event, index) => <li key={event.agent} aria-current={stage === index ? 'step' : undefined}><button type="button" onClick={() => { setSelectedAgent(event.agent); setPlaying(false); }}><span>{index + 1}</span>{positions[event.agent].name}{index < scene.events.length - 1 && <ArrowRight size={11} aria-hidden="true" />}</button></li>)}</ol>
+              <Network active={active} visited={visited} selected={selectedAgent} onSelect={id => { setSelectedAgent(id); if (id) setPlaying(false); }} reduced={motionReduced || !playing} paused={!playing} caseAgents={scene.events.map(event => event.agent)} reviewed={approved} />
               <div className={styles.networkFooter}><span><span className={styles.legendDot} style={{background:'#5adbc4'}}/> Current step</span><span><span className={styles.legendDot} style={{background:'#7084a5'}}/> Other roles</span><span className={styles.nowProcessing}>NOW / {positions[active].name.toUpperCase()} · {current.title}</span></div>
             </section>
             <aside className={styles.sidePanel}>
