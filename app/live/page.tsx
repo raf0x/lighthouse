@@ -294,7 +294,7 @@ export default function LiveDashboard() {
                 <ol className={styles.mobileSteps}>
                   {scene.events.map((event,index) => {
                     const agent = positions[event.agent];
-                    const opened = selectedAgent ? selectedAgent === event.agent && inspectionCase === activeCase : stage === index;
+                    const opened = stage === index || (selectedAgent === event.agent && inspectionCase === activeCase);
                     const Icon = agent.icon;
                     return <li key={event.agent} className={styles.mobileStep} data-current={stage === index} data-open={opened} data-human={event.agent === 'harbor'}>
                       <button type="button" className={styles.mobileStepButton} onClick={() => inspectAgent(selectedAgent === event.agent ? null : event.agent)} aria-expanded={opened} aria-label={`Inspect step ${index + 1}, ${agent.name}: ${event.title}`}>
