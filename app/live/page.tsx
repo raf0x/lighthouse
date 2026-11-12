@@ -156,6 +156,8 @@ export default function LiveDashboard() {
   const [playing, setPlaying] = React.useState(true);
   const [speed, setSpeed] = React.useState(2);
   const [theme, setTheme] = React.useState<'light' | 'dark'>('light');
+  const [showFloatingControls, setShowFloatingControls] = React.useState(false);
+  const controlsRef = React.useRef<HTMLDivElement>(null);
   const [selectedAgent, setSelectedAgent] = React.useState<AgentId | null>(null);
   const [readyCases, setReadyCases] = React.useState<Partial<Record<CaseId, string>>>({});
   const [playbackRun, setPlaybackRun] = React.useState(0);
@@ -193,6 +195,17 @@ export default function LiveDashboard() {
     update();
     media.addEventListener('change', update);
     return () => media.removeEventListener('change', update);
+  }, []);
+
+  React.useEffect(() => {
+    const element = controlsRef.current;
+    if (!element || !('IntersectionObserver' in window)) return;
+    // The dock replaces, rather than competes with, the inline controls.
+    const observer = new IntersectionObserver(([entry]) => {
+      setShowFloatingControls(!entry.isIntersecting && entry.boundingClientRect.bottom < 0);
+    }, { threshold: 0 });
+    observer.observe(element);
+    return () => observer.disconnect();
   }, []);
 
   React.useEffect(() => {
@@ -248,7 +261,7 @@ export default function LiveDashboard() {
         <section className={styles.dashboard} aria-label="Live intelligence simulation">
           <div className={styles.dashboardTop}>
             <div className={styles.titleGroup}><span className={styles.sectionIndex}>01 / CONTROL ROOM</span><h2>Portfolio command</h2></div>
-            <div className={styles.controls}>
+            <div className={styles.controls} ref={controlsRef}>
               <label className={styles.selectWrap}>Account <ChevronDown size={12} aria-hidden="true" /><select value={pinnedAccount ?? "tour"} onChange={e => chooseAccount(isCaseId(e.target.value) ? e.target.value : null)} aria-label="Choose account or portfolio tour"><option value="tour">Portfolio tour</option>{caseIds.map(id => <option value={id} key={id}>{getStory(id).account.name}</option>)}</select></label>
               <button type="button" onClick={() => setPlaying(v => !v)} aria-label={playing ? 'Pause simulation' : 'Play simulation'} className={styles.controlButton}>{playing ? <Pause size={15} fill="currentColor" /> : <Play size={15} fill="currentColor" />}<span>{playing ? 'Pause' : 'Play'}</span></button>
               
@@ -339,6 +352,48 @@ export default function LiveDashboard() {
         </section>
         <footer className={styles.footer}><p><span>✳</span> LIGHTHOUSE / INDEPENDENT PRODUCT EXPERIMENT</p><p>All activity is a scripted demonstration using fictional data. The agents shown are visual roles, not independently running AI services. No CRM connection, real-time monitoring or customer outreach.</p></footer>
       </div>
+      {!embedded && showFloatingControls && (
+        <div className={styles.floatingControls} role="group" aria-label="Floating simulation controls">
+          <label className={styles.floatingSelect}>
+            <span className={styles.srOnly}>Account or portfolio tour</span>
+            <select
+              value={pinnedAccount ?? 'tour'}
+              onChange={e => chooseAccount(isCaseId(e.target.value) ? e.target.value : null)}
+              aria-label="Floating account or portfolio tour selection"
+            >
+              <option value="tour">Portfolio tour</option>
+              {caseIds.map(id => <option key={id} value={id}>{getStory(id).account.name}</option>)}
+            </select>
+            <ChevronDown size={13} aria-hidden="true" />
+          </label>
+          <button
+            type="button"
+            className={styles.floatingPlay}
+            onClick={() => setPlaying(value => !value)}
+            aria-label={playing ? 'Pause simulation' : 'Play simulation'}
+            title={playing ? 'Pause simulation' : 'Play simulation'}
+          >
+            {playing ? <Pause size={17} fill="currentColor" aria-hidden="true" /> : <Play size={17} fill="currentColor" aria-hidden="true" />}
+            <span className={styles.floatingPlayLabel}>{playing ? 'Pause' : 'Play'}</span>
+          </button>
+          <label className={styles.floatingSpeed}>
+            <span className={styles.srOnly}>Simulation speed</span>
+            <select value={speed} onChange={e => setSpeed(Number(e.target.value))} aria-label="Floating simulation speed">
+              <option value={1}>1×</option><option value={2}>2×</option><option value={4}>4×</option>
+            </select>
+          </label>
+          <span className={styles.floatingDivider} aria-hidden="true" />
+          <button
+            type="button"
+            className={styles.floatingTheme}
+            onClick={switchTheme}
+            aria-label={theme === 'light' ? 'Switch to dark mode' : 'Switch to light mode'}
+            title={theme === 'light' ? 'Switch to dark mode' : 'Switch to light mode'}
+          >
+            {theme === 'light' ? <Moon size={18} aria-hidden="true" /> : <Sun size={18} aria-hidden="true" />}
+          </button>
+        </div>
+      )}
     </main>
   );
 }
