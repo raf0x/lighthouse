@@ -125,9 +125,6 @@ function Network({ active, visited, selected, onSelect, reduced, paused, caseAge
           <path className={styles.electricCore} d={lightningFrames[0]}>
             {!reduced && <animate attributeName="d" values={lightningValues} dur=".42s" repeatCount="indefinite" />}
           </path>
-          {!reduced && <circle className={styles.electricParticle} r="5" fill="#ffffff">
-            <animateMotion dur="1.1s" repeatCount="indefinite" path={lightningFrames[0]} />
-          </circle>}
         </g>
         {agents.map(agent => {
           const x = agent.x * 10; const y = agent.y * 6.2;
