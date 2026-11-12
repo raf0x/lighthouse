@@ -48,15 +48,38 @@ function fmtClock(seconds: number) {
   return `${String(Math.floor(seconds / 60)).padStart(2, '0')}:${String(seconds % 60).padStart(2, '0')}`;
 }
 
-function Network({ active, visited, selected, onSelect, reduced, paused, caseAgents, reviewed, story, inspecting }: {
-  active: AgentId; visited: AgentId[]; selected: AgentId | null; onSelect: (agent: AgentId | null) => void; reduced: boolean; paused: boolean; caseAgents: AgentId[]; reviewed: boolean; story: ReturnType<typeof getStory>; inspecting: boolean;
+function Network({ active, visited, selected, onSelect, reduced, paused, caseAgents, reviewed, story, inspecting, sampleScore }: {
+  active: AgentId; visited: AgentId[]; selected: AgentId | null; onSelect: (agent: AgentId | null) => void; reduced: boolean; paused: boolean; caseAgents: AgentId[]; reviewed: boolean; story: ReturnType<typeof getStory>; inspecting: boolean; sampleScore: number;
 }) {
   const selectedAgent = selected ? positions[selected] : positions[active];
   const eventIndex = story.events.findIndex(event => event.agent === selectedAgent.id);
   const detail = story.events[eventIndex];
   const nextRole = story.events[eventIndex + 1];
+  const detailRef = React.useRef<HTMLElement>(null);
+  React.useLayoutEffect(() => {
+    if (!selected || !detailRef.current) return;
+    const rect = detailRef.current.getBoundingClientRect();
+    // Account for the single sticky playback row, without losing the selected explanation.
+    const stickyHeight = document.querySelector<HTMLElement>('[data-live-controls]')?.getBoundingClientRect().height ?? 54;
+    const clearance = stickyHeight + 14;
+    if (rect.top < clearance || rect.bottom > window.innerHeight - 12) {
+      window.scrollBy({ top: rect.top - clearance, behavior: 'auto' });
+    }
+  }, [selected]);
   return (
     <>
+      {selected && <section ref={detailRef} className={styles.networkDetail} aria-label="Selected role details">
+        <div className={styles.detailHeading}>
+          <span className={styles.detailDot} style={{ background: selectedAgent.color }} />
+          <span><small><span className={styles.inspectionBadge} style={{borderColor: accountIdentity[story.account.id as CaseId].color}}>{accountIdentity[story.account.id as CaseId].code}</span> {inspecting ? "INSPECTING" : "FOLLOWING CURRENT STAGE"} · {story.account.name}</small><strong>{selectedAgent.name} · {roleLabel(selectedAgent)}</strong><small>{roleDetails[selectedAgent.id].purpose} · {inspecting ? 'Pinned inspection; playback continues' : selectedAgent.id === 'harbor' ? (reviewed ? 'Reviewed locally' : 'Human review step') : paused ? 'Paused on this step' : 'Scripted stage'}</small></span>
+          {selected && <button onClick={() => onSelect(null)} aria-label="Follow active role">×</button>}
+        </div>
+        <dl className={styles.roleFacts}>
+          <div><dt>ACCOUNT EVIDENCE</dt><dd>{detail?.input ?? "This role is not used in this account’s story."}</dd></div>
+          <div><dt>{inspecting ? "PREVIEW OF SCRIPTED OUTPUT" : "SCRIPTED OUTPUT"}</dt><dd>{detail?.output ?? roleDetails[selectedAgent.id].purpose}</dd></div>
+          <div><dt>NEXT HANDOFF</dt><dd>{detail ? nextRole ? positions[nextRole.agent].name + " · " + nextRole.title : "Human decision only. Nothing sent." : "Not in this case."}</dd></div>
+        </dl>
+      </section>}
     <div className={styles.network}>
       <div className={styles.networkGrid} aria-hidden="true" />
       <svg className={styles.wires} viewBox="0 0 1000 620" preserveAspectRatio="none" aria-hidden="true">
@@ -84,15 +107,15 @@ function Network({ active, visited, selected, onSelect, reduced, paused, caseAge
         <circle cx="500" cy="310" r="116" fill="none" stroke="#93b8ff" strokeOpacity=".08" />
       </svg>
       <div className={styles.beaconSweep} aria-hidden="true"><span className={styles.beaconBeam} /></div>
-      <div className={styles.centerHub} aria-label="Lighthouse intelligence core">
+      <div className={styles.centerHub} aria-label={`Lighthouse. Current fictional account health score ${sampleScore} out of 100`}>
         <div className={styles.hubOrbit} aria-hidden="true" />
         <div className={styles.hubGlyph} aria-hidden="true">
           <span className={styles.logoHalo} />
           <Image src="/lighthouse-logo.svg" alt="" width={68} height={68} priority className={styles.lighthouseMark} />
           <span className={styles.logoGlint} />
         </div>
-        <strong>LIGHTHOUSE</strong>
-        <small>INTELLIGENCE CORE</small>
+        <strong className={styles.hubScore} style={{color:bandColor(healthBand(sampleScore))}}>{sampleScore}<small>/100</small></strong>
+        <small>SAMPLE HEALTH</small>
       </div>
       {agents.map(agent => {
         const isActive = agent.id === active;
@@ -108,23 +131,13 @@ function Network({ active, visited, selected, onSelect, reduced, paused, caseAge
           aria-label={`${agent.name}, ${roleLabel(agent)}, ${isActive ? (agent.id === 'harbor' ? (reviewed ? 'reviewed locally' : 'awaiting human review') : paused ? 'paused on this step' : 'simulating') : isVisited ? 'completed' : (caseAgents.includes(agent.id) ? 'up next in this case' : 'not used in this case')}. View details`}
         >
           <span className={styles.agentSymbol} aria-hidden="true"><span className={styles.agentGlyphAura} /><AgentIcon size={28} strokeWidth={1.9} /></span>
-          <span className={styles.agentText}><strong>{agent.name}</strong><small>{roleLabel(agent)}</small>{!inCase && <small className={styles.outsideCaseLabel}>Not in this case</small>}</span>
+          <span className={styles.agentText}><strong>{agent.name}</strong><small>{roleLabel(agent)}</small></span>
+          {inCase && <span className={styles.agentSequence} aria-hidden="true">{caseAgents.indexOf(agent.id) + 1}</span>}
           <span className={styles.agentStatus} aria-hidden="true">{isActive ? <span className={styles.statusPulse} /> : isVisited ? '✓' : '·'}</span>
         </button>;
       })}
     </div>
-      <section className={styles.networkDetail} aria-label="Selected role details" onKeyDown={e => { if (e.key === 'Escape') onSelect(null); }}>
-        <div className={styles.detailHeading}>
-          <span className={styles.detailDot} style={{ background: selectedAgent.color }} />
-          <span><small><span className={styles.inspectionBadge} style={{borderColor: accountIdentity[story.account.id as CaseId].color}}>{accountIdentity[story.account.id as CaseId].code}</span> {inspecting ? "INSPECTING" : "FOLLOWING CURRENT STAGE"} · {story.account.name}</small><strong>{selectedAgent.name} · {roleLabel(selectedAgent)}</strong><small>{roleDetails[selectedAgent.id].purpose} · {inspecting ? 'Pinned inspection; playback continues' : selectedAgent.id === 'harbor' ? (reviewed ? 'Reviewed locally' : 'Human review step') : paused ? 'Paused on this step' : 'Scripted stage'}</small></span>
-          {selected && <button onClick={() => onSelect(null)} aria-label="Follow active role">×</button>}
-        </div>
-        <dl className={styles.roleFacts}>
-          <div><dt>ACCOUNT EVIDENCE</dt><dd>{detail?.input ?? "This role is not used in this account’s story."}</dd></div>
-          <div><dt>{inspecting ? "PREVIEW OF SCRIPTED OUTPUT" : "SCRIPTED OUTPUT"}</dt><dd>{detail?.output ?? roleDetails[selectedAgent.id].purpose}</dd></div>
-          <div><dt>NEXT HANDOFF</dt><dd>{detail ? nextRole ? positions[nextRole.agent].name + " · " + nextRole.title : "Human decision only. Nothing sent." : "Not in this case."}</dd></div>
-        </dl>
-      </section>
+
     </>
   );
 }
@@ -156,8 +169,6 @@ export default function LiveDashboard() {
   const [playing, setPlaying] = React.useState(true);
   const [speed, setSpeed] = React.useState(2);
   const [theme, setTheme] = React.useState<'light' | 'dark'>('light');
-  const [showFloatingControls, setShowFloatingControls] = React.useState(false);
-  const controlsRef = React.useRef<HTMLDivElement>(null);
   const [selectedAgent, setSelectedAgent] = React.useState<AgentId | null>(null);
   const [readyCases, setReadyCases] = React.useState<Partial<Record<CaseId, string>>>({});
   const [playbackRun, setPlaybackRun] = React.useState(0);
@@ -198,17 +209,6 @@ export default function LiveDashboard() {
   }, []);
 
   React.useEffect(() => {
-    const element = controlsRef.current;
-    if (!element || !('IntersectionObserver' in window)) return;
-    // The dock replaces, rather than competes with, the inline controls.
-    const observer = new IntersectionObserver(([entry]) => {
-      setShowFloatingControls(!entry.isIntersecting && entry.boundingClientRect.bottom < 0);
-    }, { threshold: 0 });
-    observer.observe(element);
-    return () => observer.disconnect();
-  }, []);
-
-  React.useEffect(() => {
     if (!playing) return;
     const id = window.setInterval(() => setTick(previous => previous + 1), 850 / speed);
     return () => window.clearInterval(id);
@@ -226,6 +226,16 @@ export default function LiveDashboard() {
   function inspectAgent(id: AgentId | null) {
     setSelectedAgent(id); setInspectionCase(id ? activeCase : null);
   }
+  React.useEffect(() => {
+    if (!selectedAgent) return;
+    const onEscape = (event: KeyboardEvent) => {
+      if (event.key !== 'Escape') return;
+      setSelectedAgent(null);
+      setInspectionCase(null);
+    };
+    window.addEventListener('keydown', onEscape);
+    return () => window.removeEventListener('keydown', onEscape);
+  }, [selectedAgent]);
   const pendingCases = caseIds.filter(id => readyCases[id] && !reviewedCases[id]);
   const reviewCase = pendingCases.includes(activeCase) ? activeCase : pendingCases[0] ?? activeCase;
   const reviewStory = getStory(reviewCase);
@@ -239,7 +249,7 @@ export default function LiveDashboard() {
       <div className={styles.ambient} aria-hidden="true" />
       <div className={styles.frame}>
         <header className={styles.topbar}>
-          <Link href="/" className={styles.brand} aria-label="Lighthouse home"><span className={styles.brandIcon}>✳</span><span>LIGHTHOUSE<small>ACCOUNT INTELLIGENCE</small></span></Link>
+          <Link href="/" className={styles.brand} aria-label="Lighthouse home"><span className={styles.brandIcon}><Image src="/lighthouse-logo.svg" alt="" width={27} height={27} /></span><span>LIGHTHOUSE<small>ACCOUNT INTELLIGENCE</small></span></Link>
           <nav className={styles.nav} aria-label="Dashboard navigation">
             <Link href="/live" aria-current="page" className={styles.navDashboard}>Dashboard</Link><Link href="/" className={styles.navAccounts}>Accounts</Link><Link href="/portfolio" className={styles.navPortfolio}>Portfolio</Link>
           </nav>
@@ -251,149 +261,117 @@ export default function LiveDashboard() {
             </button>
           </div>
         </header>
-        <div className={styles.intro}>
-          <div><div className={styles.eyebrow}><span className={styles.eyebrowLine} /> THE INTELLIGENCE ROOM <span> / 001</span></div>
-            <h1>See the signals.<br/><em>Before they become surprises.</em></h1>
-            <p>A living view of customer health, opportunities and decisions. Seven simulated AI agents, one human approval gate. Select any role to see its input, output and handoff.</p>
+        <section className={styles.instrumentHeader} aria-label="Dashboard introduction">
+          <div>
+            <h1>See the signals. <em>Before they become surprises.</em></h1>
+            <p>Seven simulated specialists. One human decision. Fictional accounts, scripted handoffs.</p>
           </div>
-          <div className={styles.introRight}><span className={styles.previewTag}>INTERACTIVE PRODUCT DEMO</span><span>Fictional accounts. Scripted intelligence.</span></div>
-        </div>
+          <span className={styles.instrumentDisclosure}>SAMPLE DATA · SCRIPTED DEMO</span>
+        </section>
         <section className={styles.dashboard} aria-label="Live intelligence simulation">
           <div className={styles.dashboardTop}>
-            <div className={styles.titleGroup}><span className={styles.sectionIndex}>01 / CONTROL ROOM</span><h2>Portfolio command</h2></div>
-            <div className={styles.controls} ref={controlsRef}>
+            <div className={styles.titleGroup}><h2>Intelligence network</h2><span className={styles.currentCaseTag}>{account.name} · {scene.label}</span></div>
+          </div>
+          <div className={styles.stickyControls} data-live-controls>
+            <div className={styles.controls}>
               <label className={styles.selectWrap}>Account <ChevronDown size={12} aria-hidden="true" /><select value={pinnedAccount ?? "tour"} onChange={e => chooseAccount(isCaseId(e.target.value) ? e.target.value : null)} aria-label="Choose account or portfolio tour"><option value="tour">Portfolio tour</option>{caseIds.map(id => <option value={id} key={id}>{getStory(id).account.name}</option>)}</select></label>
               <button type="button" onClick={() => setPlaying(v => !v)} aria-label={playing ? 'Pause simulation' : 'Play simulation'} className={styles.controlButton}>{playing ? <Pause size={15} fill="currentColor" /> : <Play size={15} fill="currentColor" />}<span>{playing ? 'Pause' : 'Play'}</span></button>
-              
               <label className={styles.speedControl}>Speed<select value={speed} onChange={e => setSpeed(Number(e.target.value))} aria-label="Simulation speed"><option value={1}>1×</option><option value={2}>2×</option><option value={4}>4×</option></select></label>
             </div>
           </div>
-          <section className={styles.compactStories} aria-label="Fictional account stories">
-            <div className={styles.compactStoryHeader}>
-              <div>
-                <strong>{pinnedAccount ? 'Following ' + account.name : 'Portfolio tour'}</strong>
-                <p>{pinnedAccount ? 'This fictional account repeats. Agent inspection never pauses playback.' : 'Three fictional accounts rotate automatically. Select one to follow its story.'}</p>
-              </div>
-              {pinnedAccount && <button type="button" className={styles.resumeTour} onClick={() => chooseAccount(null)}>Resume tour</button>}
-            </div>
-            <div className={styles.compactSelectors}>
-              {caseIds.map(id => {
-                const item = getStory(id);
-                return <button key={id} type="button" className={styles.compactSelector} style={{["--account-color" as string]: accountIdentity[id].color} as React.CSSProperties} data-current={activeCase === id} aria-pressed={pinnedAccount === id} onClick={() => chooseAccount(id)} aria-label={`Follow ${item.account.name}, sample health ${item.score} of 100, ${bandLabel(item.score)}`}>
-                  <span className={styles.compactAccountName}><span className={styles.compactIdentity} aria-hidden="true" />{item.account.name}</span>
-                  <span className={styles.compactAccountScore}><strong>{item.score}</strong><small>/100 · {bandLabel(item.score)}</small></span>
-                  <span className={styles.compactAccountStatus}>{pinnedAccount === id ? 'Following · repeating' : activeCase === id ? 'Now playing · select to follow' : 'Select to follow'}</span>
-                </button>;
-              })}
-            </div>
-            <div className={styles.focusSummary}>
-              <div className={styles.focusSummaryHeading}>
+          <div className={styles.instrumentGrid}>
+            <section className={styles.instrumentStage} aria-labelledby="networkTitle">
+              <div className={styles.stageHeadline}>
                 <div>
-                  <span className={styles.focusEyebrow}>CURRENT FICTIONAL CASE</span>
-                  <h3>{account.name} <span>· {scene.label}</span></h3>
+                  <span className={styles.stageMicro}>CURRENT CASE STEP <strong>{stage + 1}</strong> / 6</span>
+                  <h3 id="networkTitle">{current.title}</h3>
+                  <p>{account.name} · {stage === 5 ? 'Human decision · nothing sent' : `Stage ${stage + 1} of 6 · scripted handoff`}</p>
                 </div>
-                <Link href={`/?account=${account.id}`}>Open account details →</Link>
+                <span className={styles.stageStatus}><span className={styles.liveDot} />{playing ? 'Playing' : 'Paused'}</span>
               </div>
-              <dl className={styles.focusSignals}>
-                <div data-concern={identity.concerns.includes('seats')}><dt>Seats active</dt><dd>{scene.utilization}%</dd><small>{account.seats_active}/{account.seats_total} seats</small></div>
-                <div data-concern={identity.concerns.includes('nps')}><dt>NPS</dt><dd>{account.nps}</dd><small>{identity.concerns.includes('nps') ? 'Scenario concern' : 'Sample value'}</small></div>
-                <div data-concern={identity.concerns.includes('tickets')}><dt>Support tickets</dt><dd>{account.tickets_30d}</dd><small>Sample 30 days</small></div>
-              </dl>
-              <p className={styles.focusContext}>{identity.rationale} Emphasis belongs to this fictional story, not a universal threshold.</p>
-            </div>
-            <div className={styles.compactMeta} aria-label="Portfolio simulation summary">
-              <span>Portfolio ARR <strong>${(totalArr / 1_000_000).toFixed(2)}M</strong> <small>fictional · eight accounts</small></span>
-              <span>CURRENT CASE STEP <strong>{stage + 1}</strong> <small>of 6 steps</small></span>
-              <span>CASES IN TOUR <strong>{caseIds.length}</strong> <small>fictional</small></span>
-              <span>ACTIONS TO REVIEW <strong>{queueCount}</strong> <small>human gate · nothing sent</small></span>
-            </div>
-          </section>
-          <div className={styles.mainGrid}>
-            <section className={styles.networkPanel} aria-labelledby="networkTitle">
-              <div className={styles.panelHeading}><div><span className={styles.panelOverline}><span>7 SIMULATED AI AGENTS</span> / <span>1 HUMAN GATE</span></span><h3 id="networkTitle">Intelligence network</h3></div><span className={styles.activeTag}><span className={styles.liveDot}/> {stage === 5 ? 'HUMAN REVIEW' : playing ? 'SIMULATING' : 'PAUSED'}</span></div>
-              <p className={styles.demoDisclosure}>Scripted demo · fictional accounts · no outreach sent</p>
-              <p className={styles.interactionHint}>Select an agent or numbered stage to inspect its evidence. Playback keeps moving.</p>
-              <ol className={styles.caseRoute} aria-label="Current case handoff path">{scene.events.map((event, index) => <li key={event.agent} aria-current={stage === index ? 'step' : undefined}><button type="button" onClick={() => inspectAgent(event.agent)}><span>{index + 1}</span>{positions[event.agent].name}{index < scene.events.length - 1 && <ArrowRight size={11} aria-hidden="true" />}</button></li>)}</ol>
-              <Network active={active} visited={visited} selected={selectedAgent} onSelect={inspectAgent} reduced={motionReduced || !playing} paused={!playing} caseAgents={scene.events.map(event => event.agent)} reviewed={approved} story={getStory(inspectionCase ?? activeCase)} inspecting={selectedAgent !== null} />
-              <div className={styles.networkFooter}><span><span className={styles.legendDot} style={{background:'#5adbc4'}}/> Current step</span><span><span className={styles.legendDot} style={{background:'#7084a5'}}/> Other roles</span><span className={styles.nowProcessing}>NOW / {positions[active].name.toUpperCase()} · {current.title}</span></div>
+              <div className={styles.desktopNetwork}>
+                <Network active={active} visited={visited} selected={selectedAgent} onSelect={inspectAgent} reduced={motionReduced || !playing} paused={!playing} caseAgents={scene.events.map(event => event.agent)} reviewed={approved} story={getStory(inspectionCase ?? activeCase)} inspecting={selectedAgent !== null} sampleScore={scene.score} />
+              </div>
+              <div className={styles.mobileJourney} aria-label="Ordered account case stages">
+                <ol className={styles.mobileSteps}>
+                  {scene.events.map((event,index) => {
+                    const agent = positions[event.agent];
+                    const opened = stage === index || (selectedAgent === event.agent && inspectionCase === activeCase);
+                    const Icon = agent.icon;
+                    return <li key={event.agent} className={styles.mobileStep} data-current={stage === index} data-open={opened} data-human={event.agent === 'harbor'}>
+                      <button type="button" className={styles.mobileStepButton} onClick={() => inspectAgent(selectedAgent === event.agent ? null : event.agent)} aria-expanded={opened} aria-label={`Inspect step ${index + 1}, ${agent.name}: ${event.title}`}>
+                        <span className={styles.mobileStepIndex}>{index + 1}</span>
+                        <Icon size={18} aria-hidden="true" />
+                        <span className={styles.mobileStepTitle}><strong>{agent.name}</strong><small>{event.title}</small></span>
+                        {stage === index && <span className={styles.mobileNow}>NOW</span>}
+                        <ChevronDown size={15} className={styles.mobileStepChevron} aria-hidden="true" />
+                      </button>
+                      {opened && <div className={styles.mobileStepBody}>
+                        <p>{event.input}</p>
+                        <small>{index === stage ? 'Scripted output' : 'Scripted stage preview'}</small>
+                        <p>{event.output}</p>
+                        {event.agent === 'harbor' && <p>Human decision only. Nothing is sent.</p>}
+                      </div>}
+                    </li>;
+                  })}
+                </ol>
+                {selectedAgent && inspectionCase && inspectionCase !== activeCase && (
+                  <aside className={styles.mobilePinned} aria-label="Pinned inspection from an earlier account">
+                    <strong>Inspecting {positions[selectedAgent].name} · {getStory(inspectionCase).account.name}</strong>
+                    <p>The live tour has moved to {account.name}. Your inspection stays pinned until you clear it.</p>
+                    <p>{getStory(inspectionCase).events.find(event => event.agent === selectedAgent)?.output ?? 'This role is not part of the pinned case.'}</p>
+                    <button type="button" onClick={() => inspectAgent(null)}>Return to live stage</button>
+                  </aside>
+                )}
+                <details className={styles.offCaseDetails}><summary>Other specialists in the network</summary><p>{agents.filter(agent => !scene.events.some(event => event.agent === agent.id)).map(agent => agent.name).join(' · ') || 'Every specialist has a stage in this case.'}</p></details>
+              </div>
+              <div className={styles.stageFooter}>
+                <span>{selectedAgent ? `Inspecting ${positions[selectedAgent].name} · ${getStory(inspectionCase ?? activeCase).account.name}` : `Following ${positions[active].name}`}</span>
+                {selectedAgent && <button type="button" onClick={() => inspectAgent(null)}>Return to live stage</button>}
+                <span className={styles.stageFootnote}>Tour now: {account.name}</span>
+              </div>
             </section>
-            <aside className={styles.sidePanel}>
-              <section className={styles.feed} aria-labelledby="feedTitle"><div className={styles.panelHeading}><div><span className={styles.panelOverline}>FICTIONAL CASE / SCRIPTED</span><h3 id="feedTitle">Signal activity</h3></div><span className={styles.smallCount}>{String(visible.length).padStart(2,'0')} / 06</span></div>
-                <div className={styles.scenarioNote}><Zap size={14}/><span><strong>{account.name} · Step {stage + 1} of 6</strong><br/>{scene.label} · Fictional snapshot, not live monitoring.</span></div>
-                <ol className={styles.feedList}>{visible.map((entry, reverseIndex) => {
-                  const event = entry.event; const i = entry.sequence; const agent = positions[event.agent];
-                  return <li key={i} className={reverseIndex === 0 ? styles.feedCurrent : ''}><span className={styles.feedTrack}><span style={{background:agent.color}}/></span><div><div className={styles.feedTop}><strong>{agent.name}</strong><time>{fmtClock(i * 4)}</time></div><p>{event.title}</p><small>{event.description}</small></div></li>;
-                })}</ol>
+            <aside className={styles.instrumentRail} aria-label="Account and decision context">
+              <div className={styles.railAccounts}>
+                <div className={styles.railHeading}><strong>Accounts in tour</strong><small>Fictional sample health</small></div>
+                {caseIds.map(id => {
+                  const item = getStory(id);
+                  return <button key={id} type="button" className={styles.railAccount} data-current={activeCase === id} aria-pressed={pinnedAccount === id} onClick={() => chooseAccount(id)}>
+                    <span className={styles.railAccountName}>{item.account.name}<small>{item.label}</small></span>
+                    <span className={styles.railScore} style={{color:bandColor(healthBand(item.score))}}><strong>{item.score}</strong><small>{bandLabel(item.score)}</small></span>
+                  </button>;
+                })}
+                {pinnedAccount && <button type="button" className={styles.railResume} onClick={() => chooseAccount(null)}>Resume portfolio tour</button>}
+              </div>
+              <section className={styles.railSignals} aria-label="Current sample account signals">
+                <div className={styles.railHeading}><strong>{account.name}</strong><Link href={`/?account=${account.id}`}>Account details</Link></div>
+                <dl>
+                  <div><dt>Seats in use</dt><dd>{scene.utilization}%</dd></div>
+                  <div><dt>NPS</dt><dd>{account.nps}</dd></div>
+                  <div><dt>Support tickets</dt><dd>{account.tickets_30d}</dd></div>
+                </dl>
+                <small>Static sample, including tickets over a fictional 30-day period.</small>
               </section>
-              <section className={styles.review} aria-labelledby="reviewTitle">
-                <div className={styles.panelHeading}><div><span className={styles.panelOverline}>HUMAN IN THE LOOP</span><h3 id="reviewTitle">Decision gate</h3></div><ShieldCheck size={17} color="#94b8ff"/></div>
-                <div className={styles.reviewContent}><span className={styles.reviewIcon}>{reviewDone ? <Check size={18}/> : <Clock3 size={18}/>}</span><div><strong>{reviewDone ? 'Marked reviewed' : reviewReady ? (previousPass ? 'Queued from a previous pass' : 'Ready from this pass') : 'Awaiting briefing'}</strong><p>{reviewStory.account.name} · Nothing sent</p></div></div>
-                {reviewReady && <p className={styles.reviewBrief}>{reviewStory.recommendation}</p>}
-                <button className={styles.reviewButton} onClick={() => setReviewedCases(previous => ({...previous, [reviewCase]: true}))} disabled={reviewDone || !reviewReady}>{reviewDone ? 'Reviewed locally · nothing sent' : reviewReady ? 'Mark reviewed · nothing sent' : 'Available after this case'} <ArrowRight size={14}/></button>
-                <p className={styles.reviewHint}>The tour keeps playing. Completed briefs remain available for review; acknowledgements last until you reload.</p>
-              </section>
+              {reviewReady ? <section className={styles.railReview} aria-labelledby="reviewTitle">
+                <div className={styles.railHeading}><strong id="reviewTitle">Human review</strong><small>{queueCount} awaiting</small></div>
+                <p className={styles.reviewProvenance}>{reviewDone ? 'Reviewed locally' : previousPass ? 'Queued from a previous pass' : 'Ready from this pass'}</p>
+                <p className={styles.reviewCaseName}>{reviewStory.account.name}</p>
+                <p className={styles.reviewBrief}>{reviewStory.recommendation}</p>
+                <button type="button" className={styles.reviewButton} onClick={() => setReviewedCases(previous => ({...previous,[reviewCase]:true}))} disabled={reviewDone}>{reviewDone ? 'Reviewed locally · nothing sent' : 'Mark reviewed · nothing sent'} <ArrowRight size={14}/></button>
+              </section> : <div className={styles.railAwaiting}><ShieldCheck size={16} aria-hidden="true" /><span>A person reviews the case after its scripted brief. Nothing is sent.</span></div>}
             </aside>
           </div>
-          <div className={styles.bottomGrid}>
-            <section className={styles.bottomPanel} aria-labelledby="usageTitle">
-              <div className={styles.panelHeading}><div><span className={styles.panelOverline}>FICTIONAL / FIVE SAMPLE PERIODS</span><h3 id="usageTitle">{account.name} · usage</h3></div></div>
-              <div className={styles.usageChart}><Sparkline values={chartValues} color={scene.growth ? 'var(--healthy-fg)' : 'var(--high-fg)'} /></div>
-              <p className={styles.storyCopy}>{scene.usage}</p>
-              <p className={styles.storyCopy}>Recorded contract date: {account.contract_end}. Historical sample field, not a live renewal countdown.</p>
-            </section>
-            <section className={styles.bottomPanel} aria-labelledby="artifactTitle">
-              <div className={styles.panelHeading}><div><span className={styles.panelOverline}>{stage < 4 ? 'PREVIEW OF SCRIPTED OUTPUT' : 'SCRIPTED OUTPUT / NO AI REQUEST'}</span><h3 id="artifactTitle">{account.name} · {scene.growth ? 'discovery question' : 'recovery brief'}</h3></div></div>
-              <p className={styles.storyCopy}>{scene.recommendation}</p>
-              <p className={styles.storyCopy}>{scene.evidence}</p>
-              <Link href={`/?account=${account.id}`} className={styles.accountLink}>Open {account.name} details <ArrowRight size={14}/></Link>
-            </section>
-          </div>
-          <div className={styles.timeline}><div className={styles.timelineTop}><span><span className={styles.liveDot}/> {stage === 5 ? 'CASE AT HUMAN REVIEW' : playing ? 'SCRIPTED CASE PLAYBACK' : 'SIMULATION PAUSED'}</span><span>{pinnedAccount ? "FOLLOWING ACCOUNT" : "PORTFOLIO TOUR"} / {account.name.toUpperCase()}</span><span>{fmtClock(cycleTick)} / {fmtClock(cycleLength)} · STEP {stage + 1} OF 6 · LOOP {cycle + 1}</span></div><div className={styles.timelineTrack} role="progressbar" aria-label="Simulation progress" aria-valuemin={0} aria-valuemax={cycleLength} aria-valuenow={cycleTick}><span style={{width:`${cycleTick/cycleLength*100}%`}}/></div></div>
+          <details className={styles.caseHistory}>
+            <summary>Case history &amp; evidence <span>Explore all six stages and sample usage</span></summary>
+            <div className={styles.historyContents}>
+              <div><h3>Scripted case stages</h3><ol>{scene.events.map((event,index)=><li key={event.agent}><strong>{index+1}. {positions[event.agent].name}</strong> · {event.title}</li>)}</ol></div>
+              <div><h3>Five sample usage periods</h3><div className={styles.usageChart}><Sparkline values={chartValues} color={scene.growth ? 'var(--healthy-fg)' : 'var(--high-fg)'} /></div><p>{account.mau[0]} → {account.mau.at(-1)} monthly active users; {scene.change > 0 ? '+' : ''}{scene.change}% across five fictional periods.</p><p>Historical sample contract field: {account.contract_end}. Not a live renewal deadline.</p></div>
+            </div>
+          </details>
+
         </section>
-        <footer className={styles.footer}><p><span>✳</span> LIGHTHOUSE / INDEPENDENT PRODUCT EXPERIMENT</p><p>All activity is a scripted demonstration using fictional data. The agents shown are visual roles, not independently running AI services. No CRM connection, real-time monitoring or customer outreach.</p></footer>
+        <footer className={styles.footer}><p>LIGHTHOUSE / INDEPENDENT PRODUCT EXPERIMENT</p><p>Fictional accounts and scripted specialist roles. No CRM connection, autonomous monitoring or customer outreach.</p></footer>
       </div>
-      {!embedded && showFloatingControls && (
-        <div className={styles.floatingControls} role="group" aria-label="Floating simulation controls">
-          <label className={styles.floatingSelect}>
-            <span className={styles.srOnly}>Account or portfolio tour</span>
-            <select
-              value={pinnedAccount ?? 'tour'}
-              onChange={e => chooseAccount(isCaseId(e.target.value) ? e.target.value : null)}
-              aria-label="Floating account or portfolio tour selection"
-            >
-              <option value="tour">Portfolio tour</option>
-              {caseIds.map(id => <option key={id} value={id}>{getStory(id).account.name}</option>)}
-            </select>
-            <ChevronDown size={13} aria-hidden="true" />
-          </label>
-          <button
-            type="button"
-            className={styles.floatingPlay}
-            onClick={() => setPlaying(value => !value)}
-            aria-label={playing ? 'Pause simulation' : 'Play simulation'}
-            title={playing ? 'Pause simulation' : 'Play simulation'}
-          >
-            {playing ? <Pause size={17} fill="currentColor" aria-hidden="true" /> : <Play size={17} fill="currentColor" aria-hidden="true" />}
-            <span className={styles.floatingPlayLabel}>{playing ? 'Pause' : 'Play'}</span>
-          </button>
-          <label className={styles.floatingSpeed}>
-            <span className={styles.srOnly}>Simulation speed</span>
-            <select value={speed} onChange={e => setSpeed(Number(e.target.value))} aria-label="Floating simulation speed">
-              <option value={1}>1×</option><option value={2}>2×</option><option value={4}>4×</option>
-            </select>
-          </label>
-          <span className={styles.floatingDivider} aria-hidden="true" />
-          <button
-            type="button"
-            className={styles.floatingTheme}
-            onClick={switchTheme}
-            aria-label={theme === 'light' ? 'Switch to dark mode' : 'Switch to light mode'}
-            title={theme === 'light' ? 'Switch to dark mode' : 'Switch to light mode'}
-          >
-            {theme === 'light' ? <Moon size={18} aria-hidden="true" /> : <Sun size={18} aria-hidden="true" />}
-          </button>
-        </div>
-      )}
     </main>
   );
 }
