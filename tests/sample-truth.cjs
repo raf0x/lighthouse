@@ -22,3 +22,5 @@ assert.ok(!/RelativeTime|18%|company avg/.test(read('app/components/AccountDetai
 assert.ok(!/142ms|88ms|will scan/.test(read('app/components/AgentPanel.tsx')));
 assert.ok(!/Send via Gmail|Snooze|est\. ARR saved/.test(read('app/components/AgentResponse.tsx')));
 console.log('PASS: sample health bands, evidence-bounded fallback output, historical dates, no fabricated confidence/deltas/tool traces/actions.');
+assert.ok(!/acc\.nps\s*</.test(read('app/portfolio/page.tsx')));
+console.log('PASS: portfolio NPS has no unexplained color threshold.');

@@ -11,7 +11,7 @@ import {
 import type { LucideIcon } from 'lucide-react';
 import { accounts, bandColor, bandLabel, healthBand } from '@/app/lib/lighthouse';
 import styles from './live.module.css';
-import { caseIds, getStory, isCaseId, accountIdentity, type CaseId, type AgentId } from '@/app/lib/live-stories';
+import { caseIds, getStory, isCaseId, accountIdentity, isPreviousReviewPass, type CaseId, type AgentId } from '@/app/lib/live-stories';
 
 type Agent = { id: AgentId; name: string; role: string; color: string; x: number; y: number; icon: LucideIcon };
 
@@ -112,7 +112,6 @@ function Network({ active, visited, selected, onSelect, reduced, paused, caseAge
           <span className={styles.agentStatus} aria-hidden="true">{isActive ? <span className={styles.statusPulse} /> : isVisited ? '✓' : '·'}</span>
         </button>;
       })}
-      <div className={styles.networkLabel}>7 SIMULATED AI AGENTS + HUMAN GATE</div>
     </div>
       <section className={styles.networkDetail} aria-label="Selected role details" onKeyDown={e => { if (e.key === 'Escape') onSelect(null); }}>
         <div className={styles.detailHeading}>
@@ -148,7 +147,7 @@ export default function LiveDashboard() {
       setEmbedded(params.get('embed') === '1');
       const id = params.get('account');
       setPinnedAccount(isCaseId(id) ? id : null);
-      setTick(0); setSelectedAgent(null); setInspectionCase(null);
+      setTick(0); setPlaybackRun(previous => previous + 1); setSelectedAgent(null); setInspectionCase(null);
     };
     sync(); window.addEventListener('popstate', sync);
     return () => window.removeEventListener('popstate', sync);
@@ -158,12 +157,14 @@ export default function LiveDashboard() {
   const [speed, setSpeed] = React.useState(2);
   const [theme, setTheme] = React.useState<'light' | 'dark'>('light');
   const [selectedAgent, setSelectedAgent] = React.useState<AgentId | null>(null);
-  const [readyCases, setReadyCases] = React.useState<Partial<Record<CaseId, boolean>>>({});
+  const [readyCases, setReadyCases] = React.useState<Partial<Record<CaseId, string>>>({});
+  const [playbackRun, setPlaybackRun] = React.useState(0);
   const [reviewedCases, setReviewedCases] = React.useState<Partial<Record<CaseId, boolean>>>({});
   const [motionReduced, setMotionReduced] = React.useState(false);
   const cycleLength = 24;
   const cycle = Math.floor(tick / cycleLength);
   const cycleTick = tick % cycleLength;
+  const passKey = `${playbackRun}:${cycle}`;
   const stage = Math.floor(cycleTick / 4);
   const activeCase = pinnedAccount ?? caseIds[cycle % caseIds.length];
   const scene = getStory(activeCase);
@@ -200,11 +201,11 @@ export default function LiveDashboard() {
     return () => window.clearInterval(id);
   }, [playing, speed]);
   React.useEffect(() => {
-    if (stage === 5) setReadyCases(previous => previous[activeCase] ? previous : {...previous, [activeCase]: true});
-  }, [stage, activeCase]);
+    if (stage === 5) setReadyCases(previous => previous[activeCase] === passKey ? previous : {...previous, [activeCase]: passKey});
+  }, [stage, activeCase, passKey]);
 
   function chooseAccount(id: CaseId | null) {
-    setPinnedAccount(id); setTick(0); setSelectedAgent(null); setInspectionCase(null);
+    setPinnedAccount(id); setTick(0); setPlaybackRun(previous => previous + 1); setSelectedAgent(null); setInspectionCase(null);
     const url = new URL(window.location.href);
     if (id) url.searchParams.set('account', id); else url.searchParams.delete('account');
     window.history.pushState({}, '', url);
@@ -217,6 +218,7 @@ export default function LiveDashboard() {
   const reviewStory = getStory(reviewCase);
   const reviewReady = Boolean(readyCases[reviewCase]);
   const reviewDone = Boolean(reviewedCases[reviewCase]);
+  const previousPass = isPreviousReviewPass(readyCases[reviewCase], passKey, reviewCase, activeCase);
   const queueCount = pendingCases.length;
   const chartValues = account.mau;
   return (
@@ -289,7 +291,7 @@ export default function LiveDashboard() {
               </section>
               <section className={styles.review} aria-labelledby="reviewTitle">
                 <div className={styles.panelHeading}><div><span className={styles.panelOverline}>HUMAN IN THE LOOP</span><h3 id="reviewTitle">Decision gate</h3></div><ShieldCheck size={17} color="#94b8ff"/></div>
-                <div className={styles.reviewContent}><span className={styles.reviewIcon}>{reviewDone ? <Check size={18}/> : <Clock3 size={18}/>}</span><div><strong>{reviewDone ? 'Marked reviewed' : reviewReady ? 'Recommendation ready' : 'Awaiting briefing'}</strong><p>{reviewStory.account.name} · Nothing sent</p></div></div>
+                <div className={styles.reviewContent}><span className={styles.reviewIcon}>{reviewDone ? <Check size={18}/> : <Clock3 size={18}/>}</span><div><strong>{reviewDone ? 'Marked reviewed' : reviewReady ? (previousPass ? 'Queued from a previous pass' : 'Ready from this pass') : 'Awaiting briefing'}</strong><p>{reviewStory.account.name} · Nothing sent</p></div></div>
                 {reviewReady && <p className={styles.reviewBrief}>{reviewStory.recommendation}</p>}
                 <button className={styles.reviewButton} onClick={() => setReviewedCases(previous => ({...previous, [reviewCase]: true}))} disabled={reviewDone || !reviewReady}>{reviewDone ? 'Reviewed locally · nothing sent' : reviewReady ? 'Mark reviewed · nothing sent' : 'Available after this case'} <ArrowRight size={14}/></button>
                 <p className={styles.reviewHint}>The tour keeps playing. Completed briefs remain available for review; acknowledgements last until you reload.</p>

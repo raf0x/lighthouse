@@ -44,3 +44,11 @@ assert.ok(!page.slice(page.indexOf('function inspectAgent'), page.indexOf('const
 assert.ok(page.includes('reviewedCases[activeCase]'));
 assert.ok(!page.includes('setApproved(false)'));
 console.log('PASS: source guards for 2x default, consistent step count, nonparticipant labels, active-only spoke, continuous inspection and persistent review state.');
+const { isPreviousReviewPass } = require('../app/lib/live-stories.ts');
+assert.equal(isPreviousReviewPass(undefined, '0:0', 'ACC003', 'ACC003'), false);
+assert.equal(isPreviousReviewPass('0:0', '0:0', 'ACC003', 'ACC003'), false);
+assert.equal(isPreviousReviewPass('0:0', '0:1', 'ACC003', 'ACC003'), true);
+assert.equal(isPreviousReviewPass('0:0', '1:0', 'ACC003', 'ACC003'), true);
+assert.equal(isPreviousReviewPass('0:0', '0:0', 'ACC003', 'ACC007'), true);
+assert.ok(!page.includes('7 SIMULATED AI AGENTS + HUMAN GATE'));
+console.log('PASS: review provenance distinguishes current pass, later loop, restarted playback and another account.');

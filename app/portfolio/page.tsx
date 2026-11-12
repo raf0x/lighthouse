@@ -98,7 +98,7 @@ export default function PortfolioPage() {
             </div>
             <div>
               <div className="eyebrow" style={{ marginBottom: 4 }}>Review candidates</div>
-              <div style={{ fontSize: 32, fontWeight: 600, color: 'var(--critical-fg)', fontFamily: 'var(--font-mono)' }}>
+              <div style={{ fontSize: 32, fontWeight: 600, color: 'var(--fg-2)', fontFamily: 'var(--font-mono)' }}>
                 {escalations.length}
               </div>
             </div>
@@ -112,7 +112,7 @@ export default function PortfolioPage() {
               <h2 style={{ fontSize: 18, fontWeight: 600, color: 'var(--fg-1)' }}>
                 Sample accounts to review
               </h2>
-              <span className="pill pill--critical">{escalations.length}</span>
+              <span className="pill">{escalations.length}</span>
             </div>
             <div className="portfolio-escalations">
               {escalations.map(acc => (
@@ -271,7 +271,7 @@ export default function PortfolioPage() {
                         style={{
                           fontSize: 13,
                           fontFamily: 'var(--font-mono)',
-                          color: acc.nps < 40 ? 'var(--critical-fg)' : acc.nps < 60 ? 'var(--fg-2)' : 'var(--healthy-fg)',
+                          color: 'var(--fg-1)',
                         }}
                       >
                         {acc.nps}

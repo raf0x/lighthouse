@@ -44,3 +44,8 @@ export function getStory(id: CaseId) {
   events.push({ agent: 'harbor', title: 'Human review requested', description: 'Review this fictional recommendation locally. Nothing is sent or saved to a CRM.', input: recommendation, output: 'A person decides whether to act. Demo review is local, remains available across loops and resets when this page reloads.' });
   return { account, score, utilization, change, evidence, usage, growth, label, recommendation, events };
 }
+
+// A restarted account or later tour cycle is a new pass, even for the same account.
+export function isPreviousReviewPass(readyPass: string | undefined, currentPass: string, reviewAccountId: CaseId, activeAccountId: CaseId): boolean {
+  return readyPass !== undefined && (readyPass !== currentPass || reviewAccountId !== activeAccountId);
+}
