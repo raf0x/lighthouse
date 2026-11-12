@@ -202,7 +202,7 @@ export default function LiveDashboard() {
     if (!element || !('IntersectionObserver' in window)) return;
     // The dock replaces, rather than competes with, the inline controls.
     const observer = new IntersectionObserver(([entry]) => {
-      setShowFloatingControls(!entry.isIntersecting);
+      setShowFloatingControls(!entry.isIntersecting && entry.boundingClientRect.bottom < 0);
     }, { threshold: 0 });
     observer.observe(element);
     return () => observer.disconnect();
