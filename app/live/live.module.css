@@ -475,3 +475,29 @@
 .shell[data-embed="true"] .timeline{display:none}
 .shell[data-embed="true"] .controls{display:none}
 .shell[data-embed="true"] .dashboard:before{display:none}
+
+/* Inspectable identities and a deliberate, finite case playback. */
+.networkDetail{display:block}
+.detailHeading{display:flex;align-items:center;gap:10px}
+.detailHeading>span:nth-child(2){flex:1;min-width:0}
+.detailHeading button{min-width:36px;min-height:36px}
+.roleFacts{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px;margin:16px 0 2px}
+.roleFacts dt{font:9px var(--font-geist-mono),monospace;letter-spacing:.1em;color:var(--muted);margin-bottom:6px}
+.roleFacts dd{font-size:12px;line-height:1.6;margin:0;color:var(--ink)}
+.agentText{min-width:0}
+.agentText small{overflow-wrap:normal;line-height:1.35}
+.agent,.agent:hover,.agentSelected{gap:8px;padding-inline:9px}
+.agentSymbol{width:40px;height:40px;flex-basis:40px}
+.networkLabel{font-size:8px}
+.shell[data-paused="true"] *,.shell[data-paused="true"] *::before,.shell[data-paused="true"] *::after{animation-play-state:paused!important}
+@media(max-width:600px){
+  .roleFacts{grid-template-columns:1fr;gap:12px}
+  .detailHeading strong{line-height:1.5}
+  .networkDetail small{line-height:1.6}
+  .networkLabel{display:none}
+}
+@media(prefers-reduced-motion:reduce){
+  .shell *,.shell *::before,.shell *::after{animation:none!important;transition:none!important}
+}
+.metricCaption{display:block;margin-top:12px;font-size:10px;line-height:1.5;color:var(--muted)}
+.shell[data-embed="true"] .controls{display:flex}
