@@ -55,9 +55,20 @@ function Network({ active, visited, selected, onSelect, reduced, paused, caseAge
   const eventIndex = story.events.findIndex(event => event.agent === selectedAgent.id);
   const detail = story.events[eventIndex];
   const nextRole = story.events[eventIndex + 1];
+  const detailRef = React.useRef<HTMLElement>(null);
+  React.useLayoutEffect(() => {
+    if (!selected || !detailRef.current) return;
+    const rect = detailRef.current.getBoundingClientRect();
+    // Account for the single sticky playback row, without losing the selected explanation.
+    const stickyHeight = document.querySelector<HTMLElement>('[data-live-controls]')?.getBoundingClientRect().height ?? 54;
+    const clearance = stickyHeight + 14;
+    if (rect.top < clearance || rect.bottom > window.innerHeight - 12) {
+      window.scrollBy({ top: rect.top - clearance, behavior: 'auto' });
+    }
+  }, [selected]);
   return (
     <>
-      {selected && <section className={styles.networkDetail} aria-label="Selected role details" onKeyDown={e => { if (e.key === 'Escape') onSelect(null); }}>
+      {selected && <section ref={detailRef} className={styles.networkDetail} aria-label="Selected role details">
         <div className={styles.detailHeading}>
           <span className={styles.detailDot} style={{ background: selectedAgent.color }} />
           <span><small><span className={styles.inspectionBadge} style={{borderColor: accountIdentity[story.account.id as CaseId].color}}>{accountIdentity[story.account.id as CaseId].code}</span> {inspecting ? "INSPECTING" : "FOLLOWING CURRENT STAGE"} · {story.account.name}</small><strong>{selectedAgent.name} · {roleLabel(selectedAgent)}</strong><small>{roleDetails[selectedAgent.id].purpose} · {inspecting ? 'Pinned inspection; playback continues' : selectedAgent.id === 'harbor' ? (reviewed ? 'Reviewed locally' : 'Human review step') : paused ? 'Paused on this step' : 'Scripted stage'}</small></span>
@@ -215,6 +226,16 @@ export default function LiveDashboard() {
   function inspectAgent(id: AgentId | null) {
     setSelectedAgent(id); setInspectionCase(id ? activeCase : null);
   }
+  React.useEffect(() => {
+    if (!selectedAgent) return;
+    const onEscape = (event: KeyboardEvent) => {
+      if (event.key !== 'Escape') return;
+      setSelectedAgent(null);
+      setInspectionCase(null);
+    };
+    window.addEventListener('keydown', onEscape);
+    return () => window.removeEventListener('keydown', onEscape);
+  }, [selectedAgent]);
   const pendingCases = caseIds.filter(id => readyCases[id] && !reviewedCases[id]);
   const reviewCase = pendingCases.includes(activeCase) ? activeCase : pendingCases[0] ?? activeCase;
   const reviewStory = getStory(reviewCase);
@@ -250,6 +271,8 @@ export default function LiveDashboard() {
         <section className={styles.dashboard} aria-label="Live intelligence simulation">
           <div className={styles.dashboardTop}>
             <div className={styles.titleGroup}><h2>Intelligence network</h2><span className={styles.currentCaseTag}>{account.name} · {scene.label}</span></div>
+          </div>
+          <div className={styles.stickyControls} data-live-controls>
             <div className={styles.controls}>
               <label className={styles.selectWrap}>Account <ChevronDown size={12} aria-hidden="true" /><select value={pinnedAccount ?? "tour"} onChange={e => chooseAccount(isCaseId(e.target.value) ? e.target.value : null)} aria-label="Choose account or portfolio tour"><option value="tour">Portfolio tour</option>{caseIds.map(id => <option value={id} key={id}>{getStory(id).account.name}</option>)}</select></label>
               <button type="button" onClick={() => setPlaying(v => !v)} aria-label={playing ? 'Pause simulation' : 'Play simulation'} className={styles.controlButton}>{playing ? <Pause size={15} fill="currentColor" /> : <Play size={15} fill="currentColor" />}<span>{playing ? 'Pause' : 'Play'}</span></button>
