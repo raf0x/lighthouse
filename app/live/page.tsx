@@ -313,6 +313,14 @@ export default function LiveDashboard() {
                     </li>;
                   })}
                 </ol>
+                {selectedAgent && inspectionCase && inspectionCase !== activeCase && (
+                  <aside className={styles.mobilePinned} aria-label="Pinned inspection from an earlier account">
+                    <strong>Inspecting {positions[selectedAgent].name} · {getStory(inspectionCase).account.name}</strong>
+                    <p>The live tour has moved to {account.name}. Your inspection stays pinned until you clear it.</p>
+                    <p>{getStory(inspectionCase).events.find(event => event.agent === selectedAgent)?.output ?? 'This role is not part of the pinned case.'}</p>
+                    <button type="button" onClick={() => inspectAgent(null)}>Return to live stage</button>
+                  </aside>
+                )}
                 <details className={styles.offCaseDetails}><summary>Other specialists in the network</summary><p>{agents.filter(agent => !scene.events.some(event => event.agent === agent.id)).map(agent => agent.name).join(' · ') || 'Every specialist has a stage in this case.'}</p></details>
               </div>
               <div className={styles.stageFooter}>
@@ -358,7 +366,7 @@ export default function LiveDashboard() {
               <div><h3>Five sample usage periods</h3><div className={styles.usageChart}><Sparkline values={chartValues} color={scene.growth ? 'var(--healthy-fg)' : 'var(--high-fg)'} /></div><p>{account.mau[0]} → {account.mau.at(-1)} monthly active users; {scene.change > 0 ? '+' : ''}{scene.change}% across five fictional periods.</p><p>Historical sample contract field: {account.contract_end}. Not a live renewal deadline.</p></div>
             </div>
           </details>
-          <p className={styles.instrumentEthics}>Seven simulated specialist roles and one human review gate. Fictional data, scripted stages, no autonomous monitoring, and no customer outreach.</p>
+
         </section>
         <footer className={styles.footer}><p>LIGHTHOUSE / INDEPENDENT PRODUCT EXPERIMENT</p><p>Fictional accounts and scripted specialist roles. No CRM connection, autonomous monitoring or customer outreach.</p></footer>
       </div>
