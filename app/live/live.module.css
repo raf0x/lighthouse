@@ -891,3 +891,155 @@
  .floatingSpeed select{min-width:51px;height:40px}
 }
 .shell[data-embed="true"] .floatingControls{display:none}
+
+
+/* Network-first instrument, replacing decorative stacked dashboard furniture. */
+.shell{--instrument-rule:var(--line)}
+.shell:not([data-embed="true"]){padding-bottom:96px}
+.instrumentHeader{display:flex;align-items:center;justify-content:space-between;gap:22px;padding:20px 2px 16px}
+.instrumentHeader h1{margin:0;font-weight:620;font-size:clamp(22px,2.15vw,30px);letter-spacing:-.045em;line-height:1.2}
+.instrumentHeader h1 em{font-family:var(--font-serif),Georgia,serif;font-weight:400;color:var(--ink);letter-spacing:-.02em}
+.instrumentHeader p{margin:7px 0 0;color:var(--muted);font-size:12px;line-height:1.5}
+.instrumentDisclosure{flex:none;white-space:nowrap;font-size:11px;color:var(--muted);letter-spacing:.035em;border:1px solid var(--line);border-radius:5px;padding:8px 10px}
+.dashboard{padding:14px;box-shadow:none;background:var(--panel);border-color:var(--line)}
+.dashboard:before{display:none}
+.dashboardTop{min-height:54px;padding:1px 4px 13px}
+.titleGroup{gap:12px;flex-wrap:wrap}
+.titleGroup h2{font-size:17px}
+.currentCaseTag{font-size:11px;color:var(--muted)}
+.instrumentGrid{display:grid;grid-template-columns:minmax(0,1fr) minmax(220px,255px);gap:12px;align-items:stretch}
+.instrumentStage{min-width:0;border:1px solid var(--line);border-radius:9px;background:var(--deep);display:flex;flex-direction:column;overflow:hidden}
+.stageHeadline{display:flex;justify-content:space-between;align-items:center;gap:15px;padding:14px 18px 8px}
+.stageMicro{font-size:11px;letter-spacing:.065em;color:var(--muted)}
+.stageMicro strong{font-size:12px;color:var(--ink)}
+.stageHeadline h3{margin:6px 0 4px;font-family:var(--font-serif),Georgia,serif;font-size:clamp(19px,2.05vw,27px);font-weight:500;letter-spacing:-.02em;line-height:1.2}
+.stageHeadline p{margin:0;font-size:12px;color:var(--muted);line-height:1.5}
+.stageStatus{display:inline-flex;align-items:center;gap:8px;border:1px solid var(--line);padding:7px 10px;border-radius:5px;white-space:nowrap;font-size:11px;color:var(--ink)}
+.desktopNetwork{display:flex;flex-direction:column;flex:1;min-height:0}
+.desktopNetwork .network{height:clamp(510px,60vh,700px);flex:1;min-height:510px}
+.desktopNetwork .networkDetail{position:relative;inset:auto;max-width:none}
+.desktopNetwork .networkGrid{opacity:.10}
+.desktopNetwork .agentOutsideCase .outsideCaseLabel{display:none}
+.desktopNetwork .agentActive{animation:none;box-shadow:0 0 0 2px color-mix(in srgb,var(--agent-color) 18%,transparent)}
+.desktopNetwork .agentSelected{outline:2px solid var(--ink);outline-offset:3px}
+.desktopNetwork .agent{transition:border-color .3s,background .3s}
+.desktopNetwork .centerHub{box-shadow:0 0 0 7px rgba(82,155,202,.02),inset 0 0 22px rgba(60,132,168,.12)}
+.stageFooter{border-top:1px solid var(--line);padding:11px 16px;display:flex;align-items:center;flex-wrap:wrap;gap:8px 14px;color:var(--muted);font-size:12px}
+.stageFooter button{background:transparent;border:0;padding:5px 0;color:var(--ink);text-decoration:underline;font-size:12px}
+.stageFootnote{margin-left:auto}
+.instrumentRail{display:flex;flex-direction:column;gap:10px;min-width:0}
+.railAccounts,.railSignals,.railReview,.railAwaiting{padding:13px;border:1px solid var(--line);border-radius:8px;background:var(--deep)}
+.railHeading{display:flex;align-items:baseline;justify-content:space-between;gap:8px;margin-bottom:10px}
+.railHeading strong{font-size:13px;font-weight:700;line-height:1.3}
+.railHeading small,.railHeading a{font-size:11px;color:var(--muted)}
+.railHeading a{text-decoration:underline;min-height:32px;display:flex;align-items:center}
+.railAccount{display:flex;align-items:center;justify-content:space-between;gap:8px;min-height:60px;width:100%;padding:10px 8px;background:transparent;border:0;border-top:1px solid var(--line);border-radius:0;color:var(--ink);text-align:left}
+.railAccount:hover{background:color-mix(in srgb,var(--panel) 85%,var(--ink))}
+.railAccount[data-current="true"]{background:color-mix(in srgb,var(--panel) 90%,#51a9a3);box-shadow:inset 2px 0 #51a9a3}
+.railAccount[aria-pressed="true"]{outline:2px solid #51a9a3;outline-offset:-2px}
+.railAccountName{font-size:12px;font-weight:650;min-width:0;line-height:1.3}
+.railAccountName small{display:block;font-size:11px;color:var(--muted);margin-top:3px;font-weight:400}
+.railScore{text-align:right;white-space:nowrap;flex:none}
+.railScore strong{font-size:19px;font-variant-numeric:tabular-nums;line-height:1;display:block}
+.railScore small{font-size:10px;display:block;margin-top:4px;color:var(--muted)}
+.railResume{display:block;margin:10px 0 0;min-height:36px;padding:6px 9px;border:1px solid var(--line);border-radius:5px;color:var(--ink);background:transparent;font-size:12px}
+.railSignals dl{display:grid;gap:0;margin:0}
+.railSignals dl div{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:7px 0;border-top:1px solid var(--line)}
+.railSignals dt{font-size:12px;color:var(--muted)}
+.railSignals dd{font-size:17px;font-weight:700;margin:0;font-variant-numeric:tabular-nums}
+.railSignals>small{font-size:10px;line-height:1.5;color:var(--muted);display:block;margin-top:8px}
+.railReview{margin-top:auto}
+.railReview .reviewBrief{margin:8px 0 14px;color:var(--ink);font-size:12px;line-height:1.6}
+.reviewProvenance{margin:6px 0;font-size:11px;color:var(--muted)}
+.reviewCaseName{margin:9px 0 0;font-weight:700;font-size:13px}
+.railReview .reviewButton{width:100%;margin:0;min-height:44px;padding:10px 9px;font-size:12px!important}
+.railAwaiting{margin-top:auto;display:flex;gap:9px;align-items:start;color:var(--muted);font-size:11px;line-height:1.55}
+.railAwaiting svg{flex:none}
+.caseHistory{border-top:1px solid var(--line);margin:12px 2px 0;padding:0 8px}
+.caseHistory summary{cursor:pointer;list-style:none;display:flex;align-items:center;justify-content:space-between;gap:15px;min-height:48px;font-size:12px;font-weight:700}
+.caseHistory summary::-webkit-details-marker{display:none}
+.caseHistory summary:before{content:'+';font-size:19px;color:var(--muted);margin-right:8px}
+.caseHistory[open] summary:before{content:'−'}
+.caseHistory summary span{font-size:11px;color:var(--muted);font-weight:400;margin-left:auto}
+.historyContents{display:grid;grid-template-columns:1fr 1fr;gap:18px 28px;padding:8px 18px 24px;color:var(--muted);font-size:12px;line-height:1.6}
+.historyContents h3{font-size:13px;color:var(--ink);margin:0 0 10px}
+.historyContents ol{margin:0;padding-left:16px}
+.historyContents li{margin-bottom:6px}
+.historyContents .usageChart{height:80px;margin:0 0 8px}
+.historyContents p{font-size:11px;line-height:1.6}
+.instrumentEthics{font-size:11px;line-height:1.5;color:var(--muted);margin:10px 8px 0}
+.footer{padding-top:16px}
+.mobileJourney{display:none}
+/* Keep the embedded showcase network-only and free of additional chrome. */
+.shell[data-embed="true"] .instrumentHeader,.shell[data-embed="true"] .instrumentRail,.shell[data-embed="true"] .caseHistory,.shell[data-embed="true"] .instrumentEthics{display:none}
+.shell[data-embed="true"] .instrumentGrid{grid-template-columns:1fr}
+.shell[data-embed="true"] .instrumentStage{border:0}
+@media(max-width:1100px){
+ .instrumentGrid{grid-template-columns:minmax(0,1fr) 220px}
+ .frame{padding-inline:22px}
+ .desktopNetwork .network{min-height:520px}
+}
+@media(max-width:800px){
+ .instrumentHeader{padding:14px 0;gap:8px}
+ .instrumentHeader h1{font-size:23px}
+ .instrumentDisclosure{font-size:10px}
+ .instrumentGrid{grid-template-columns:1fr}
+ .instrumentStage{min-height:0}
+ .instrumentRail{display:grid;grid-template-columns:1fr 1fr;align-items:start}
+ .railAccounts{grid-row:1/3}
+ .railReview,.railAwaiting{margin-top:0}
+ .dashboardTop{flex-direction:row;flex-wrap:wrap;align-items:center}
+}
+@media(max-width:699px){
+ .frame{padding-inline:12px}
+ .instrumentHeader{display:block}
+ .instrumentHeader h1{font-size:22px}
+ .instrumentHeader p{font-size:12px}
+ .instrumentDisclosure{display:inline-block;margin-top:9px;font-size:10px}
+ .dashboard{padding:9px}
+ .dashboardTop{padding:4px 5px 10px;gap:8px}
+ .titleGroup{display:block}
+ .titleGroup h2{font-size:15px}
+ .currentCaseTag{display:block;margin-top:4px}
+ .controls{display:flex;flex-wrap:wrap;max-width:100%;gap:6px}
+ .controls .selectWrap{grid-column:auto}
+ .instrumentStage{border:0}
+ .stageHeadline{padding:14px 10px}
+ .stageHeadline h3{font-size:23px}
+ .stageHeadline p{font-size:12px}
+ .stageStatus{padding:6px}
+ .desktopNetwork{display:none}
+ .mobileJourney{display:block;padding:2px 8px 12px}
+ .mobileSteps{list-style:none;display:grid;gap:4px;padding:0;margin:0}
+ .mobileStep{border:1px solid var(--line);border-radius:6px;overflow:hidden}
+ .mobileStep[data-current="true"]{border-color:#4a9f9a;background:color-mix(in srgb,var(--panel) 88%,#4a9f9a)}
+ .mobileStep[data-human="true"]{border-style:dashed}
+ .mobileStepButton{display:flex;align-items:center;gap:9px;width:100%;min-height:58px;padding:9px 11px;background:transparent;border:0;color:var(--ink);text-align:left}
+ .mobileStepIndex{font-size:11px;color:var(--muted);width:16px}
+ .mobileStepButton>svg:not(.mobileStepChevron){color:var(--muted);flex:none}
+ .mobileStepTitle{display:flex;flex-direction:column;gap:3px;min-width:0;flex:1}
+ .mobileStepTitle strong{font-size:13px}
+ .mobileStepTitle small{font-size:11px;line-height:1.4;color:var(--muted)}
+ .mobileNow{font-size:10px;color:var(--ink);font-weight:800;letter-spacing:.04em}
+ .mobileStepChevron{margin-left:auto;color:var(--muted);flex:none}
+ .mobileStep[data-open="true"] .mobileStepChevron{transform:rotate(180deg)}
+ .mobileStepBody{border-top:1px solid var(--line);padding:9px 13px 13px 37px}
+ .mobileStepBody p{font-size:12px;line-height:1.6;margin:4px 0 9px}
+ .mobileStepBody small{text-transform:uppercase;letter-spacing:.06em;color:var(--muted);font-size:10px}
+ .offCaseDetails{font-size:11px;color:var(--muted);padding:9px 4px}
+ .offCaseDetails summary{cursor:pointer;min-height:35px;display:flex;align-items:center}
+ .offCaseDetails p{font-size:11px}
+ .instrumentRail{display:grid;grid-template-columns:1fr;gap:8px}
+ .railAccounts{grid-row:auto}
+ .railSignals{display:none}
+ .railAccount{min-height:54px}
+ .stageFooter{padding:10px;line-height:1.5}
+ .historyContents{grid-template-columns:1fr;padding-inline:8px}
+ .caseHistory summary span{display:none}
+ .instrumentEthics{font-size:11px}
+ .shell:not([data-embed="true"]){padding-bottom:105px}
+ .shell[data-embed="true"] .mobileJourney{display:block}
+}
+@media(prefers-reduced-motion:reduce){
+ .desktopNetwork .agentActive,.desktopNetwork .hubOrbit{animation:none}
+}
