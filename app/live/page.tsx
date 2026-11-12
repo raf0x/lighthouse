@@ -319,9 +319,23 @@ export default function LiveDashboard() {
             <section className={styles.instrumentStage} aria-labelledby="networkTitle">
               <div className={styles.stageHeadline}>
                 <div>
-                  <span className={styles.stageMicro}>CURRENT CASE STEP <strong>{stage + 1}</strong> / 6</span>
-                  <h3 id="networkTitle">{current.title}</h3>
-                  <p>{account.name} · {stage === 5 ? 'Human decision · nothing sent' : `Stage ${stage + 1} of 6 · scripted handoff`}</p>
+                  <span className={styles.stageMicro}>
+                    <span className={styles.desktopMicro}>CURRENT CASE STEP <strong>{stage + 1}</strong> / 6</span>
+                    <span className={styles.phoneMicro}>SIMULATED AI SPECIALISTS · STEP <strong>{stage + 1}</strong> / 6</span>
+                  </span>
+                  <h3 id="networkTitle">
+                    <span className={styles.eventTitle}>{current.title}</span>
+                    <span className={styles.agentTitle} aria-live="polite" aria-atomic="true">
+                      <span className={styles.agentTitleDot} style={{ backgroundColor: positions[active].color }} aria-hidden="true" />
+                      {positions[active].name} · {roleLabel(positions[active])}
+                    </span>
+                  </h3>
+                  <p>
+                    <span className={styles.desktopSub}>{account.name} · {stage === 5 ? 'Human decision · nothing sent' : `Stage ${stage + 1} of 6 · scripted handoff`}</span>
+                    <span className={styles.phoneSub}>
+                      {active === 'harbor' ? 'A person decides. Nothing is sent.' : `${current.title}. A person reviews at Harbor.`}
+                    </span>
+                  </p>
                 </div>
                 <span className={styles.stageStatus}><span className={styles.liveDot} />{playing ? 'Playing' : 'Paused'}</span>
               </div>
@@ -362,9 +376,31 @@ export default function LiveDashboard() {
                 <details className={styles.offCaseDetails}><summary>Other specialists in the network</summary><p>{agents.filter(agent => !scene.events.some(event => event.agent === agent.id)).map(agent => agent.name).join(' · ') || 'Every specialist has a stage in this case.'}</p></details>
               </div>
               <div className={styles.stageFooter}>
-                <span>{selectedAgent ? `Inspecting ${positions[selectedAgent].name} · ${getStory(inspectionCase ?? activeCase).account.name}` : `Following ${positions[active].name}`}</span>
+                <span className={styles.desktopFollowing}>{selectedAgent ? `Inspecting ${positions[selectedAgent].name} · ${getStory(inspectionCase ?? activeCase).account.name}` : `Following ${positions[active].name}`}</span>
                 {selectedAgent && <button type="button" onClick={() => inspectAgent(null)}>Return to live stage</button>}
                 <span className={styles.stageFootnote}>Tour now: {account.name}</span>
+                <div className={styles.phoneCast} aria-label="Specialists in this fictional case">
+                  <ol className={styles.phoneCastList}>
+                    {scene.events.map((event, index) => {
+                      const role = positions[event.agent];
+                      return <li key={event.agent}>
+                        <button
+                          type="button"
+                          data-playing={active === event.agent}
+                          data-selected={selectedAgent === event.agent && inspectionCase === activeCase}
+                          aria-pressed={selectedAgent === event.agent && inspectionCase === activeCase}
+                          aria-label={`Inspect ${role.name}, ${roleLabel(role)}, stage ${index + 1}. Playback continues.`}
+                          onClick={() => inspectAgent(selectedAgent === event.agent && inspectionCase === activeCase ? null : event.agent)}
+                        >
+                          <span className={styles.phoneCastNumber}>{index + 1}</span>
+                          <span>{role.name}{event.agent === 'harbor' && <span className={styles.phoneHumanLabel}> · human</span>}</span>
+                        </button>
+                      </li>;
+                    })}
+                  </ol>
+                  <p className={styles.phoneIdle}>Idle · {agents.filter(role => !scene.events.some(event => event.agent === role.id)).map(role => role.name).join(' · ')}</p>
+                  {selectedAgent && <p className={styles.phoneInspectionState}>Inspecting {positions[selectedAgent].name} · {getStory(inspectionCase ?? activeCase).account.name}. Tour now: {account.name}.</p>}
+                </div>
               </div>
             </section>
             <aside className={styles.instrumentRail} aria-label="Account and decision context">
