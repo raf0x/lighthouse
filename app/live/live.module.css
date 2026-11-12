@@ -1149,3 +1149,42 @@
   .mobileStep[data-human="true"] .mobileStepBody p{color:#253849}
   .shell:not([data-embed="true"]){padding-bottom:32px}
 }
+
+
+/* Release QA: keep only the small playback cluster sticky, not its title.
+   Leave real scroll clearance for the final mobile stage and account controls. */
+.dashboardTop{position:static;z-index:auto;background:transparent;border:0;border-radius:0;margin:0;padding:3px 4px 7px;min-height:0}
+.stickyControls{
+  position:sticky;
+  top:0;
+  z-index:80;
+  display:flex;
+  justify-content:flex-end;
+  align-items:center;
+  padding:6px 9px;
+  margin:0 0 10px;
+  min-height:54px;
+  border:1px solid var(--line);
+  border-radius:7px;
+  background:var(--panel);
+  box-shadow:0 5px 16px rgba(0,0,0,.09);
+}
+.stickyControls .controls{display:flex;align-items:center;justify-content:flex-end;gap:8px;flex-wrap:nowrap}
+.stickyControls .selectWrap{min-width:0}
+.stickyControls .selectWrap select{min-height:42px}
+.stickyControls .speedControl select{min-height:42px}
+.desktopNetwork .networkDetail{scroll-margin-top:85px}
+.shell:not([data-embed="true"]){padding-bottom:clamp(160px,22vh,270px)}
+@media(max-width:699px){
+  .dashboardTop{padding:3px 5px 7px;margin:0}
+  .stickyControls{min-height:54px;padding:6px;margin:0 0 8px}
+  .stickyControls .controls{display:grid;grid-template-columns:minmax(0,1fr) auto auto;gap:7px;width:100%;min-width:0}
+  .stickyControls .selectWrap{grid-column:auto;min-width:0;max-width:100%;font-size:0}
+  .stickyControls .selectWrap select{min-width:0;width:100%;font-size:12px;padding-inline:9px 24px}
+  .stickyControls .controlButton{min-width:44px;min-height:42px;justify-content:center}
+  .stickyControls .controlButton span{display:none}
+  .stickyControls .speedControl{font-size:0;gap:0}
+  .stickyControls .speedControl select{min-width:57px;font-size:12px}
+  .shell:not([data-embed="true"]){padding-bottom:240px}
+  .mobileStep{scroll-margin-top:80px}
+}
