@@ -1529,3 +1529,54 @@
     box-shadow:inset 0 1px 0 rgba(255,255,255,.04),0 2px 10px rgba(0,0,0,.22);
   }
 }
+
+/* Phone only: put the active specialist beneath its case description,
+   centered above the top node of the Intelligence Network. */
+@media (max-width: 699px) {
+  .stageHeadline > div:first-child {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .stageHeadline .stageMicro { order: 1; }
+  .stageHeadline p {
+    order: 2;
+    margin: 4px 0 0;
+  }
+  .stageHeadline h3 {
+    order: 3;
+    width: 100%;
+    margin: 13px 0 7px;
+    text-align: center;
+  }
+  .stageHeadline .agentTitle {
+    display: flex;
+    width: 100%;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    text-align: center;
+  }
+}
+
+/* Phone-only active role: stronger typography, without a competing second pill. */
+@media (max-width:699px) {
+  .stageHeadline .agentTitle {
+    font-family:var(--font-geist),Geist,system-ui,sans-serif;
+    font-size:clamp(20px,5.6vw,24px);
+    font-weight:780;
+    letter-spacing:-.035em;
+    line-height:1.22;
+    color:#087e78;
+    gap:10px;
+  }
+  .stageHeadline .agentTitleDot {
+    width:9px;
+    height:9px;
+    flex-basis:9px;
+    box-shadow:0 0 0 4px rgba(8,126,120,.11);
+  }
+  .shell[data-mode="dark"] .stageHeadline .agentTitle {
+    color:#72dfd0;
+  }
+}
