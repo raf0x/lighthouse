@@ -48,6 +48,28 @@ function fmtClock(seconds: number) {
   return `${String(Math.floor(seconds / 60)).padStart(2, '0')}:${String(seconds % 60).padStart(2, '0')}`;
 }
 
+
+/** Stable, bounded lightning geometry for the phone-sized network only. */
+function electricPath(agent: Agent, phase: number, amplitude = 16) {
+  const x0 = agent.x * 10;
+  const y0 = agent.y * 6.2;
+  const dx = 500 - x0;
+  const dy = 310 - y0;
+  const distance = Math.hypot(dx, dy) || 1;
+  const normalX = -dy / distance;
+  const normalY = dx / distance;
+  let path = `M ${x0} ${y0}`;
+  for (let index = 1; index <= 12; index += 1) {
+    const t = index / 13;
+    const taper = Math.sin(Math.PI * t);
+    const offset = Math.sin(index * 2.43 + phase) * amplitude * taper;
+    const x = x0 + dx * t + normalX * offset;
+    const y = y0 + dy * t + normalY * offset;
+    path += ` L ${x.toFixed(1)} ${y.toFixed(1)}`;
+  }
+  return path + ' L 500 310';
+}
+
 function Network({ active, visited, selected, onSelect, reduced, paused, caseAgents, reviewed, story, inspecting, sampleScore }: {
   active: AgentId; visited: AgentId[]; selected: AgentId | null; onSelect: (agent: AgentId | null) => void; reduced: boolean; paused: boolean; caseAgents: AgentId[]; reviewed: boolean; story: ReturnType<typeof getStory>; inspecting: boolean; sampleScore: number;
 }) {
@@ -55,6 +77,10 @@ function Network({ active, visited, selected, onSelect, reduced, paused, caseAge
   const eventIndex = story.events.findIndex(event => event.agent === selectedAgent.id);
   const detail = story.events[eventIndex];
   const nextRole = story.events[eventIndex + 1];
+  const activeRole = positions[active];
+  const lightningFrames = [0, 1.6, 3.5, 0].map(phase => electricPath(activeRole, phase));
+  const lightningValues = lightningFrames.join(';');
+  const secondaryPath = electricPath(activeRole, 2.3, 24);
   const detailRef = React.useRef<HTMLElement>(null);
   React.useLayoutEffect(() => {
     if (!selected || !detailRef.current) return;
@@ -90,11 +116,26 @@ function Network({ active, visited, selected, onSelect, reduced, paused, caseAge
             <stop offset="1" stopColor="#65a5e8" stopOpacity=".09" />
           </linearGradient>
         </defs>
+        <g className={styles.mobileTesla} aria-hidden="true">
+          <path className={styles.electricAura} stroke={activeRole.color} d={lightningFrames[0]}>
+            {!reduced && <animate attributeName="d" values={lightningValues} dur=".42s" repeatCount="indefinite" />}
+          </path>
+          <path className={styles.electricBeam} d={lightningFrames[0]}>
+            {!reduced && <animate attributeName="d" values={lightningValues} dur=".42s" repeatCount="indefinite" />}
+          </path>
+          <path className={styles.electricCore} d={lightningFrames[0]}>
+            {!reduced && <animate attributeName="d" values={lightningValues} dur=".42s" repeatCount="indefinite" />}
+          </path>
+          <path className={styles.electricBranch} d={secondaryPath} />
+          {!reduced && <circle className={styles.electricParticle} r="5" fill="#ffffff">
+            <animateMotion dur="1.1s" repeatCount="indefinite" path={lightningFrames[0]} />
+          </circle>}
+        </g>
         {agents.map(agent => {
           const x = agent.x * 10; const y = agent.y * 6.2;
           const isActive = active === agent.id;
           if (!isActive) return null;
-          return <g key={agent.id}>
+          return <g key={agent.id} className={styles.desktopSpoke}>
             <path d={`M500 310 Q${(500 + x) / 2} ${(310 + y) / 2 - 30} ${x} ${y}`}
               fill="none" stroke={isActive ? agent.color : 'url(#wire)'} strokeWidth={isActive ? 2.6 : 1.2}
               strokeDasharray={isActive ? 'none' : '3 8'} opacity={isActive ? .9 : .7} />
