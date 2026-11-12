@@ -666,3 +666,24 @@
 .shell .feedList li{opacity:1}
 .shell .panelOverline{color:var(--muted)}
 .shell .nowProcessing{max-width:100%;white-space:normal;overflow:visible;text-overflow:clip}
+
+/* Keep every orbit node inside its canvas and the inspector outside it. */
+.network{flex-shrink:0}
+.networkDetail{margin:10px 16px 10px;padding:12px 14px;border-radius:8px;text-align:left}
+.detailHeading{display:grid;grid-template-columns:8px minmax(0,1fr) auto;align-items:start;gap:10px}
+.detailHeading .detailDot{margin-top:8px}
+.detailHeading>span:nth-child(2){display:flex;flex-wrap:wrap;align-items:baseline;gap:4px 10px}
+.detailHeading>span:nth-child(2)>small:first-child{flex-basis:100%;display:flex;align-items:center;gap:6px}
+.detailHeading>span:nth-child(2)>strong{display:block}
+.detailHeading>span:nth-child(2)>small:last-child{display:block}
+.detailHeading button{margin:0;align-self:start}
+.roleFacts{display:grid;grid-template-columns:1fr;gap:8px;margin:12px 0 0}
+.roleFacts>div{display:grid;grid-template-columns:132px minmax(0,1fr);align-items:start;gap:12px}
+.roleFacts dt{margin:2px 0 0;line-height:1.4}
+.roleFacts dd{line-height:1.5}
+@media(max-width:600px){
+ .networkDetail{margin:10px;padding:12px}
+ .roleFacts>div{grid-template-columns:1fr;gap:3px}
+ .detailHeading>span:nth-child(2)>small:first-child{display:block}
+ .roleFacts{gap:10px}
+}
