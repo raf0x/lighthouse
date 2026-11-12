@@ -1078,3 +1078,74 @@
 .mobilePinned strong{font-size:12px}
 .mobilePinned p{font-size:11px;color:var(--muted);line-height:1.6;margin:7px 0}
 .mobilePinned button{min-height:40px;padding:8px 10px;background:var(--deep);color:var(--ink);border:1px solid var(--line);border-radius:5px;font-size:12px}
+
+
+/* Review fixes: one sticky control row, legible orbital sequence, immediate inspection. */
+.shell{overflow:clip}
+.dashboard{overflow:visible}
+.dashboardTop{
+  position:sticky;
+  top:0;
+  z-index:80;
+  background:var(--panel);
+  border-bottom:1px solid var(--line);
+  border-radius:6px 6px 0 0;
+  padding:8px 8px 10px;
+  margin:-3px -3px 9px;
+}
+.desktopNetwork .networkDetail{
+  position:relative;
+  top:auto;right:auto;bottom:auto;left:auto;
+  margin:8px 14px 4px;
+  scroll-margin-top:75px;
+}
+.desktopNetwork .agentSequence{
+  position:absolute;
+  top:-10px;
+  left:-8px;
+  display:grid;
+  place-items:center;
+  width:21px;height:21px;
+  border:1px solid color-mix(in srgb,var(--agent-color) 50%,#7d9294);
+  border-radius:50%;
+  background:var(--deep);
+  color:var(--ink);
+  font:700 11px var(--font-geist-mono),monospace;
+  box-shadow:0 2px 8px rgba(0,0,0,.15);
+}
+.desktopNetwork .agent[aria-label^="Harbor"] .agentSequence{
+  background:#e9e7dc;
+  color:#253849;
+  border-color:#627d7c;
+}
+.desktopNetwork .hubScore{font-size:28px;font-weight:750;line-height:1}
+.desktopNetwork .hubScore small{color:var(--muted);font-size:11px}
+.desktopNetwork .centerHub>small{font-size:10px!important}
+.desktopNetwork .hubGlyph{width:48px;height:48px;margin-bottom:6px}
+.desktopNetwork .lighthouseMark{width:45px;height:45px}
+.desktopNetwork .agent[aria-pressed="true"]{
+  outline:3px solid #26b3a8;
+  outline-offset:3px;
+  box-shadow:0 0 0 5px rgba(38,179,168,.14);
+}
+.desktopNetwork .agent[aria-pressed="true"].agentActive{
+  outline:3px solid #26b3a8;
+}
+@media(max-width:699px){
+  .instrumentHeader{display:none}
+  .dashboardTop{top:0;margin:0 0 8px;padding:7px 5px 9px}
+  .stageHeadline{padding-top:10px}
+  .mobileStep[data-human="true"]{
+    background:#e9e7dc;
+    border-color:#a7b9b4;
+    color:#253849;
+  }
+  .mobileStep[data-human="true"] .mobileStepButton{color:#253849}
+  .mobileStep[data-human="true"] .mobileStepTitle strong{color:#253849}
+  .mobileStep[data-human="true"] .mobileStepTitle small,
+  .mobileStep[data-human="true"] .mobileStepIndex,
+  .mobileStep[data-human="true"] .mobileStepButton>svg{color:#4d5d65}
+  .mobileStep[data-human="true"] .mobileStepBody{border-color:#abbdb8;color:#253849}
+  .mobileStep[data-human="true"] .mobileStepBody p{color:#253849}
+  .shell:not([data-embed="true"]){padding-bottom:32px}
+}
