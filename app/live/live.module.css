@@ -1290,3 +1290,79 @@
     grid-template-columns: 1fr;
   }
 }
+
+
+/* Tesla handoff is phone-only. Desktop retains its existing spoke and motion. */
+.mobileTesla{display:none}
+@media(max-width:699px){
+  /* Earlier phone grid rules pinned the hub to 77px while the radar sat at 50%. */
+  .desktopNetwork .centerHub{
+    top:50%;
+    left:50%;
+    transform:translate(-50%,-50%);
+  }
+  .desktopNetwork .beaconSweep{
+    top:50%;
+    left:50%;
+    transform:translate(-50%,-50%);
+  }
+  .desktopNetwork .wires{
+    display:block;
+    pointer-events:none;
+  }
+  .desktopNetwork .wires .desktopSpoke,
+  .desktopNetwork .wires>circle{
+    display:none;
+  }
+  .desktopNetwork .mobileTesla{
+    display:block;
+    pointer-events:none;
+    stroke-linecap:round;
+    stroke-linejoin:round;
+  }
+  .desktopNetwork .electricAura,
+  .desktopNetwork .electricBeam,
+  .desktopNetwork .electricCore,
+  .desktopNetwork .electricBranch{
+    fill:none;
+  }
+  .desktopNetwork .electricAura{
+    stroke-width:14;
+    stroke-opacity:.45;
+    filter:blur(6px) drop-shadow(0 0 9px #4accff);
+    animation:mobileArcSurge 1.1s ease-in-out infinite alternate;
+  }
+  .desktopNetwork .electricBeam{
+    stroke:#3dcfff;
+    stroke-width:5;
+    filter:drop-shadow(0 0 6px #18baff);
+  }
+  .desktopNetwork .electricCore{
+    stroke:#f3feff;
+    stroke-width:2;
+    filter:drop-shadow(0 0 5px #b4f9ff);
+  }
+  .desktopNetwork .electricBranch{
+    stroke:#9eecff;
+    stroke-width:1.4;
+    stroke-opacity:.48;
+    stroke-dasharray:12 17;
+    animation:mobileArcDash .7s linear infinite;
+  }
+  .desktopNetwork .electricParticle{
+    filter:drop-shadow(0 0 7px #79e6ff);
+  }
+}
+@keyframes mobileArcSurge{
+  from{opacity:.50}
+  to{opacity:1}
+}
+@keyframes mobileArcDash{
+  to{stroke-dashoffset:-58}
+}
+@media(max-width:699px) and (prefers-reduced-motion:reduce){
+  .desktopNetwork .electricAura,
+  .desktopNetwork .electricBranch{animation:none!important}
+  .desktopNetwork .electricAura{opacity:.35}
+  .desktopNetwork .electricBranch{stroke-dasharray:none}
+}
