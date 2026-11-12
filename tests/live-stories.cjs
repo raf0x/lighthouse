@@ -52,3 +52,15 @@ assert.equal(isPreviousReviewPass('0:0', '1:0', 'ACC003', 'ACC003'), true);
 assert.equal(isPreviousReviewPass('0:0', '0:0', 'ACC003', 'ACC007'), true);
 assert.ok(!page.includes('7 SIMULATED AI AGENTS + HUMAN GATE'));
 console.log('PASS: review provenance distinguishes current pass, later loop, restarted playback and another account.');
+
+assert.ok(page.includes('styles.instrumentGrid'), 'network-first composition must remain');
+assert.ok(page.includes('styles.mobileJourney'), 'mobile must have a case-ordered journey');
+assert.ok(page.includes('scene.events.map((event,index) =>'), 'mobile sequence uses actual story order');
+assert.ok(page.includes('sampleScore={scene.score}'), 'hub must reflect current fictional account');
+assert.ok(page.includes('caseAgents.slice(0, visited.length + 1)'), 'path must reflect completed case stages');
+assert.ok(!page.includes('className={styles.metrics}'), 'large redundant KPI tiles must not return');
+assert.ok(!page.includes('className={styles.feed}'), 'duplicated always-visible activity feed must not return');
+assert.ok(!page.includes('className={styles.bottomGrid}'), 'repeated bottom panels must not return');
+assert.ok(page.includes('reviewReady ? <section'), 'review brief only shown when available');
+assert.ok(page.includes("setPlaying(v => !v)"), 'playback remains user controllable');
+console.log('PASS: network-first composition, case-ordered mobile journey, semantic hub and gated human review.');
