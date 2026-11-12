@@ -69,3 +69,13 @@ assert.ok(!page.includes('className={styles.bottomGrid}'), 'repeated bottom pane
 assert.ok(page.includes('reviewReady ? <section'), 'review brief only shown when available');
 assert.ok(page.includes("setPlaying(v => !v)"), 'playback remains user controllable');
 console.log('PASS: network-first composition, case-ordered mobile journey, semantic hub and gated human review.');
+
+const css = fs.readFileSync(require('node:path').join(__dirname, '../app/live/live.module.css'), 'utf8');
+assert.ok(page.includes('data-live-controls'), 'single sticky playback cluster must be identifiable for inspection clearance');
+assert.ok(page.includes('detailRef.current.getBoundingClientRect()'), 'selected details must be measured in viewport');
+assert.ok(page.includes('window.scrollBy({ top: rect.top - clearance'), 'selected details must be scrolled visibly below sticky controls');
+assert.ok(page.includes("window.addEventListener('keydown', onEscape)"), 'Escape must dismiss pinned inspection irrespective of focus');
+assert.ok(page.includes('className={styles.stickyControls}'), 'playback controls must be in their own sticky row');
+assert.ok(!page.includes('showFloatingControls'), 'the duplicate floating dock must remain removed');
+assert.ok(css.includes('.shell:not([data-embed="true"]){padding-bottom:240px}'), 'mobile page must reserve end scroll clearance');
+console.log('PASS: selected inspector scroll/focus, a single compact sticky toolbar, and mobile Harbor scroll clearance.');
