@@ -53,7 +53,7 @@
   .hubGlyph span{font-size:30px}
   .centerHub strong{font-size:9px}
   .centerHub small{font-size:6px}
-  .agent,.agent:hover,.agentSelected{position:relative!important;left:auto!important;top:auto!important;transform:none!important;width:100%;height:57px;min-height:0;padding:9px 10px;gap:9px;box-shadow:none}
+  .agent,.agent:hover,.agentSelected{width:100%;height:57px;min-height:0;padding:9px 10px;gap:9px;box-shadow:none}
   .agentActive{box-shadow:0 0 0 1px var(--agent-color),inset 0 0 19px color-mix(in srgb,var(--agent-color) 8%,transparent)}
   .agentSymbol{width:29px;height:29px;font-size:19px}
   .agentText strong{font-size:11px}
@@ -1323,8 +1323,7 @@
   }
   .desktopNetwork .electricAura,
   .desktopNetwork .electricBeam,
-  .desktopNetwork .electricCore,
-  .desktopNetwork .electricBranch{
+  .desktopNetwork .electricCore{
     fill:none;
   }
   .desktopNetwork .electricAura{
@@ -1343,13 +1342,6 @@
     stroke-width:2;
     filter:drop-shadow(0 0 5px #b4f9ff);
   }
-  .desktopNetwork .electricBranch{
-    stroke:#9eecff;
-    stroke-width:1.4;
-    stroke-opacity:.48;
-    stroke-dasharray:12 17;
-    animation:mobileArcDash .7s linear infinite;
-  }
   .desktopNetwork .electricParticle{
     filter:drop-shadow(0 0 7px #79e6ff);
   }
@@ -1362,8 +1354,6 @@
   to{stroke-dashoffset:-58}
 }
 @media(max-width:699px) and (prefers-reduced-motion:reduce){
-  .desktopNetwork .electricAura,
-  .desktopNetwork .electricBranch{animation:none!important}
+  .desktopNetwork .electricAura{animation:none!important}
   .desktopNetwork .electricAura{opacity:.35}
-  .desktopNetwork .electricBranch{stroke-dasharray:none}
 }
