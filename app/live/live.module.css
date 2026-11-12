@@ -1199,7 +1199,8 @@
   .shell[data-embed="true"] .mobileJourney {
     display: none;
   }
-  .desktopNetwork .network {
+  .desktopNetwork .network,
+  .shell[data-embed="true"] .desktopNetwork .network {
     --node-inset: 28px;
     display: block;
     position: relative;
