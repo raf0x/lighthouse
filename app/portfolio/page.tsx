@@ -1,7 +1,7 @@
 'use client';
 
 import * as React from 'react';
-import { accounts, calculateHealthScore, healthBand } from '@/app/lib/lighthouse';
+import { accounts, calculateHealthScore, healthBand, bandLabel } from '@/app/lib/lighthouse';
 import { IconAlert, IconTrendUp, IconTrendDown } from '@/app/components/icons';
 import { useRouter } from 'next/navigation';
 import Header from '@/app/components/Header';
@@ -12,22 +12,17 @@ export default function PortfolioPage() {
   const router = useRouter();
   const [sortBy, setSortBy] = React.useState<SortKey>('health');
   const [sortAsc, setSortAsc] = React.useState(true);
-  const renewalLabel = (days: number, compact = false) =>
-    days < 0 ? (compact ? `${Math.abs(days)}d overdue` : `${Math.abs(days)} days overdue`) :
-    days === 0 ? 'Due today' : (compact ? `${days}d to renewal` : `${days} days to renewal`);
 
   const portfolioData = accounts.map(acc => {
     const health = calculateHealthScore(acc);
     const band = healthBand(health);
     const mauDelta = ((acc.mau[4] - acc.mau[0]) / acc.mau[0]) * 100;
-    const daysToRenewal = Math.floor((new Date(acc.contract_end).getTime() - Date.now()) / (1000 * 60 * 60 * 24));
     
     return {
       ...acc,
       health,
       band,
       mauDelta,
-      daysToRenewal,
       healthDelta: mauDelta,
     };
   });
@@ -41,7 +36,7 @@ export default function PortfolioPage() {
     switch (sortBy) {
       case 'health': comparison = a.health - b.health; break;
       case 'arr': comparison = a.arr - b.arr; break;
-      case 'renewal': comparison = a.daysToRenewal - b.daysToRenewal; break;
+      case 'renewal': comparison = a.contract_end.localeCompare(b.contract_end); break;
       case 'delta': comparison = a.healthDelta - b.healthDelta; break;
     }
     return sortAsc ? comparison : -comparison;
@@ -81,6 +76,7 @@ export default function PortfolioPage() {
           <h1 style={{ fontSize: 40, fontWeight: 600, color: 'var(--fg-1)', marginBottom: 8 }}>
             Portfolio Overview
           </h1>
+          <p style={{ color: 'var(--fg-2)', lineHeight: 1.6, marginBottom: 20 }}>Fictional accounts and static sample figures. Health is a weighted decision aid, not a churn probability. Contract dates are historical fields, not live renewal deadlines.</p>
           <div className="portfolio-kpis">
             <div>
               <div className="eyebrow" style={{ marginBottom: 4 }}>Total Accounts</div>
@@ -101,8 +97,8 @@ export default function PortfolioPage() {
               </div>
             </div>
             <div>
-              <div className="eyebrow" style={{ marginBottom: 4 }}>Escalations</div>
-              <div style={{ fontSize: 32, fontWeight: 600, color: 'var(--critical-fg)', fontFamily: 'var(--font-mono)' }}>
+              <div className="eyebrow" style={{ marginBottom: 4 }}>Review candidates</div>
+              <div style={{ fontSize: 32, fontWeight: 600, color: 'var(--fg-2)', fontFamily: 'var(--font-mono)' }}>
                 {escalations.length}
               </div>
             </div>
@@ -114,9 +110,9 @@ export default function PortfolioPage() {
             <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 14 }}>
               <IconAlert size={20} style={{ color: 'var(--critical-fg)' }} />
               <h2 style={{ fontSize: 18, fontWeight: 600, color: 'var(--fg-1)' }}>
-                This Week's Escalations
+                Sample accounts to review
               </h2>
-              <span className="pill pill--critical">{escalations.length}</span>
+              <span className="pill">{escalations.length}</span>
             </div>
             <div className="portfolio-escalations">
               {escalations.map(acc => (
@@ -141,13 +137,13 @@ export default function PortfolioPage() {
                       <div style={{ fontSize: 12, color: 'var(--fg-3)', marginTop: 2 }}>{acc.industry}</div>
                     </div>
                     <div className="pill pill--critical">
-                      {acc.health}/100
+                      {acc.health}/100 · {bandLabel(acc.health)}
                     </div>
                   </div>
-                  <div style={{ fontSize: 12, color: 'var(--fg-2)', display: 'flex', gap: 16 }}>
+                  <div style={{ fontSize: 12, color: 'var(--fg-2)', display: 'flex', flexWrap: 'wrap', gap: 12 }}>
                     <span>${(acc.arr / 1000).toFixed(0)}K ARR</span>
                     <span>•</span>
-                    <span>{renewalLabel(acc.daysToRenewal, true)}</span>
+                    <span>{acc.contract_end} · historical</span>
                     <span>•</span>
                     <span style={{ color: 'var(--critical-fg)' }}>
                       {acc.mauDelta < 0 ? '↓' : '↑'} {Math.abs(Math.round(acc.mauDelta))}% MAU
@@ -176,7 +172,7 @@ export default function PortfolioPage() {
                   <SortButton column="health" label="Health" />
                 </th>
                 <th style={{ padding: '12px 16px', textAlign: 'left' }}>
-                  <SortButton column="delta" label="Trend" />
+                  <SortButton column="delta" label="Sample usage" />
                 </th>
                 <th style={{ padding: '12px 16px', textAlign: 'right' }}>
                   <SortButton column="arr" label="ARR" />
@@ -185,7 +181,7 @@ export default function PortfolioPage() {
                   <div className="eyebrow">NPS</div>
                 </th>
                 <th style={{ padding: '12px 16px', textAlign: 'right' }}>
-                  <SortButton column="renewal" label="Renewal" />
+                  <SortButton column="renewal" label="Contract date" />
                 </th>
                 <th style={{ padding: '12px 24px', textAlign: 'left' }}>
                   <div className="eyebrow">Executive</div>
@@ -200,6 +196,10 @@ export default function PortfolioPage() {
                 return (
                   <tr
                     key={acc.id}
+                    tabIndex={0}
+                    role="link"
+                    aria-label={`Open ${acc.name} sample account`}
+                    onKeyDown={event => { if (event.key === 'Enter') router.push(`/?account=${acc.id}`); }}
                     onClick={() => router.push(`/?account=${acc.id}`)}
                     style={{
                       borderBottom: '1px solid var(--border-subtle)',
@@ -238,7 +238,7 @@ export default function PortfolioPage() {
                         >
                           {acc.health}
                         </span>
-                        <span style={{ fontSize: 12, color: 'var(--fg-4)' }}>/100</span>
+                        <span style={{ fontSize: 12, color: 'var(--fg-3)' }}>/100 · {bandLabel(acc.health)}</span>
                       </div>
                     </td>
                     <td style={{ padding: '16px 16px' }}>
@@ -271,7 +271,7 @@ export default function PortfolioPage() {
                         style={{
                           fontSize: 13,
                           fontFamily: 'var(--font-mono)',
-                          color: acc.nps < 40 ? 'var(--critical-fg)' : acc.nps < 60 ? 'var(--fg-2)' : 'var(--healthy-fg)',
+                          color: 'var(--fg-1)',
                         }}
                       >
                         {acc.nps}
@@ -283,10 +283,10 @@ export default function PortfolioPage() {
                           style={{
                             fontSize: 13,
                             fontFamily: 'var(--font-mono)',
-                            color: acc.daysToRenewal < 90 ? 'var(--critical-fg)' : 'var(--fg-2)',
+                            color: 'var(--fg-2)',
                           }}
                         >
-                          {renewalLabel(acc.daysToRenewal, true)}
+                          {acc.contract_end} · historical
                         </div>
                         <div style={{ fontSize: 10, color: 'var(--fg-4)', marginTop: 2 }}>
                           {new Date(acc.contract_end).toLocaleDateString('en-US', { month: 'short', year: 'numeric' })}
@@ -305,7 +305,7 @@ export default function PortfolioPage() {
             <label htmlFor="lighthouse-portfolio-sort">Sort accounts</label>
             <select id="lighthouse-portfolio-sort" value={sortBy} onChange={e => handleSort(e.target.value as SortKey)}>
               <option value="health">Customer health</option>
-              <option value="renewal">Renewal date</option>
+              <option value="renewal">Historical contract date</option>
               <option value="arr">ARR</option>
               <option value="delta">Usage trend</option>
             </select>
@@ -321,10 +321,10 @@ export default function PortfolioPage() {
                 <span className="portfolio-mobile-account-head">
                   <strong>{acc.name}</strong>
                   <span className="portfolio-mobile-account-health" style={{ color: acc.band === 'critical' ? 'var(--critical-fg)' : acc.band === 'high' ? 'var(--high-fg)' : acc.band === 'watch' ? 'var(--medium-fg)' : 'var(--healthy-fg)' }}>
-                    {acc.health}/100
+                    {acc.health}/100 · {bandLabel(acc.health)}
                   </span>
                 </span>
-                <span className="portfolio-mobile-account-meta">{acc.industry} · ${(acc.arr / 1000).toFixed(0)}K ARR · {renewalLabel(acc.daysToRenewal)}</span>
+                <span className="portfolio-mobile-account-meta">{acc.industry} · ${(acc.arr / 1000).toFixed(0)}K ARR · contract {acc.contract_end} (historical)</span>
               </button>
             ))}
           </div>

@@ -79,7 +79,7 @@ Return ONLY this JSON:
   ]
 }
 
-Provide 2-3 concrete opportunities with realistic ARR lift calculations.`,
+Provide discovery hypotheses only when supported. Omit arr_lift because pricing, budget, and purchase intent are not supplied. Do not invent benchmarks or contractual terms.`,
 
       briefing: `Create executive briefing for this account. Return ONLY valid JSON with NO preamble.
 
@@ -121,6 +121,7 @@ Return ONLY this JSON:
     const message = await client.messages.create({
       model: 'claude-haiku-4-5-20251001',
       max_tokens: 2000,
+      system: 'This is a demonstration using fictional static accounts. Use only supplied facts. Health is a heuristic, not a probability or validated prediction. Dates are historical sample fields, never current deadlines. Do not invent trends, benchmarks, confidence percentages, ARR lift, customer intent, tool activity, or commitments. Label hypotheses and missing evidence. No message is sent and no action is executed.',
       messages: [{ role: 'user', content: prompts[type] }],
     });
 

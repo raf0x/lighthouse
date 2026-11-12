@@ -399,27 +399,20 @@
 }
 
 
-/* Match the color-coded primary navigation: dashboard, accounts, portfolio. */
+/* Navigation expresses location, not three competing primary actions. */
 .nav{gap:7px;background:transparent;border-color:transparent}
 .nav a,.shell[data-mode="light"] .nav a{
-  color:#fff;
-  font-size:12px;
-  font-weight:750;
-  border:1.5px solid transparent;
-  border-radius:8px;
-  padding:10px 14px;
-  box-shadow:inset 0 1px rgba(255,255,255,.18),0 2px 7px rgba(13,40,60,.12);
-  transition:filter .18s,transform .18s,box-shadow .18s;
+  color:var(--muted);background:transparent;border:1px solid transparent;
+  border-radius:8px;padding:10px 14px;min-height:44px;
+  display:flex;align-items:center;justify-content:center;
+  font-size:12px;font-weight:650;box-shadow:none;
+  transition:background .18s,color .18s;
 }
-.nav a.navDashboard,.shell[data-mode="light"] .nav a.navDashboard{background:#087e78;border-color:#066963;color:white}
-.nav a.navAccounts,.shell[data-mode="light"] .nav a.navAccounts{background:#305ebf;border-color:#234c9f;color:white}
-.nav a.navPortfolio,.shell[data-mode="light"] .nav a.navPortfolio{background:#853fb0;border-color:#6c2c95;color:white}
-.nav a:hover,.shell[data-mode="light"] .nav a:hover{filter:brightness(1.1);transform:translateY(-1px);color:white}
+.nav a:hover,.shell[data-mode="light"] .nav a:hover{background:var(--deep);color:var(--ink)}
 .nav a[aria-current="page"],.shell[data-mode="light"] .nav a[aria-current="page"]{
-  color:white;
-  box-shadow:0 0 0 2px var(--deep),0 0 0 4px rgba(109,171,181,.6),inset 0 1px rgba(255,255,255,.2);
+  background:#087e78;border-color:#066963;color:white;box-shadow:none;
 }
-.nav a:focus-visible{outline:3px solid #79dbc8;outline-offset:3px}
+.nav a:focus-visible{outline:3px solid #318c83;outline-offset:3px}
 @media(max-width:600px){
   .nav{gap:6px;width:100%;padding:4px 1px}
   .nav a,.shell[data-mode="light"] .nav a{min-width:0;flex:1;padding:10px 5px;font-size:11px}
@@ -475,3 +468,265 @@
 .shell[data-embed="true"] .timeline{display:none}
 .shell[data-embed="true"] .controls{display:none}
 .shell[data-embed="true"] .dashboard:before{display:none}
+
+/* Inspectable identities and a deliberate, finite case playback. */
+.networkDetail{display:block}
+.detailHeading{display:flex;align-items:center;gap:10px}
+.detailHeading>span:nth-child(2){flex:1;min-width:0}
+.detailHeading button{min-width:36px;min-height:36px}
+.roleFacts{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px;margin:16px 0 2px}
+.roleFacts dt{font:9px var(--font-geist-mono),monospace;letter-spacing:.1em;color:var(--muted);margin-bottom:6px}
+.roleFacts dd{font-size:12px;line-height:1.6;margin:0;color:var(--ink)}
+.agentText{min-width:0}
+.agentText small{overflow-wrap:normal;line-height:1.35}
+.agent,.agent:hover,.agentSelected{gap:8px;padding-inline:9px}
+.agentSymbol{width:40px;height:40px;flex-basis:40px}
+.networkLabel{font-size:8px}
+.shell[data-paused="true"] *,.shell[data-paused="true"] *::before,.shell[data-paused="true"] *::after{animation-play-state:paused!important}
+@media(max-width:600px){
+  .roleFacts{grid-template-columns:1fr;gap:12px}
+  .detailHeading strong{line-height:1.5}
+  .networkDetail small{line-height:1.6}
+  .networkLabel{display:none}
+}
+@media(prefers-reduced-motion:reduce){
+  .shell *,.shell *::before,.shell *::after{animation:none!important;transition:none!important}
+}
+.metricCaption{display:block;margin-top:12px;font-size:10px;line-height:1.5;color:var(--muted)}
+.shell[data-embed="true"] .controls{display:flex}
+.demoDisclosure{margin:0 18px 12px;font-size:11px;line-height:1.5;color:var(--muted)}
+.caseRoute{display:flex;flex-wrap:wrap;gap:5px;margin:0 18px 8px;padding:0;list-style:none}
+.caseRoute button{display:flex;gap:5px;align-items:center;border:1px solid var(--line);border-radius:5px;padding:6px;background:transparent;color:var(--muted);font-size:10px}
+.caseRoute button span{font-size:9px;opacity:.8}
+.caseRoute li[aria-current="step"] button{color:var(--ink);border-color:#4ba99a;background:rgba(74,181,157,.13)}
+@media(max-width:600px){.caseRoute button{min-height:36px}.agentText small{font-size:9px;word-break:normal}.agentSymbol{width:34px;height:34px;flex-basis:34px}}
+
+/* The selected fictional account anchors every stage and output. */
+.accountStories{margin-bottom:18px;padding:18px;border:1px solid var(--line);border-radius:12px;background:var(--panel)}
+.storyHeading{display:flex;justify-content:space-between;align-items:center;gap:16px;margin-bottom:14px}
+.storyHeading strong{font-size:15px}
+.storyHeading p{font-size:12px;line-height:1.6;color:var(--muted);margin:5px 0 0}
+.storyHeading button{padding:10px 12px;border:1px solid var(--line);border-radius:7px;background:var(--deep);color:var(--ink);white-space:nowrap}
+.storyCards{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+.storyCard{display:flex;flex-direction:column;align-items:flex-start;gap:8px;text-align:left;padding:14px;border:1px solid var(--line);border-radius:9px;background:var(--deep);color:var(--ink);min-width:0}
+.storyCard>span:first-child{font-weight:650;font-size:13px}
+.storyCard strong{font-size:24px}.storyCard strong small{font-size:10px;margin-left:4px;font-weight:400}
+.storyCard>span,.storyCard>small{font-size:10px;line-height:1.5}
+.storyCard[data-current="true"]{border-color:#39a995;box-shadow:inset 3px 0 #39a995;background:color-mix(in srgb,var(--panel) 91%,#39a995)}
+.storyCard[aria-pressed="true"]{outline:2px solid #39a995;outline-offset:2px}
+.storyContext{display:flex;flex-wrap:wrap;gap:8px 20px;margin-top:15px;font-size:11px;line-height:1.7;color:var(--muted)}
+.storyContext span:first-child{font-weight:650;color:var(--ink)}
+.storyContext a{margin-left:auto;text-decoration:underline}
+.storyCopy{margin:0;padding:0 18px 16px;font-size:12px;line-height:1.8;color:var(--muted)}
+.accountLink{display:flex;align-items:center;gap:6px;margin:0 18px 18px;text-decoration:underline!important;font-size:12px}
+.usageChart{height:100px;margin:0 18px 14px;position:relative}
+.usageChart .spark{position:static;width:100%;height:100%}
+@media(max-width:600px){.accountStories{padding:12px}.storyHeading{align-items:flex-start;flex-direction:column}.storyCards{grid-template-columns:1fr}.storyCard{display:grid;grid-template-columns:1fr auto;gap:6px 12px}.storyCard strong{grid-column:2;grid-row:1 / span 3}.storyCard>span,.storyCard>small{grid-column:1}.storyContext{display:grid}.storyContext a{margin:0}.storyCard strong small{display:block;margin:0}.storyCopy{font-size:12px}}
+
+/* Account identity colors are separate from agent-role colors and concern semantics. */
+.storyCard{border-top:3px solid var(--account-color)}
+.storyCard[data-current="true"]{border-color:var(--account-color);box-shadow:inset 3px 0 var(--account-color);background:color-mix(in srgb,var(--panel) 92%,var(--account-color))}
+.storyCard[aria-pressed="true"]{outline-color:var(--account-color)}
+.accountIdentity{display:flex;align-items:center;gap:8px}
+.accountBadge{display:inline-grid;place-items:center;min-width:27px;height:25px;padding:0 4px;border:2px solid var(--account-color);border-radius:6px;font:700 10px var(--font-geist-mono),monospace;color:var(--ink);background:color-mix(in srgb,var(--panel) 86%,var(--account-color));vertical-align:middle}
+.storyContext>span:first-child{display:flex;align-items:center;gap:8px}
+.inspectionBadge{display:inline-block;border:2px solid;border-radius:4px;padding:2px 4px;color:var(--ink);font-weight:700;margin-right:4px}
+.scenarioNote{border-left:3px solid var(--account-color)}
+.accountKpis{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin:14px 0 10px}
+.accountKpis>div{padding:12px;border:1px solid var(--line);border-radius:7px;background:var(--deep)}
+.accountKpis dt{font-size:9px;line-height:1.5;letter-spacing:.05em;color:var(--muted)}
+.accountKpis dd{margin:6px 0 0;font-size:24px;font-weight:750;line-height:1.3}
+.accountKpis dd small{display:block;font-size:11px;font-weight:400;color:var(--muted)}
+.accountKpis>div>span{display:block;margin-top:6px;font-size:10px;font-weight:650}
+.accountKpis [data-concern="true"]{border-color:var(--line);background:var(--deep)}
+.accountKpis [data-concern="true"] dd,.accountKpis [data-concern="true"]>span{color:#ffb39a}
+.shell[data-mode="light"] .accountKpis [data-concern="true"]{border-color:var(--line);background:var(--deep)}
+.shell[data-mode="light"] .accountKpis [data-concern="true"] dd,.shell[data-mode="light"] .accountKpis [data-concern="true"]>span{color:#9b381c}
+.concernNote{margin:0;font-size:11px;line-height:1.7;color:var(--muted)}
+.interactionHint{margin:0 18px 12px;font-size:11px;line-height:1.6;color:var(--muted)}
+.storyCard:hover{border-color:var(--account-color);background:color-mix(in srgb,var(--panel) 92%,var(--account-color))}
+@media(max-width:600px){.accountKpis{grid-template-columns:1fr}.accountKpis>div{display:grid;grid-template-columns:1fr auto;gap:4px 12px}.accountKpis dd{grid-column:2;grid-row:1 / span 2;margin:0;text-align:right}.accountKpis>div>span{grid-column:1}.storyContext>span:first-child{align-items:flex-start}.accountIdentity{align-items:flex-start}}
+
+/* Full-tile identities, not just a colored edge; stable KPI label baselines. */
+.storyCard,.storyCard[data-current="true"],.storyCard:hover{
+  background:color-mix(in srgb,var(--deep) 72%,var(--account-color));
+}
+.shell[data-mode="light"] .storyCard,
+.shell[data-mode="light"] .storyCard[data-current="true"],
+.shell[data-mode="light"] .storyCard:hover{
+  background:color-mix(in srgb,white 78%,var(--account-color));
+}
+.storyCard:hover{box-shadow:inset 0 0 0 1px var(--account-color)}
+.storyCard[data-current="true"]{box-shadow:inset 3px 0 var(--account-color)}
+.accountKpis>div{display:flex;flex-direction:column}
+.accountKpis dd{min-height:49px}
+.accountKpis>div>span{margin-top:auto;padding-top:6px}
+@media(max-width:600px){
+  .accountKpis>div{display:grid;grid-template-columns:1fr auto}
+  .accountKpis dd{min-height:0}
+  .accountKpis>div>span{margin-top:0;padding-top:0}
+}
+
+
+/* Compact the three summary rows without shrinking their text or click targets. */
+.accountStories{padding:14px;margin-bottom:12px}
+.storyHeading{margin-bottom:10px;gap:12px}
+.storyHeading p{margin-top:3px}
+.storyCard{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:5px 10px;padding:10px 12px;align-items:center;min-height:96px}
+.storyCard>span,.storyCard>small{grid-column:1}
+.storyCard strong{grid-column:2;grid-row:1 / span 3;font-size:23px;text-align:right}
+.storyCard strong small{display:block;margin:0;font-size:10px}
+.storyContext{margin-top:10px}
+.accountKpis{margin:10px 0 8px;gap:10px}
+.accountKpis>div{padding:9px 12px}
+.accountKpis dd{font-size:23px;margin-top:3px;min-height:44px}
+.accountKpis>div>span{padding-top:3px}
+.concernNote{line-height:1.55}
+.metric{padding:12px 14px;min-height:0}
+.metric>div{margin-top:8px;gap:8px}
+.metric strong{font-size:28px}
+.metricCaption{margin-top:7px}
+@media(max-width:600px){
+  .accountStories{padding:10px}
+  .storyCard{min-height:88px;padding:10px;gap:5px 10px}
+  .accountKpis>div{padding:9px 10px}
+  .accountKpis dd{min-height:0;margin:0}
+  .accountKpis>div>span{padding-top:0}
+  .metric{padding:11px;min-height:100px}
+  .metric strong{font-size:25px}
+}
+
+/* Readability pass: compact spacing stays, but informative text is never microtype. */
+.shell{--muted:#b3c3d8}
+.shell[data-mode="light"]{--muted:#344f60}
+.shell :is(.brand small,.topStatus,.eyebrow,.sectionIndex,.panelOverline,.previewTag,.networkLabel,.metric>span,.metricTiny,.metricUp,.metricOrange,.metricBlue,.activeTag,.smallCount,.feedTop time,.networkFooter,.timelineTop,.footer,.centerHub small,.chartAxis,.chartBottom,.chartDelta){font-size:11px!important;letter-spacing:.035em}
+.shell :is(.intro p,.storyHeading p,.storyCopy,.roleFacts dd,.feedList p,.reviewContent p){font-size:14px;line-height:1.6}
+.shell :is(.introRight,.selectWrap,.speedControl,.controlButton,.controls select,.nav a,.themeButton,.metricCaption,.demoDisclosure,.interactionHint,.caseRoute button,.accountKpis dt,.accountKpis>div>span,.concernNote,.storyContext,.storyCard>span,.storyCard>small,.storyCard strong small,.accountKpis dd small,.networkDetail small,.feedList small,.scenarioNote,.reviewButton,.accountLink){font-size:12px!important;line-height:1.5}
+.shell :is(.storyCard>span:first-child,.agentText strong,.networkDetail strong,.feedTop strong,.reviewContent strong){font-size:14px;font-weight:700}
+.shell :is(.agentText small,.roleFacts dt,.caseRoute button span){font-size:11px;line-height:1.4;letter-spacing:0;opacity:1}
+.shell :is(.brand small,.introRight,.intro p,.sectionIndex,.previewTag,.selectWrap,.speedControl,.metric>span,.metricTiny,.networkLabel,.agentText small,.networkDetail small,.networkFooter,.smallCount,.feedTop time,.feedList small,.reviewContent p,.chartAxis,.chartBottom,.chartDelta,.timelineTop,.footer){color:var(--muted)}
+.shell .eyebrow>span:last-child{color:var(--muted)}
+.shell .metricOrange{color:#ffd0ad}
+.shell .metricBlue{color:#c3caff}
+.shell[data-mode="light"] .metricOrange{color:#84441f}
+.shell[data-mode="light"] .metricBlue{color:#494d97}
+.shell .feedTop strong{color:var(--ink)}
+.shell .reviewButton:disabled{opacity:1;color:var(--muted)}
+.shell .centerHub small{color:var(--ink);font-weight:600}
+.shell .timelineTop span:first-child{color:var(--ink)}
+.storyCard{gap:5px 10px}
+.storyCard strong{font-size:25px}
+.accountKpis dt{font-weight:600}
+.accountKpis dd{min-height:48px}
+.controls button,.controls select,.themeButton{min-height:40px}
+.caseRoute button{min-height:36px;padding:6px 8px}
+.networkFooter,.timelineTop{flex-wrap:wrap;line-height:1.6}
+.detailHeading{flex-wrap:wrap}
+.networkDetail .detailHeading strong{font-size:14px}
+.networkDetail .detailHeading button{font-size:12px;line-height:1.4}
+.feedList small{display:block}
+.metric>div{flex-wrap:wrap}
+.agent,.agent:hover,.agentSelected{width:166px;min-height:78px}
+.agentSymbol{width:32px;height:32px;flex-basis:32px}
+.agentText{flex:1}
+.agentText strong,.agentText small{overflow-wrap:normal;word-break:normal}
+.networkLabel{max-width:calc(100% - 40px)}
+@media(max-width:1150px) and (min-width:601px){
+  .agent,.agent:hover,.agentSelected{width:138px;min-height:78px;gap:6px;padding:8px}
+  .agentSymbol{width:24px;height:28px;flex-basis:24px}
+  .shell .agentText strong{font-size:13px}
+}
+@media(max-width:800px){
+  .roleFacts{grid-template-columns:1fr;gap:12px}
+}
+@media(max-width:600px){
+  .shell .brand small{font-size:9px!important}
+  .storyCard{grid-template-columns:minmax(0,1fr) auto;min-height:96px}
+  .accountKpis dd{min-height:0}
+  .network{grid-template-rows:repeat(4,minmax(88px,auto));min-height:550px}
+  .agent,.agent:hover,.agentSelected{width:100%;height:auto;min-height:88px;padding:8px;gap:6px}
+  .agentSymbol{width:24px;height:28px;flex-basis:24px}
+  .shell .agentText strong{font-size:13px}
+  .shell .agentText small{font-size:11px}
+  .networkFooter{gap:8px}
+  .shell .metric>span{font-size:11px!important}
+  .metric{min-height:110px}
+  .footer p:first-child{white-space:normal}
+}
+
+/* The seven summary values share a centered visual axis. */
+.accountKpis>div,.metric{text-align:center}
+.accountKpis dd{text-align:center}
+.metric>div{justify-content:center;align-items:center}
+@media(max-width:600px){
+  .accountKpis>div{display:flex;flex-direction:column;align-items:stretch;gap:3px}
+  .accountKpis dd{min-height:0;text-align:center}
+  .metric>div{align-items:center}
+}
+.shell .feedList li{opacity:1}
+.shell .panelOverline{color:var(--muted)}
+.shell .nowProcessing{max-width:100%;white-space:normal;overflow:visible;text-overflow:clip}
+
+/* Keep every orbit node inside its canvas and the inspector outside it. */
+.network{flex-shrink:0}
+.networkDetail{margin:10px 16px 10px;padding:12px 14px;border-radius:8px;text-align:left}
+.detailHeading{display:grid;grid-template-columns:8px minmax(0,1fr) auto;align-items:start;gap:10px}
+.detailHeading .detailDot{margin-top:8px}
+.detailHeading>span:nth-child(2){display:flex;flex-wrap:wrap;align-items:baseline;gap:4px 10px}
+.detailHeading>span:nth-child(2)>small:first-child{flex-basis:100%;display:flex;align-items:center;gap:6px}
+.detailHeading>span:nth-child(2)>strong{display:block}
+.detailHeading>span:nth-child(2)>small:last-child{display:block}
+.detailHeading button{margin:0;align-self:start}
+.roleFacts{display:grid;grid-template-columns:1fr;gap:8px;margin:12px 0 0}
+.roleFacts>div{display:grid;grid-template-columns:132px minmax(0,1fr);align-items:start;gap:12px}
+.roleFacts dt{margin:2px 0 0;line-height:1.4}
+.roleFacts dd{line-height:1.5}
+@media(max-width:600px){
+ .networkDetail{margin:10px;padding:12px}
+ .roleFacts>div{grid-template-columns:1fr;gap:3px}
+ .detailHeading>span:nth-child(2)>small:first-child{display:block}
+ .roleFacts{gap:10px}
+}
+
+/* NPS/ticket numerals sit on the exact tile center, not below the heading. */
+.accountKpis>div:nth-child(n+2){
+ display:grid;grid-template-columns:1fr;grid-template-rows:1fr auto 1fr;
+ min-height:116px;row-gap:0;padding:10px 12px;
+}
+.accountKpis>div:nth-child(n+2)>dt{grid-row:1;align-self:start}
+.accountKpis>div:nth-child(n+2)>dd{
+ grid-column:1;grid-row:2;margin:0;min-height:0;line-height:1.3;
+ align-self:center;text-align:center;
+}
+.accountKpis>div:nth-child(n+2)>span{
+ grid-column:1;grid-row:3;align-self:end;margin:0;padding:0;
+}
+
+/* Identity accents stay categorical; health numbers carry labeled ordinal bands. */
+.shell[data-mode] .storyCard,.shell[data-mode] .storyCard[data-current="true"],.shell[data-mode] .storyCard:hover{
+ background:var(--deep);border-top:3px solid var(--account-color);
+}
+.shell[data-mode] .storyCard[data-current="true"]{box-shadow:inset 3px 0 var(--account-color)}
+.shell[data-mode] .storyCard:hover{background:color-mix(in srgb,var(--deep) 95%,var(--account-color))}
+.storyCard strong small{color:var(--muted);font-weight:600}
+.shell[data-mode] .accountKpis [data-concern="true"] dd,
+.shell[data-mode] .accountKpis [data-concern="true"]>span{color:var(--ink)}
+.shell[data-mode] .accountKpis [data-primary-concern="true"] dd,
+.shell[data-mode] .accountKpis [data-primary-concern="true"]>span{color:var(--high-fg)}
+/* Nonparticipants remain readable and clickable without competing with the case. */
+.shell .agentOutsideCase{border-style:dashed;box-shadow:none;background:var(--deep)}
+.agentOutsideCase .agentSymbol{filter:grayscale(1);opacity:.55}
+.shell .agentOutsideCase .agentText strong{color:var(--muted)}
+.shell .agentOutsideCase .outsideCaseLabel{font-size:10px;font-style:italic}
+.agentOutsideCase:hover,.agentOutsideCase.agentSelected{border-color:var(--muted)}
+.panelOverline>span{display:inline-block;white-space:nowrap}
+.reviewBrief,.reviewHint{margin:0 20px 16px;color:var(--muted);font-size:13px;line-height:1.6}
+.reviewHint{font-size:12px}
+@media(max-width:600px){
+ .controls{grid-template-columns:1fr 1fr}
+ .selectWrap{grid-column:1/-1;overflow:visible}
+ .selectWrap select{flex:1;width:auto;min-width:0}
+ .speedControl{justify-content:flex-end}
+ .panelHeading{flex-wrap:wrap}
+ .reviewBrief,.reviewHint{margin-inline:12px}
+}

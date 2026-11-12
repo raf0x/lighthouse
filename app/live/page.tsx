@@ -9,12 +9,10 @@ import {
   AudioLines, Compass, FilePenLine, Radar, ScanSearch, ShieldAlert, ShieldCheck, Network as NetworkIcon, Zap
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
-import { accounts, calculateHealthScore } from '@/app/lib/lighthouse';
+import { accounts, bandColor, bandLabel, healthBand } from '@/app/lib/lighthouse';
 import styles from './live.module.css';
+import { caseIds, getStory, isCaseId, accountIdentity, isPreviousReviewPass, type CaseId, type AgentId } from '@/app/lib/live-stories';
 
-type AgentId = 'beacon' | 'undertow' | 'waypoint' | 'current' | 'relay' | 'aperture' | 'dispatch' | 'harbor';
-type ScenarioId = 'risk' | 'growth';
-type Event = { agent: AgentId; title: string; description: string; account: string; type: 'signal' | 'analysis' | 'draft' | 'review' };
 type Agent = { id: AgentId; name: string; role: string; color: string; x: number; y: number; icon: LucideIcon };
 
 const agents: Agent[] = [
@@ -28,34 +26,21 @@ const agents: Agent[] = [
   { id: 'harbor', name: 'Harbor', role: 'Approval', color: '#5897c9', x: 8, y: 52, icon: ShieldCheck },
 ];
 
-const scenarios: Record<ScenarioId, { label: string; kicker: string; events: Event[] }> = {
-  risk: {
-    label: 'Renewal watch',
-    kicker: 'A declining account is surfaced before the next conversation.',
-    events: [
-      { agent: 'current', title: 'Engagement shift detected', description: 'Horizon Retail usage trend fell across the sample period.', account: 'Horizon Retail', type: 'signal' },
-      { agent: 'beacon', title: 'Account health recalculated', description: 'Utilization, support and satisfaction signals were reviewed.', account: 'Horizon Retail', type: 'analysis' },
-      { agent: 'undertow', title: 'Renewal exposure flagged', description: 'Risk context was assembled for the account owner.', account: 'Horizon Retail', type: 'analysis' },
-      { agent: 'waypoint', title: 'Portfolio priority updated', description: 'Horizon Retail moved into the simulated attention queue.', account: 'Portfolio', type: 'signal' },
-      { agent: 'dispatch', title: 'Executive briefing drafted', description: 'A suggested outreach brief is ready for inspection.', account: 'Horizon Retail', type: 'draft' },
-      { agent: 'harbor', title: 'Human review required', description: 'No customer-facing action occurs without a reviewer.', account: 'Horizon Retail', type: 'review' },
-    ],
-  },
-  growth: {
-    label: 'Expansion opportunity',
-    kicker: 'Promising account signals become a reviewable opportunity.',
-    events: [
-      { agent: 'current', title: 'Adoption trend strengthened', description: 'Cascade Energy shows encouraging engagement in sample data.', account: 'Cascade Energy', type: 'signal' },
-      { agent: 'beacon', title: 'Account health inspected', description: 'Positive usage and support signals were summarized.', account: 'Cascade Energy', type: 'analysis' },
-      { agent: 'waypoint', title: 'Portfolio comparison prepared', description: 'Signals were compared with the fictional account portfolio.', account: 'Portfolio', type: 'analysis' },
-      { agent: 'aperture', title: 'Expansion hypothesis formed', description: 'Potential next steps were proposed, not forecast as revenue.', account: 'Cascade Energy', type: 'signal' },
-      { agent: 'relay', title: 'Stakeholder context surfaced', description: 'Executive relationship context was added to the recommendation.', account: 'Cascade Energy', type: 'analysis' },
-      { agent: 'harbor', title: 'Opportunity queued for review', description: 'The proposal awaits a Customer Success manager.', account: 'Cascade Energy', type: 'review' },
-    ],
-  },
+const roleDetails: Record<AgentId, { purpose: string; input: string; output: string; handoff: string }> = {
+  beacon: { purpose: 'Explain account health', input: 'Sample usage, support and satisfaction signals', output: 'A health assessment with supporting context', handoff: 'Undertow for risk or Waypoint for comparison' },
+  undertow: { purpose: 'Surface renewal exposure', input: 'Beacon’s assessment and fictional renewal context', output: 'Risk rationale for the account owner', handoff: 'Waypoint to prioritize attention' },
+  waypoint: { purpose: 'Prioritize the portfolio', input: 'Account signals and the sample portfolio', output: 'An attention priority or opportunity comparison', handoff: 'Dispatch for a brief or Aperture for growth' },
+  current: { purpose: 'Spot engagement changes', input: 'Fictional product adoption trends', output: 'A declining or strengthening usage signal', handoff: 'Beacon to assess account health' },
+  relay: { purpose: 'Connect relationship context', input: 'Fictional stakeholder and executive context', output: 'People and relationships to consider next', handoff: 'Harbor for a person to review' },
+  aperture: { purpose: 'Explore expansion potential', input: 'Positive health and portfolio comparison', output: 'An expansion hypothesis, not a revenue forecast', handoff: 'Relay to add stakeholder context' },
+  dispatch: { purpose: 'Prepare the next conversation', input: 'Prioritized risk and its supporting rationale', output: 'A suggested executive outreach brief', handoff: 'Harbor for a person to review' },
+  harbor: { purpose: 'Keep the decision human', input: 'The suggested brief or opportunity', output: 'A local demo review acknowledgement only', handoff: 'A Customer Success manager decides; nothing is sent' },
 };
 
-const sampleAccountNames = ['Horizon Retail', 'Velocity Healthcare', 'Meridian Financial', 'Cascade Energy'];
+function roleLabel(agent: Agent) {
+  return agent.id === 'harbor' ? 'Human gate' : agent.role;
+}
+
 const positions = Object.fromEntries(agents.map(a => [a.id, a])) as Record<AgentId, Agent>;
 const totalArr = accounts.reduce((sum, account) => sum + account.arr, 0);
 
@@ -63,10 +48,13 @@ function fmtClock(seconds: number) {
   return `${String(Math.floor(seconds / 60)).padStart(2, '0')}:${String(seconds % 60).padStart(2, '0')}`;
 }
 
-function Network({ active, visited, selected, onSelect, reduced }: {
-  active: AgentId; visited: AgentId[]; selected: AgentId | null; onSelect: (agent: AgentId | null) => void; reduced: boolean;
+function Network({ active, visited, selected, onSelect, reduced, paused, caseAgents, reviewed, story, inspecting }: {
+  active: AgentId; visited: AgentId[]; selected: AgentId | null; onSelect: (agent: AgentId | null) => void; reduced: boolean; paused: boolean; caseAgents: AgentId[]; reviewed: boolean; story: ReturnType<typeof getStory>; inspecting: boolean;
 }) {
   const selectedAgent = selected ? positions[selected] : positions[active];
+  const eventIndex = story.events.findIndex(event => event.agent === selectedAgent.id);
+  const detail = story.events[eventIndex];
+  const nextRole = story.events[eventIndex + 1];
   return (
     <>
     <div className={styles.network}>
@@ -82,6 +70,7 @@ function Network({ active, visited, selected, onSelect, reduced }: {
         {agents.map(agent => {
           const x = agent.x * 10; const y = agent.y * 6.2;
           const isActive = active === agent.id;
+          if (!isActive) return null;
           return <g key={agent.id}>
             <path d={`M500 310 Q${(500 + x) / 2} ${(310 + y) / 2 - 30} ${x} ${y}`}
               fill="none" stroke={isActive ? agent.color : 'url(#wire)'} strokeWidth={isActive ? 2.6 : 1.2}
@@ -108,27 +97,34 @@ function Network({ active, visited, selected, onSelect, reduced }: {
       {agents.map(agent => {
         const isActive = agent.id === active;
         const isVisited = visited.includes(agent.id);
+        const inCase = caseAgents.includes(agent.id);
         const AgentIcon = agent.icon;
         return <button
           key={agent.id}
           type="button"
-          className={`${styles.agent} ${isActive ? styles.agentActive : ''} ${selected === agent.id ? styles.agentSelected : ''}`}
-          style={{ left: `clamp(80px, ${agent.x}%, calc(100% - 80px))`, top: `${agent.y}%`, ['--agent-color' as string]: agent.color } as React.CSSProperties}
+          className={`${styles.agent} ${isActive ? styles.agentActive : ''} ${!inCase ? styles.agentOutsideCase : ''} ${selected === agent.id ? styles.agentSelected : ''}`}
+          style={{ left: `clamp(92px, ${agent.x}%, calc(100% - 92px))`, top: `clamp(60px, ${agent.y}%, calc(100% - 60px))`, ['--agent-color' as string]: agent.color } as React.CSSProperties}
           aria-pressed={selected === agent.id} onClick={() => onSelect(selected === agent.id ? null : agent.id)}
-          aria-label={`${agent.name}, ${agent.role}, ${isActive ? 'processing' : isVisited ? 'completed' : 'standby'}. View details`}
+          aria-label={`${agent.name}, ${roleLabel(agent)}, ${isActive ? (agent.id === 'harbor' ? (reviewed ? 'reviewed locally' : 'awaiting human review') : paused ? 'paused on this step' : 'simulating') : isVisited ? 'completed' : (caseAgents.includes(agent.id) ? 'up next in this case' : 'not used in this case')}. View details`}
         >
           <span className={styles.agentSymbol} aria-hidden="true"><span className={styles.agentGlyphAura} /><AgentIcon size={28} strokeWidth={1.9} /></span>
-          <span className={styles.agentText}><strong>{agent.name}</strong><small>{agent.role}</small></span>
+          <span className={styles.agentText}><strong>{agent.name}</strong><small>{roleLabel(agent)}</small>{!inCase && <small className={styles.outsideCaseLabel}>Not in this case</small>}</span>
           <span className={styles.agentStatus} aria-hidden="true">{isActive ? <span className={styles.statusPulse} /> : isVisited ? '✓' : '·'}</span>
         </button>;
       })}
-      <div className={styles.networkLabel}>NETWORK / 08 NODES</div>
     </div>
-      <div className={styles.networkDetail} aria-live="polite">
-        <span className={styles.detailDot} style={{ background: selectedAgent.color }} />
-        <span><strong>{selectedAgent.name}</strong><small>{selectedAgent.role} · {active === selectedAgent.id ? 'Processing simulation event' : visited.includes(selectedAgent.id) ? 'Step completed' : 'Standby'}</small></span>
-        {selected && <button onClick={() => onSelect(null)} aria-label="Close agent details">×</button>}
-      </div>
+      <section className={styles.networkDetail} aria-label="Selected role details" onKeyDown={e => { if (e.key === 'Escape') onSelect(null); }}>
+        <div className={styles.detailHeading}>
+          <span className={styles.detailDot} style={{ background: selectedAgent.color }} />
+          <span><small><span className={styles.inspectionBadge} style={{borderColor: accountIdentity[story.account.id as CaseId].color}}>{accountIdentity[story.account.id as CaseId].code}</span> {inspecting ? "INSPECTING" : "FOLLOWING CURRENT STAGE"} · {story.account.name}</small><strong>{selectedAgent.name} · {roleLabel(selectedAgent)}</strong><small>{roleDetails[selectedAgent.id].purpose} · {inspecting ? 'Pinned inspection; playback continues' : selectedAgent.id === 'harbor' ? (reviewed ? 'Reviewed locally' : 'Human review step') : paused ? 'Paused on this step' : 'Scripted stage'}</small></span>
+          {selected && <button onClick={() => onSelect(null)} aria-label="Follow active role">×</button>}
+        </div>
+        <dl className={styles.roleFacts}>
+          <div><dt>ACCOUNT EVIDENCE</dt><dd>{detail?.input ?? "This role is not used in this account’s story."}</dd></div>
+          <div><dt>{inspecting ? "PREVIEW OF SCRIPTED OUTPUT" : "SCRIPTED OUTPUT"}</dt><dd>{detail?.output ?? roleDetails[selectedAgent.id].purpose}</dd></div>
+          <div><dt>NEXT HANDOFF</dt><dd>{detail ? nextRole ? positions[nextRole.agent].name + " · " + nextRole.title : "Human decision only. Nothing sent." : "Not in this case."}</dd></div>
+        </dl>
+      </section>
     </>
   );
 }
@@ -142,31 +138,42 @@ function Sparkline({ values, color = '#64ddc5' }: { values: number[]; color?: st
 }
 
 export default function LiveDashboard() {
-  const [scenario, setScenario] = React.useState<ScenarioId>('risk');
+  const [pinnedAccount, setPinnedAccount] = React.useState<CaseId | null>(null);
+  const [inspectionCase, setInspectionCase] = React.useState<CaseId | null>(null);
   const [embedded, setEmbedded] = React.useState(false);
   React.useEffect(() => {
-    setEmbedded(new URLSearchParams(window.location.search).get('embed') === '1');
+    const sync = () => {
+      const params = new URLSearchParams(window.location.search);
+      setEmbedded(params.get('embed') === '1');
+      const id = params.get('account');
+      setPinnedAccount(isCaseId(id) ? id : null);
+      setTick(0); setPlaybackRun(previous => previous + 1); setSelectedAgent(null); setInspectionCase(null);
+    };
+    sync(); window.addEventListener('popstate', sync);
+    return () => window.removeEventListener('popstate', sync);
   }, []);
   const [tick, setTick] = React.useState(0);
   const [playing, setPlaying] = React.useState(true);
-  const [speed, setSpeed] = React.useState(3);
+  const [speed, setSpeed] = React.useState(2);
   const [theme, setTheme] = React.useState<'light' | 'dark'>('light');
   const [selectedAgent, setSelectedAgent] = React.useState<AgentId | null>(null);
-  const [approved, setApproved] = React.useState(false);
+  const [readyCases, setReadyCases] = React.useState<Partial<Record<CaseId, string>>>({});
+  const [playbackRun, setPlaybackRun] = React.useState(0);
+  const [reviewedCases, setReviewedCases] = React.useState<Partial<Record<CaseId, boolean>>>({});
   const [motionReduced, setMotionReduced] = React.useState(false);
   const cycleLength = 24;
   const cycle = Math.floor(tick / cycleLength);
   const cycleTick = tick % cycleLength;
+  const passKey = `${playbackRun}:${cycle}`;
   const stage = Math.floor(cycleTick / 4);
-  const activeScenario: ScenarioId = cycle % 2 === 0 ? scenario : scenario === 'risk' ? 'growth' : 'risk';
-  const scene = scenarios[activeScenario];
+  const activeCase = pinnedAccount ?? caseIds[cycle % caseIds.length];
+  const scene = getStory(activeCase);
+  const account = scene.account;
+  const identity = accountIdentity[activeCase];
   const current = scene.events[stage];
-  const visible = Array.from({length: Math.min(6, Math.floor(tick / 4) + 1)}, (_, offset) => {
-    const sequence = Math.floor(tick / 4) - offset;
-    const pastScenario: ScenarioId = Math.floor(sequence / 6) % 2 === 0 ? scenario : scenario === 'risk' ? 'growth' : 'risk';
-    return {event: scenarios[pastScenario].events[sequence % 6], sequence};
-  });
-  const visited = scene.events.slice(0, stage + 1).map(e => e.agent);
+  const approved = Boolean(reviewedCases[activeCase]);
+  const visible = scene.events.slice(0, stage + 1).map((event, sequence) => ({ event, sequence })).reverse();
+  const visited = scene.events.slice(0, stage).map(e => e.agent);
   const active = current.agent;
 
   React.useEffect(() => {
@@ -193,19 +200,29 @@ export default function LiveDashboard() {
     const id = window.setInterval(() => setTick(previous => previous + 1), 850 / speed);
     return () => window.clearInterval(id);
   }, [playing, speed]);
+  React.useEffect(() => {
+    if (stage === 5) setReadyCases(previous => previous[activeCase] === passKey ? previous : {...previous, [activeCase]: passKey});
+  }, [stage, activeCase, passKey]);
 
-  function changeScenario(next: ScenarioId) {
-    setScenario(next); setTick(0); setApproved(false); setSelectedAgent(null); setPlaying(!motionReduced);
+  function chooseAccount(id: CaseId | null) {
+    setPinnedAccount(id); setTick(0); setPlaybackRun(previous => previous + 1); setSelectedAgent(null); setInspectionCase(null);
+    const url = new URL(window.location.href);
+    if (id) url.searchParams.set('account', id); else url.searchParams.delete('account');
+    window.history.pushState({}, '', url);
   }
-  React.useEffect(() => { setApproved(false); }, [cycle]);
-  const healthScore = calculateHealthScore(accounts.find(a => a.name === (activeScenario === 'risk' ? 'Horizon Retail' : 'Cascade Energy'))!);
-  const healthValue = activeScenario === 'risk' ? Math.max(0, healthScore + 7 - stage * 2) : Math.min(100, healthScore - 4 + stage);
-  const queueCount = stage >= 4 && !approved ? 2 : 1;
-  const chartValues = activeScenario === 'risk'
-    ? [76, 74, 72, 73, 69, 68 - stage, 66 - stage, 66 - stage * 1.5]
-    : [65, 66, 66, 68, 69, 70 + stage, 71 + stage, 73 + stage];
+  function inspectAgent(id: AgentId | null) {
+    setSelectedAgent(id); setInspectionCase(id ? activeCase : null);
+  }
+  const pendingCases = caseIds.filter(id => readyCases[id] && !reviewedCases[id]);
+  const reviewCase = pendingCases.includes(activeCase) ? activeCase : pendingCases[0] ?? activeCase;
+  const reviewStory = getStory(reviewCase);
+  const reviewReady = Boolean(readyCases[reviewCase]);
+  const reviewDone = Boolean(reviewedCases[reviewCase]);
+  const previousPass = isPreviousReviewPass(readyCases[reviewCase], passKey, reviewCase, activeCase);
+  const queueCount = pendingCases.length;
+  const chartValues = account.mau;
   return (
-    <main className={styles.shell} data-mode={theme} data-embed={embedded ? "true" : undefined}>
+    <main className={styles.shell} style={{["--account-color" as string]: identity.color} as React.CSSProperties} data-paused={!playing} data-mode={theme} data-embed={embedded ? "true" : undefined}>
       <div className={styles.ambient} aria-hidden="true" />
       <div className={styles.frame}>
         <header className={styles.topbar}>
@@ -214,7 +231,7 @@ export default function LiveDashboard() {
             <Link href="/live" aria-current="page" className={styles.navDashboard}>Dashboard</Link><Link href="/" className={styles.navAccounts}>Accounts</Link><Link href="/portfolio" className={styles.navPortfolio}>Portfolio</Link>
           </nav>
           <div className={styles.topRight}>
-            <div className={styles.topStatus}><span className={styles.liveDot} /> SIMULATION ONLINE <span className={styles.dividerText}>/</span> 08 NODES</div>
+            <div className={styles.topStatus}><span className={styles.liveDot} /> SCRIPTED DEMO <span className={styles.dividerText}>/</span> 7 AGENTS + HUMAN</div>
             <button type="button" className={styles.themeButton} onClick={switchTheme} aria-label={theme === 'light' ? 'Switch to dark mode' : 'Switch to light mode'} title={theme === 'light' ? 'Switch to dark mode' : 'Switch to light mode'}>
               {theme === 'light' ? <Moon size={16} aria-hidden="true" /> : <Sun size={16} aria-hidden="true" />}
               <span>{theme === 'light' ? 'Dark' : 'Light'}</span>
@@ -224,7 +241,7 @@ export default function LiveDashboard() {
         <div className={styles.intro}>
           <div><div className={styles.eyebrow}><span className={styles.eyebrowLine} /> THE INTELLIGENCE ROOM <span> / 001</span></div>
             <h1>See the signals.<br/><em>Before they become surprises.</em></h1>
-            <p>A living view of customer health, opportunities and decisions. Eight simulated specialists, one connected picture.</p>
+            <p>A living view of customer health, opportunities and decisions. Seven simulated AI agents, one human approval gate. Select any role to see its input, output and handoff.</p>
           </div>
           <div className={styles.introRight}><span className={styles.previewTag}>INTERACTIVE PRODUCT DEMO</span><span>Fictional accounts. Scripted intelligence.</span></div>
         </div>
@@ -232,40 +249,70 @@ export default function LiveDashboard() {
           <div className={styles.dashboardTop}>
             <div className={styles.titleGroup}><span className={styles.sectionIndex}>01 / CONTROL ROOM</span><h2>Portfolio command</h2></div>
             <div className={styles.controls}>
-              <label className={styles.selectWrap}>Start with <ChevronDown size={12} aria-hidden="true" /><select value={scenario} onChange={e => changeScenario(e.target.value as ScenarioId)} aria-label="Choose simulation scenario"><option value="risk">Renewal watch</option><option value="growth">Expansion</option></select></label>
+              <label className={styles.selectWrap}>Account <ChevronDown size={12} aria-hidden="true" /><select value={pinnedAccount ?? "tour"} onChange={e => chooseAccount(isCaseId(e.target.value) ? e.target.value : null)} aria-label="Choose account or portfolio tour"><option value="tour">Portfolio tour</option>{caseIds.map(id => <option value={id} key={id}>{getStory(id).account.name}</option>)}</select></label>
               <button type="button" onClick={() => setPlaying(v => !v)} aria-label={playing ? 'Pause simulation' : 'Play simulation'} className={styles.controlButton}>{playing ? <Pause size={15} fill="currentColor" /> : <Play size={15} fill="currentColor" />}<span>{playing ? 'Pause' : 'Play'}</span></button>
               
-              <label className={styles.speedControl}>Speed<select value={speed} onChange={e => setSpeed(Number(e.target.value))} aria-label="Simulation speed"><option value={1}>1×</option><option value={2}>2×</option><option value={3}>3×</option><option value={4}>4×</option></select></label>
+              <label className={styles.speedControl}>Speed<select value={speed} onChange={e => setSpeed(Number(e.target.value))} aria-label="Simulation speed"><option value={1}>1×</option><option value={2}>2×</option><option value={4}>4×</option></select></label>
             </div>
           </div>
+          <section className={styles.accountStories} aria-label="Fictional account stories">
+            <div className={styles.storyHeading}><div><strong>{pinnedAccount ? 'Following ' + account.name : 'Portfolio tour'}</strong><p>{pinnedAccount ? 'This account repeats at your chosen speed. Selecting an agent never stops playback.' : 'Three fictional accounts rotate automatically. Click an account card to follow its story.'}</p></div>{pinnedAccount && <button onClick={() => chooseAccount(null)}>Resume portfolio tour</button>}</div>
+            <div className={styles.storyCards}>{caseIds.map(id => { const item = getStory(id); return <button key={id} className={styles.storyCard} style={{["--account-color" as string]: accountIdentity[id].color} as React.CSSProperties} aria-pressed={pinnedAccount === id} data-current={activeCase === id} onClick={() => chooseAccount(id)}><span className={styles.accountIdentity}><span className={styles.accountBadge} aria-hidden="true">{accountIdentity[id].code}</span>{item.account.name}</span><strong style={{color: bandColor(healthBand(item.score))}}>{item.score}<small>/100 · {bandLabel(item.score)}</small></strong><span>{item.label} · ${(item.account.arr / 1000).toFixed(0)}K ARR</span><small>{pinnedAccount === id ? '✓ FOLLOWING · REPEATING' : activeCase === id ? 'NOW PLAYING · CLICK TO FOLLOW' : 'FOLLOW THIS ACCOUNT →'}</small></button>; })}</div>
+            <div className={styles.storyContext}><span><span className={styles.accountBadge} aria-hidden="true">{identity.code}</span> NOW: {account.name} · {scene.label}</span><Link href={`/?account=${account.id}`}>Open account details →</Link></div>
+            <dl className={styles.accountKpis}>
+              <div data-concern={identity.concerns.includes('seats')} data-primary-concern={identity.concerns.includes('seats')}><dt>SEATS ACTIVE</dt><dd>{scene.utilization}% <small>{account.seats_active}/{account.seats_total} seats</small></dd>{identity.concerns.includes('seats') && <span>Scenario concern</span>}</div>
+              <div data-concern={identity.concerns.includes('nps')}><dt>NPS</dt><dd>{account.nps}</dd>{identity.concerns.includes('nps') && <span>Scenario concern</span>}</div>
+              <div data-concern={identity.concerns.includes('tickets')}><dt>SUPPORT TICKETS · SAMPLE 30 DAYS</dt><dd>{account.tickets_30d}</dd>{identity.concerns.includes('tickets') && <span>Scenario concern</span>}</div>
+            </dl>
+            <p className={styles.concernNote}>{identity.rationale} Emphasis is specific to this fictional story, not a universal threshold.</p>
+          </section>
           <div className={styles.metrics} aria-label="Simulated portfolio metrics">
-            <div className={styles.metric}><span>PORTFOLIO ARR</span><div><strong>${(totalArr / 1_000_000).toFixed(2)}M</strong><span className={styles.metricTiny}>FICTIONAL</span></div><Sparkline values={[55, 57, 56, 62, 67, 66, 71, 75]}/></div>
-            <div className={styles.metric}><span>SIGNALS REVIEWED</span><div><strong>{(128 + tick * 11).toLocaleString('en-US')}</strong><span className={styles.metricUp}><ArrowUpRight size={13}/> {playing ? 'PROCESSING' : 'PAUSED'}</span></div><Sparkline values={[25, 28, 34, 36, 39, 43, 53 + stage, 65 + stage]}/></div>
-            <div className={styles.metric}><span>ACCOUNTS UNDER WATCH</span><div><strong>{activeScenario === 'risk' ? 2 + (stage >= 3 ? 1 : 0) : 2}</strong><span className={styles.metricOrange}><Activity size={13}/> PRIORITIZED</span></div><Sparkline values={[30, 30, 30, 35, 33, 32, 40 + stage, 40 + stage]} color="#ffab7e"/></div>
-            <div className={styles.metric}><span>ACTIONS TO REVIEW</span><div><strong>{queueCount}</strong><span className={styles.metricBlue}><ShieldCheck size={13}/> HUMAN GATE</span></div><Sparkline values={[20, 24, 25, 27, 29, 29 + stage, 30 + stage, 35 + stage]} color="#a5b7ff"/></div>
+            <div className={styles.metric}><span>PORTFOLIO ARR</span><div><strong>${(totalArr / 1_000_000).toFixed(2)}M</strong><span className={styles.metricTiny}>FICTIONAL</span></div><small className={styles.metricCaption}>Sum of eight sample account records</small></div>
+            <div className={styles.metric}><span>CURRENT CASE STEP</span><div><strong>{stage + 1}</strong><span className={styles.metricUp}><ArrowUpRight size={13}/> OF 6 STEPS</span></div><small className={styles.metricCaption}>Five simulated stages, then a human decision</small></div>
+            <div className={styles.metric}><span>CASES IN TOUR</span><div><strong>{caseIds.length}</strong><span className={styles.metricOrange}><Activity size={13}/> FICTIONAL</span></div><small className={styles.metricCaption}>Recovery, value and capacity stories</small></div>
+            <div className={styles.metric}><span>ACTIONS TO REVIEW</span><div><strong>{queueCount}</strong><span className={styles.metricBlue}><ShieldCheck size={13}/> HUMAN GATE</span></div><small className={styles.metricCaption}>{queueCount ? "Ready to review below. Nothing sent." : "Reviews are local to this page session"}</small></div>
           </div>
           <div className={styles.mainGrid}>
             <section className={styles.networkPanel} aria-labelledby="networkTitle">
-              <div className={styles.panelHeading}><div><span className={styles.panelOverline}>ORCHESTRATION / 08 SIMULATED ROLES</span><h3 id="networkTitle">Intelligence network</h3></div><span className={styles.activeTag}><span className={styles.liveDot}/> {playing ? 'ALWAYS ON' : 'PAUSED'}</span></div>
-              <Network active={active} visited={visited} selected={selectedAgent} onSelect={setSelectedAgent} reduced={motionReduced} />
-              <div className={styles.networkFooter}><span><span className={styles.legendDot} style={{background:'#5adbc4'}}/> Active handoff</span><span><span className={styles.legendDot} style={{background:'#7084a5'}}/> Standby</span><span className={styles.nowProcessing}>NOW / {positions[active].name.toUpperCase()} · {current.title}</span></div>
+              <div className={styles.panelHeading}><div><span className={styles.panelOverline}><span>7 SIMULATED AI AGENTS</span> / <span>1 HUMAN GATE</span></span><h3 id="networkTitle">Intelligence network</h3></div><span className={styles.activeTag}><span className={styles.liveDot}/> {stage === 5 ? 'HUMAN REVIEW' : playing ? 'SIMULATING' : 'PAUSED'}</span></div>
+              <p className={styles.demoDisclosure}>Scripted demo · fictional accounts · no outreach sent</p>
+              <p className={styles.interactionHint}>Select an agent or numbered stage to inspect its evidence. Playback keeps moving.</p>
+              <ol className={styles.caseRoute} aria-label="Current case handoff path">{scene.events.map((event, index) => <li key={event.agent} aria-current={stage === index ? 'step' : undefined}><button type="button" onClick={() => inspectAgent(event.agent)}><span>{index + 1}</span>{positions[event.agent].name}{index < scene.events.length - 1 && <ArrowRight size={11} aria-hidden="true" />}</button></li>)}</ol>
+              <Network active={active} visited={visited} selected={selectedAgent} onSelect={inspectAgent} reduced={motionReduced || !playing} paused={!playing} caseAgents={scene.events.map(event => event.agent)} reviewed={approved} story={getStory(inspectionCase ?? activeCase)} inspecting={selectedAgent !== null} />
+              <div className={styles.networkFooter}><span><span className={styles.legendDot} style={{background:'#5adbc4'}}/> Current step</span><span><span className={styles.legendDot} style={{background:'#7084a5'}}/> Other roles</span><span className={styles.nowProcessing}>NOW / {positions[active].name.toUpperCase()} · {current.title}</span></div>
             </section>
             <aside className={styles.sidePanel}>
-              <section className={styles.feed} aria-labelledby="feedTitle"><div className={styles.panelHeading}><div><span className={styles.panelOverline}>REALTIME / SCRIPTED</span><h3 id="feedTitle">Signal activity</h3></div><span className={styles.smallCount}>{String(visible.length).padStart(2,'0')} / 06</span></div>
-                <div className={styles.scenarioNote}><Zap size={14}/><span>{scene.kicker}</span></div>
+              <section className={styles.feed} aria-labelledby="feedTitle"><div className={styles.panelHeading}><div><span className={styles.panelOverline}>FICTIONAL CASE / SCRIPTED</span><h3 id="feedTitle">Signal activity</h3></div><span className={styles.smallCount}>{String(visible.length).padStart(2,'0')} / 06</span></div>
+                <div className={styles.scenarioNote}><Zap size={14}/><span><strong>{account.name} · Step {stage + 1} of 6</strong><br/>{scene.label} · Fictional snapshot, not live monitoring.</span></div>
                 <ol className={styles.feedList}>{visible.map((entry, reverseIndex) => {
                   const event = entry.event; const i = entry.sequence; const agent = positions[event.agent];
                   return <li key={i} className={reverseIndex === 0 ? styles.feedCurrent : ''}><span className={styles.feedTrack}><span style={{background:agent.color}}/></span><div><div className={styles.feedTop}><strong>{agent.name}</strong><time>{fmtClock(i * 4)}</time></div><p>{event.title}</p><small>{event.description}</small></div></li>;
                 })}</ol>
               </section>
-              <section className={styles.review} aria-labelledby="reviewTitle"><div className={styles.panelHeading}><div><span className={styles.panelOverline}>HUMAN IN THE LOOP</span><h3 id="reviewTitle">Decision gate</h3></div><ShieldCheck size={17} color="#94b8ff"/></div><div className={styles.reviewContent}><span className={styles.reviewIcon}>{approved ? <Check size={18}/> : <Clock3 size={18}/>}</span><div><strong>{approved ? 'Marked reviewed' : stage >= 4 ? 'Recommendation ready' : 'Awaiting briefing'}</strong><p>{activeScenario === 'risk' ? 'Horizon Retail' : 'Cascade Energy'} · {approved ? 'Demo item reviewed locally' : 'No outreach sent'}</p></div></div><button className={styles.reviewButton} onClick={() => setApproved(true)} disabled={approved || stage < 4}>{approved ? 'Reviewed in demo' : stage < 4 ? 'Available after analysis' : 'Mark as reviewed'} <ArrowRight size={14}/></button></section>
+              <section className={styles.review} aria-labelledby="reviewTitle">
+                <div className={styles.panelHeading}><div><span className={styles.panelOverline}>HUMAN IN THE LOOP</span><h3 id="reviewTitle">Decision gate</h3></div><ShieldCheck size={17} color="#94b8ff"/></div>
+                <div className={styles.reviewContent}><span className={styles.reviewIcon}>{reviewDone ? <Check size={18}/> : <Clock3 size={18}/>}</span><div><strong>{reviewDone ? 'Marked reviewed' : reviewReady ? (previousPass ? 'Queued from a previous pass' : 'Ready from this pass') : 'Awaiting briefing'}</strong><p>{reviewStory.account.name} · Nothing sent</p></div></div>
+                {reviewReady && <p className={styles.reviewBrief}>{reviewStory.recommendation}</p>}
+                <button className={styles.reviewButton} onClick={() => setReviewedCases(previous => ({...previous, [reviewCase]: true}))} disabled={reviewDone || !reviewReady}>{reviewDone ? 'Reviewed locally · nothing sent' : reviewReady ? 'Mark reviewed · nothing sent' : 'Available after this case'} <ArrowRight size={14}/></button>
+                <p className={styles.reviewHint}>The tour keeps playing. Completed briefs remain available for review; acknowledgements last until you reload.</p>
+              </section>
             </aside>
           </div>
           <div className={styles.bottomGrid}>
-            <section className={styles.bottomPanel} aria-labelledby="healthTitle"><div className={styles.panelHeading}><div><span className={styles.panelOverline}>PORTFOLIO / SIGNAL TREND</span><h3 id="healthTitle">Health trajectory</h3></div><span className={styles.chartDelta}>{activeScenario === 'risk' ? <ArrowDownRight size={16}/> : <ArrowUpRight size={16}/>} {activeScenario === 'risk' ? 'Watch signals' : 'Positive momentum'}</span></div><div className={styles.chartWrap}><div className={styles.chartAxis}><span>100</span><span>75</span><span>50</span><span>25</span></div><svg className={styles.chart} viewBox="0 0 640 170" preserveAspectRatio="none" role="img" aria-label={`Simulated health trend for ${activeScenario === 'risk' ? 'Horizon Retail' : 'Cascade Energy'}`}><defs><linearGradient id="chartFill" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stopColor={activeScenario==='risk'?'#ffab7e':'#60ddc7'} stopOpacity=".23"/><stop offset="1" stopColor="#60ddc7" stopOpacity="0"/></linearGradient></defs>{[16,62,108,154].map(y=><path key={y} d={`M0 ${y} H640`} stroke="#526781" strokeOpacity=".23" strokeDasharray="3 6"/>)}<polygon points={`0,170 ${chartValues.map((v,i)=>`${i*640/7},${170-v*1.72}`).join(' ')} 640,170`} fill="url(#chartFill)"/><polyline points={chartValues.map((v,i)=>`${i*640/7},${170-v*1.72}`).join(' ')} fill="none" stroke={activeScenario==='risk'?'#ffab7e':'#60ddc7'} strokeWidth="3" vectorEffect="non-scaling-stroke" strokeLinecap="round" strokeLinejoin="round"/><circle cx="640" cy={170-chartValues[7]*1.72} r="5" fill={activeScenario==='risk'?'#ffab7e':'#60ddc7'}/></svg></div><div className={styles.chartBottom}><span>EARLIER</span><span>{activeScenario === 'risk' ? 'HORIZON RETAIL' : 'CASCADE ENERGY'} / SAMPLE TREND</span><span>NOW</span></div></section>
-            <section className={styles.bottomPanel} aria-labelledby="priorityTitle"><div className={styles.panelHeading}><div><span className={styles.panelOverline}>SORTED / PRIORITY SIGNALS</span><h3 id="priorityTitle">Accounts to watch</h3></div><Link href="/portfolio" className={styles.openPortfolio}>OPEN PORTFOLIO <ArrowRight size={14}/></Link></div><div className={styles.accountsList}>{sampleAccountNames.map((name,i)=>{const account=accounts.find(a=>a.name===name)!;const score=name===(activeScenario==='risk'?'Horizon Retail':'Cascade Energy')?healthValue:calculateHealthScore(account);return <div className={styles.accountRow} key={name}><span className={styles.accountRank}>{String(i+1).padStart(2,'0')}</span><span className={styles.accountName}>{name}<small>${Math.round(account.arr/1000)}K ARR</small></span><span className={styles.healthTrack}><span style={{width:`${score}%`,background:score<55?'#ff9d7d':score<70?'#ffcb7f':'#6ee1c2'}}/></span><strong>{score}</strong></div>})}</div></section>
+            <section className={styles.bottomPanel} aria-labelledby="usageTitle">
+              <div className={styles.panelHeading}><div><span className={styles.panelOverline}>FICTIONAL / FIVE SAMPLE PERIODS</span><h3 id="usageTitle">{account.name} · usage</h3></div></div>
+              <div className={styles.usageChart}><Sparkline values={chartValues} color={scene.growth ? 'var(--healthy-fg)' : 'var(--high-fg)'} /></div>
+              <p className={styles.storyCopy}>{scene.usage}</p>
+              <p className={styles.storyCopy}>Recorded contract date: {account.contract_end}. Historical sample field, not a live renewal countdown.</p>
+            </section>
+            <section className={styles.bottomPanel} aria-labelledby="artifactTitle">
+              <div className={styles.panelHeading}><div><span className={styles.panelOverline}>{stage < 4 ? 'PREVIEW OF SCRIPTED OUTPUT' : 'SCRIPTED OUTPUT / NO AI REQUEST'}</span><h3 id="artifactTitle">{account.name} · {scene.growth ? 'discovery question' : 'recovery brief'}</h3></div></div>
+              <p className={styles.storyCopy}>{scene.recommendation}</p>
+              <p className={styles.storyCopy}>{scene.evidence}</p>
+              <Link href={`/?account=${account.id}`} className={styles.accountLink}>Open {account.name} details <ArrowRight size={14}/></Link>
+            </section>
           </div>
-          <div className={styles.timeline}><div className={styles.timelineTop}><span><span className={styles.liveDot}/> {playing ? 'CONTINUOUS SIMULATION' : 'SIMULATION PAUSED'}</span><span>AUTO-ROTATING / {scene.label.toUpperCase()}</span><span>{fmtClock(cycleTick)} / {fmtClock(cycleLength)} · LOOP {cycle + 1}</span></div><div className={styles.timelineTrack} role="progressbar" aria-label="Simulation progress" aria-valuemin={0} aria-valuemax={cycleLength} aria-valuenow={cycleTick}><span style={{width:`${cycleTick/cycleLength*100}%`}}/></div></div>
+          <div className={styles.timeline}><div className={styles.timelineTop}><span><span className={styles.liveDot}/> {stage === 5 ? 'CASE AT HUMAN REVIEW' : playing ? 'SCRIPTED CASE PLAYBACK' : 'SIMULATION PAUSED'}</span><span>{pinnedAccount ? "FOLLOWING ACCOUNT" : "PORTFOLIO TOUR"} / {account.name.toUpperCase()}</span><span>{fmtClock(cycleTick)} / {fmtClock(cycleLength)} · STEP {stage + 1} OF 6 · LOOP {cycle + 1}</span></div><div className={styles.timelineTrack} role="progressbar" aria-label="Simulation progress" aria-valuemin={0} aria-valuemax={cycleLength} aria-valuenow={cycleTick}><span style={{width:`${cycleTick/cycleLength*100}%`}}/></div></div>
         </section>
         <footer className={styles.footer}><p><span>✳</span> LIGHTHOUSE / INDEPENDENT PRODUCT EXPERIMENT</p><p>All activity is a scripted demonstration using fictional data. The agents shown are visual roles, not independently running AI services. No CRM connection, real-time monitoring or customer outreach.</p></footer>
       </div>

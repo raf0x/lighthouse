@@ -1,7 +1,7 @@
 'use client';
 
 import * as React from 'react';
-import { calculateHealthScore, healthBand, bandColor } from '@/app/lib/lighthouse';
+import { calculateHealthScore, healthBand, bandColor, bandLabel } from '@/app/lib/lighthouse';
 import type { Account } from './types';
 
 type Props = {
@@ -31,6 +31,7 @@ export default function PortfolioSidebar({ accounts, selectedId, onSelect }: Pro
               key={acc.id}
               className={`acc-row acc-row--${band} ${sel ? 'acc-row--selected' : ''}`}
               onClick={() => onSelect(acc.id)}
+              aria-pressed={sel}
             >
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 2 }}>
                 <span className="acc-name">{acc.name}</span>
@@ -44,7 +45,7 @@ export default function PortfolioSidebar({ accounts, selectedId, onSelect }: Pro
               </div>
               <div className="acc-meta">
                 <span className="acc-score" style={{ color }}>{acc.h}<span style={{ color: 'var(--fg-4)' }}>/100</span></span>
-                <span className="acc-arr">${(acc.arr / 1000).toFixed(0)}K ARR</span>
+                <span className="acc-arr">{bandLabel(acc.h)} · ${(acc.arr / 1000).toFixed(0)}K ARR</span>
               </div>
             </button>
           );
