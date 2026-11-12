@@ -1043,3 +1043,32 @@
 @media(prefers-reduced-motion:reduce){
  .desktopNetwork .agentActive,.desktopNetwork .hubOrbit{animation:none}
 }
+
+
+/* Final instrument details: semantic human gate and non-obstructive desktop controls. */
+.desktopNetwork .hubScore{font-size:21px;line-height:1.05;letter-spacing:-.05em;font-weight:720;font-variant-numeric:tabular-nums}
+.desktopNetwork .hubScore small{font-size:10px;letter-spacing:0;margin-left:2px;font-weight:500}
+.desktopNetwork .centerHub>small{font-size:9px!important;letter-spacing:.08em;margin-top:4px}
+.desktopNetwork .agent:has(.agentText strong){outline-offset:2px}
+.desktopNetwork .agent[aria-label^="Harbor"]{background:#e9e7dc;color:#253849;border-color:#b3c5c4;box-shadow:0 7px 16px rgba(0,0,0,.1)}
+.desktopNetwork .agent[aria-label^="Harbor"] .agentText strong{color:#253849}
+.desktopNetwork .agent[aria-label^="Harbor"] .agentText small{color:#475765}
+.desktopNetwork .agent[aria-label^="Harbor"] .agentSymbol{background:#d9ddd9;color:#375c62}
+.desktopNetwork .agent[aria-label^="Harbor"].agentActive{border-color:#408f8b;box-shadow:0 0 0 2px rgba(64,143,139,.15)}
+.desktopNetwork .agent[aria-pressed="true"]{outline:2px solid #62afa8;outline-offset:3px}
+.shell[data-mode="light"] .instrumentStage{background:#f8faf9}
+.shell[data-mode="light"] .railAccounts,.shell[data-mode="light"] .railSignals,.shell[data-mode="light"] .railReview,.shell[data-mode="light"] .railAwaiting{background:#f8faf9}
+.shell[data-mode="light"] .railAccount:hover{background:#eef4f3}
+.shell[data-mode="light"] .railAccount[data-current="true"]{background:#e7f1ef}
+.shell[data-mode="light"] .desktopNetwork .agent[aria-label^="Harbor"]{background:#fffdf5}
+.shell[data-mode="light"] .desktopNetwork .agent[aria-label^="Harbor"] .agentText small{color:#475765}
+@media(min-width:700px){
+ .floatingControls{top:max(12px,env(safe-area-inset-top,0px));right:18px;left:auto;bottom:auto;transform:none}
+}
+@media(max-width:699px){
+ .floatingControls{bottom:max(12px,env(safe-area-inset-bottom,0px));top:auto;right:auto;left:50%;transform:translateX(-50%)}
+ .desktopNetwork .hubScore{font-size:18px}
+ .instrumentHeader{margin-top:0}
+ .mobileStep[data-human="true"]{background:color-mix(in srgb,var(--panel) 85%,#d8ded3);border-style:solid}
+ .mobileStep[data-human="true"] .mobileStepTitle strong{color:var(--ink)}
+}
