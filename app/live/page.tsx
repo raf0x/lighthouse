@@ -388,6 +388,7 @@ export default function LiveDashboard() {
                           type="button"
                           data-playing={active === event.agent}
                           data-selected={selectedAgent === event.agent && inspectionCase === activeCase}
+                          data-human={event.agent === 'harbor'}
                           aria-pressed={selectedAgent === event.agent && inspectionCase === activeCase}
                           aria-label={`Inspect ${role.name}, ${roleLabel(role)}, stage ${index + 1}. Playback continues.`}
                           onClick={() => inspectAgent(selectedAgent === event.agent && inspectionCase === activeCase ? null : event.agent)}
