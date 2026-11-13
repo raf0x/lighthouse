@@ -5,7 +5,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import {
   Activity, ArrowDownRight, ArrowRight, ArrowUpRight, Check, ChevronDown,
-  Bot, Clock3, Moon, Pause, Play, Sun, UserRound,
+  Clock3, Moon, Pause, Play, Sun, UserRound,
   AudioLines, Compass, FilePenLine, Radar, ScanSearch, ShieldAlert, ShieldCheck, Network as NetworkIcon, Zap
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
@@ -178,18 +178,25 @@ function Network({ active, visited, selected, onSelect, reduced, paused, caseAge
           aria-pressed={selected === agent.id} onClick={() => onSelect(selected === agent.id ? null : agent.id)}
           aria-label={`${agent.name}, ${agent.id === 'harbor' ? 'human reviewer' : 'simulated AI specialist'}, ${specialistTasks[agent.id]}, ${!inCase ? 'not on this case, ' : ''}${isActive ? (agent.id === 'harbor' ? (reviewed ? 'reviewed locally' : 'awaiting human review') : paused ? 'paused on this step' : 'simulating') : isVisited ? 'completed' : (caseAgents.includes(agent.id) ? 'up next in this case' : 'not used in this case')}. View details`}
         >
-          <span className={styles.agentSymbol} aria-hidden="true"><span className={styles.agentGlyphAura} /><AgentIcon size={28} strokeWidth={1.9} /></span>
+          <span className={styles.agentSymbol} aria-hidden="true">
+            <span className={styles.agentGlyphAura} />
+            {agent.id === 'harbor' ? (
+              <>
+                <AgentIcon className={styles.mobileHarborShield} size={28} strokeWidth={1.9} />
+                <UserRound className={styles.desktopHarborPerson} size={28} strokeWidth={1.9} />
+              </>
+            ) : <AgentIcon size={28} strokeWidth={1.9} />}
+          </span>
           <span className={styles.agentText}>
             <strong>{agent.name}</strong>
-            <small className={styles.agentSpecialty}>
-              <span className={styles.agentKind} data-human={agent.id === 'harbor'} aria-hidden="true">
-                {agent.id === 'harbor' ? <UserRound size={15} strokeWidth={2.2} /> : <Bot size={15} strokeWidth={2.2} />}
-              </span>
-              <span>{specialistTasks[agent.id]}</span>
-            </small>
+            <small className={styles.agentSpecialty}>{specialistTasks[agent.id]}</small>
             {!inCase && <small className={styles.agentOutOfCase}>Not on this case</small>}
           </span>
-          {inCase && <span className={styles.agentSequence} aria-hidden="true">{caseAgents.indexOf(agent.id) + 1}</span>}
+          {inCase && <span className={styles.agentSequence} aria-hidden="true">
+            {caseAgents.indexOf(agent.id) + 1}
+            {agent.id !== 'harbor' && <span className={styles.desktopAI}>AI</span>}
+          </span>}
+          {!inCase && agent.id !== 'harbor' && <span className={styles.desktopIdleAI} aria-hidden="true">AI</span>}
           <span className={styles.agentStatus} aria-hidden="true">{isActive ? <span className={styles.statusPulse} /> : isVisited ? '✓' : '·'}</span>
         </button>;
       })}
