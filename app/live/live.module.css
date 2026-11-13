@@ -1690,6 +1690,7 @@
     position:absolute;
     inset:0;
     display:block;
+    animation:none; /* Keep the tower upright; only the directional beam revolves. */
     overflow:hidden;
     border-radius:50%;
     border:1px solid #c4b187;
