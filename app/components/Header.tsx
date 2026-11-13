@@ -1,7 +1,7 @@
 'use client';
 
 import * as React from 'react';
-import { IconLogo } from './icons';
+import LighthouseBrandMark from './LighthouseBrandMark';
 import { usePathname, useRouter } from 'next/navigation';
 import type { Account } from './types';
 import ThemeToggle from './ThemeToggle';
@@ -14,7 +14,7 @@ export default function Header({ accounts }: { accounts: Account[] }) {
   return (
     <header className="app-header">
       <div className="brand">
-        <IconLogo size={56} />
+        <LighthouseBrandMark size={56} />
         <div>
           <div className="brand-name">Lighthouse</div>
           <div className="brand-tagline">Account intelligence demo · fictional accounts · nothing sent</div>
