@@ -5,7 +5,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import {
   Activity, ArrowDownRight, ArrowRight, ArrowUpRight, Check, ChevronDown,
-  Clock3, Moon, Pause, Play, Sun,
+  Clock3, Moon, Pause, Play, Sun, UserRound,
   AudioLines, Compass, FilePenLine, Radar, ScanSearch, ShieldAlert, ShieldCheck, Network as NetworkIcon, Zap
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
@@ -35,6 +35,18 @@ const roleDetails: Record<AgentId, { purpose: string; input: string; output: str
   aperture: { purpose: 'Explore expansion potential', input: 'Positive health and portfolio comparison', output: 'An expansion hypothesis, not a revenue forecast', handoff: 'Relay to add stakeholder context' },
   dispatch: { purpose: 'Prepare the next conversation', input: 'Prioritized risk and its supporting rationale', output: 'A suggested executive outreach brief', handoff: 'Harbor for a person to review' },
   harbor: { purpose: 'Keep the decision human', input: 'The suggested brief or opportunity', output: 'A local demo review acknowledgement only', handoff: 'A Customer Success manager decides; nothing is sent' },
+};
+
+/** Visible desktop specialties describe scripted roles, not independently running services. */
+const specialistTasks: Record<AgentId, string> = {
+  beacon: 'Checks health',
+  undertow: 'Surfaces risk',
+  waypoint: 'Sets priority',
+  current: 'Reads engagement',
+  dispatch: 'Drafts the brief',
+  aperture: 'Looks for expansion',
+  relay: 'Maps relationships',
+  harbor: 'Human decision.',
 };
 
 function roleLabel(agent: Agent) {
@@ -149,6 +161,7 @@ function Network({ active, visited, selected, onSelect, reduced, paused, caseAge
           <span className={styles.logoHalo} />
           <Image src="/lighthouse-logo.svg" alt="" width={68} height={68} priority className={styles.lighthouseMark} />
           <span className={styles.logoGlint} />
+          <span className={styles.grokLantern} />
         </div>
         <strong className={styles.hubScore} style={{color:bandColor(healthBand(sampleScore))}}>{sampleScore}<small>/100</small></strong>
         <small>SAMPLE HEALTH</small>
@@ -164,11 +177,25 @@ function Network({ active, visited, selected, onSelect, reduced, paused, caseAge
           className={`${styles.agent} ${isActive ? styles.agentActive : ''} ${!inCase ? styles.agentOutsideCase : ''} ${selected === agent.id ? styles.agentSelected : ''}`}
           style={{ left: `clamp(var(--node-inset), ${agent.x}%, calc(100% - var(--node-inset)))`, top: `clamp(min(var(--node-inset), 60px), ${agent.y}%, calc(100% - min(var(--node-inset), 60px)))`, ['--agent-color' as string]: agent.color } as React.CSSProperties}
           aria-pressed={selected === agent.id} onClick={() => onSelect(selected === agent.id ? null : agent.id)}
-          aria-label={`${agent.name}, ${roleLabel(agent)}, ${isActive ? (agent.id === 'harbor' ? (reviewed ? 'reviewed locally' : 'awaiting human review') : paused ? 'paused on this step' : 'simulating') : isVisited ? 'completed' : (caseAgents.includes(agent.id) ? 'up next in this case' : 'not used in this case')}. View details`}
+          aria-label={`${agent.name}, ${agent.id === 'harbor' ? 'human reviewer' : 'simulated AI specialist'}, ${specialistTasks[agent.id]}, ${!inCase ? 'not on this case, ' : ''}${isActive ? (agent.id === 'harbor' ? (reviewed ? 'reviewed locally' : 'awaiting human review') : paused ? 'paused on this step' : 'simulating') : isVisited ? 'completed' : (caseAgents.includes(agent.id) ? 'up next in this case' : 'not used in this case')}. View details`}
         >
-          <span className={styles.agentSymbol} aria-hidden="true"><span className={styles.agentGlyphAura} /><AgentIcon size={28} strokeWidth={1.9} /></span>
-          <span className={styles.agentText}><strong>{agent.name}</strong><small>{roleLabel(agent)}</small></span>
-          {inCase && <span className={styles.agentSequence} aria-hidden="true">{caseAgents.indexOf(agent.id) + 1}</span>}
+          <span className={styles.agentSymbol} aria-hidden="true">
+            <span className={styles.agentGlyphAura} />
+            {agent.id === 'harbor' ? (
+              <>
+                <AgentIcon className={styles.mobileHarborShield} size={28} strokeWidth={1.9} />
+                <UserRound className={styles.desktopHarborPerson} size={28} strokeWidth={1.9} />
+              </>
+            ) : <AgentIcon size={28} strokeWidth={1.9} />}
+          </span>
+          <span className={styles.agentText}>
+            <strong>{agent.name}</strong>
+            <small className={styles.agentSpecialty}>{specialistTasks[agent.id]}</small>
+            {!inCase && <small className={styles.agentOutOfCase}>Not on this case</small>}
+          </span>
+          {inCase && <span className={styles.agentSequence} aria-hidden="true">
+            <span className={styles.desktopStepWord}>STEP</span> {caseAgents.indexOf(agent.id) + 1}
+          </span>}
           <span className={styles.agentStatus} aria-hidden="true">{isActive ? <span className={styles.statusPulse} /> : isVisited ? '✓' : '·'}</span>
         </button>;
       })}
@@ -346,6 +373,7 @@ export default function LiveDashboard() {
                 <span className={styles.stageStatus}><span className={styles.liveDot} />{playing ? 'Playing' : 'Paused'}</span>
               </div>
               <div className={styles.desktopNetwork}>
+                <p className={styles.desktopAgentExplainer}><strong>Simulated AI specialists, one job each.</strong> Harbor is a person.<span className={styles.desktopStepHelp}> Step numbers show the handoff order for this fictional case.</span></p>
                 <Network active={active} visited={visited} selected={selectedAgent} onSelect={inspectAgent} reduced={motionReduced || !playing} paused={!playing} caseAgents={scene.events.map(event => event.agent)} reviewed={approved} story={getStory(inspectionCase ?? activeCase)} inspecting={selectedAgent !== null} sampleScore={scene.score} />
               </div>
               <div className={styles.mobileJourney} aria-label="Ordered account case stages">
