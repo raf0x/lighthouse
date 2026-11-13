@@ -1582,13 +1582,13 @@
 }
 
 
-/* Desktop specialist semantics. Retain the existing orbit, sizing and phone chip ring. */
+/* Desktop network: explicit simulated specialist roles and a distinct human gate. */
 .desktopAgentExplainer{display:none}
 @media(min-width:700px){
   .desktopAgentExplainer{
     display:block;
     margin:0;
-    padding:1px 18px 9px;
+    padding:2px 18px 9px;
     color:var(--muted);
     font-size:12px;
     line-height:1.5;
@@ -1599,7 +1599,7 @@
     display:flex;
     flex-direction:column;
     justify-content:center;
-    gap:5px;
+    gap:4px;
     min-width:0;
   }
   .desktopNetwork .agentSpecialty{
@@ -1608,41 +1608,64 @@
     flex-wrap:wrap;
     gap:3px 5px;
     color:var(--muted);
-    font-size:10px!important;
-    line-height:1.25;
+    font-size:11px!important;
+    line-height:1.2;
     letter-spacing:0;
   }
   .desktopNetwork .agentKind{
-    display:inline-flex;
-    align-items:center;
-    justify-content:center;
+    display:inline-grid;
+    place-items:center;
     flex:none;
-    padding:2px 4px;
-    border:1px solid rgba(22,146,140,.35);
-    border-radius:3px;
-    background:rgba(18,150,140,.10);
+    width:19px;
+    height:19px;
+    border:1px solid rgba(22,146,140,.33);
+    border-radius:5px;
+    background:rgba(18,150,140,.09);
     color:#087e78;
-    font:800 9px/1 var(--font-geist),Geist,system-ui,sans-serif;
-    letter-spacing:.03em;
   }
   .shell[data-mode="dark"] .desktopNetwork .agentKind{
     background:rgba(68,194,170,.16);
     border-color:rgba(102,207,186,.35);
     color:#8de9d2;
   }
-  .desktopNetwork .agentKind[data-human="true"]{
-    color:#375863;
-    background:#f6f2e8;
-    border-color:#b7c8c4;
+  .desktopNetwork .agentOutOfCase{
+    display:block;
+    color:var(--muted);
+    font-size:10px!important;
+    line-height:1.2;
+    font-weight:550;
   }
+  /* Harbor represents a person, not an eighth simulated AI specialist. */
+  .desktopNetwork .agent[aria-label^="Harbor"],
+  .shell[data-mode="light"] .desktopNetwork .agent[aria-label^="Harbor"]{
+    background:#f5e8d0;
+    border:1.5px solid #b89a6b;
+    color:#48341d;
+    box-shadow:0 5px 17px rgba(98,68,30,.14);
+  }
+  .desktopNetwork .agent[aria-label^="Harbor"] .agentText strong{color:#48341d}
+  .desktopNetwork .agent[aria-label^="Harbor"] .agentSpecialty{color:#695137}
+  .desktopNetwork .agent[aria-label^="Harbor"] .agentSymbol{
+    background:#e9d6b5;
+    border-color:#c1a77a;
+    color:#74552b;
+    filter:none;
+    opacity:1;
+  }
+  .desktopNetwork .agentKind[data-human="true"],
   .shell[data-mode="dark"] .desktopNetwork .agentKind[data-human="true"]{
-    color:#253849;
-    background:#f0eddf;
-    border-color:#b7c8c4;
+    background:#ead8b8;
+    border-color:#b99663;
+    color:#70481f;
   }
-  .desktopNetwork .agent[aria-label^="Harbor"] .agentSpecialty{color:#475765}
+  .desktopNetwork .agent[aria-label^="Harbor"].agentActive{
+    border-color:#9e7340;
+    box-shadow:0 0 0 2px rgba(174,125,59,.20),0 5px 17px rgba(98,68,30,.14);
+  }
 }
 @media(min-width:700px) and (max-width:1150px){
-  .desktopNetwork .agentSpecialty{font-size:9px!important;gap:3px}
-  .desktopNetwork .agentKind{font-size:8px;padding:2px 3px}
+  .desktopNetwork .agentSpecialty{font-size:10px!important;gap:3px}
+  .desktopNetwork .agentKind{width:17px;height:17px}
+  .desktopNetwork .agentKind svg{width:13px;height:13px}
+  .desktopNetwork .agentOutOfCase{font-size:9px!important}
 }
