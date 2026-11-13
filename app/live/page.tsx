@@ -5,7 +5,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import {
   Activity, ArrowDownRight, ArrowRight, ArrowUpRight, Check, ChevronDown,
-  Clock3, Moon, Pause, Play, Sun,
+  Bot, Clock3, Moon, Pause, Play, Sun, UserRound,
   AudioLines, Compass, FilePenLine, Radar, ScanSearch, ShieldAlert, ShieldCheck, Network as NetworkIcon, Zap
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
@@ -39,14 +39,14 @@ const roleDetails: Record<AgentId, { purpose: string; input: string; output: str
 
 /** Visible desktop specialties describe scripted roles, not independently running services. */
 const specialistTasks: Record<AgentId, string> = {
-  beacon: 'Assesses health',
-  undertow: 'Flags risks',
-  waypoint: 'Sets priorities',
-  current: 'Tracks adoption',
-  relay: 'Maps contacts',
-  aperture: 'Explores growth',
-  dispatch: 'Drafts briefs',
-  harbor: 'Reviews decisions',
+  beacon: 'Checks health',
+  undertow: 'Surfaces risk',
+  waypoint: 'Sets priority',
+  current: 'Reads engagement',
+  dispatch: 'Drafts the brief',
+  aperture: 'Looks for expansion',
+  relay: 'Maps relationships',
+  harbor: 'Human. Makes the call',
 };
 
 function roleLabel(agent: Agent) {
@@ -176,15 +176,18 @@ function Network({ active, visited, selected, onSelect, reduced, paused, caseAge
           className={`${styles.agent} ${isActive ? styles.agentActive : ''} ${!inCase ? styles.agentOutsideCase : ''} ${selected === agent.id ? styles.agentSelected : ''}`}
           style={{ left: `clamp(var(--node-inset), ${agent.x}%, calc(100% - var(--node-inset)))`, top: `clamp(min(var(--node-inset), 60px), ${agent.y}%, calc(100% - min(var(--node-inset), 60px)))`, ['--agent-color' as string]: agent.color } as React.CSSProperties}
           aria-pressed={selected === agent.id} onClick={() => onSelect(selected === agent.id ? null : agent.id)}
-          aria-label={`${agent.name}, ${roleLabel(agent)}, ${isActive ? (agent.id === 'harbor' ? (reviewed ? 'reviewed locally' : 'awaiting human review') : paused ? 'paused on this step' : 'simulating') : isVisited ? 'completed' : (caseAgents.includes(agent.id) ? 'up next in this case' : 'not used in this case')}. View details`}
+          aria-label={`${agent.name}, ${agent.id === 'harbor' ? 'human reviewer' : 'simulated AI specialist'}, ${specialistTasks[agent.id]}, ${!inCase ? 'not on this case, ' : ''}${isActive ? (agent.id === 'harbor' ? (reviewed ? 'reviewed locally' : 'awaiting human review') : paused ? 'paused on this step' : 'simulating') : isVisited ? 'completed' : (caseAgents.includes(agent.id) ? 'up next in this case' : 'not used in this case')}. View details`}
         >
           <span className={styles.agentSymbol} aria-hidden="true"><span className={styles.agentGlyphAura} /><AgentIcon size={28} strokeWidth={1.9} /></span>
           <span className={styles.agentText}>
             <strong>{agent.name}</strong>
             <small className={styles.agentSpecialty}>
-              <span className={styles.agentKind} data-human={agent.id === 'harbor'}>{agent.id === 'harbor' ? 'HUMAN' : 'AI'}</span>
+              <span className={styles.agentKind} data-human={agent.id === 'harbor'} aria-hidden="true">
+                {agent.id === 'harbor' ? <UserRound size={15} strokeWidth={2.2} /> : <Bot size={15} strokeWidth={2.2} />}
+              </span>
               <span>{specialistTasks[agent.id]}</span>
             </small>
+            {!inCase && <small className={styles.agentOutOfCase}>Not on this case</small>}
           </span>
           {inCase && <span className={styles.agentSequence} aria-hidden="true">{caseAgents.indexOf(agent.id) + 1}</span>}
           <span className={styles.agentStatus} aria-hidden="true">{isActive ? <span className={styles.statusPulse} /> : isVisited ? '✓' : '·'}</span>
@@ -364,7 +367,7 @@ export default function LiveDashboard() {
                 <span className={styles.stageStatus}><span className={styles.liveDot} />{playing ? 'Playing' : 'Paused'}</span>
               </div>
               <div className={styles.desktopNetwork}>
-                <p className={styles.desktopAgentExplainer}><strong>7 simulated AI agents</strong> with distinct tasks. <strong>Harbor</strong> is the human reviewer. Select a specialist to see its scripted evidence and handoff.</p>
+                <p className={styles.desktopAgentExplainer}><strong>Simulated AI specialists, one job each.</strong> Harbor is a person.</p>
                 <Network active={active} visited={visited} selected={selectedAgent} onSelect={inspectAgent} reduced={motionReduced || !playing} paused={!playing} caseAgents={scene.events.map(event => event.agent)} reviewed={approved} story={getStory(inspectionCase ?? activeCase)} inspecting={selectedAgent !== null} sampleScore={scene.score} />
               </div>
               <div className={styles.mobileJourney} aria-label="Ordered account case stages">
