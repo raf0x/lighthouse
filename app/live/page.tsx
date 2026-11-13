@@ -3,6 +3,7 @@
 import * as React from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
+import LighthouseBrandMark from '@/app/components/LighthouseBrandMark';
 import {
   Activity, ArrowDownRight, ArrowRight, ArrowUpRight, Check, ChevronDown,
   Clock3, Moon, Pause, Play, Sun, UserRound,
@@ -312,7 +313,7 @@ export default function LiveDashboard() {
       <div className={styles.ambient} aria-hidden="true" />
       <div className={styles.frame}>
         <header className={styles.topbar}>
-          <Link href="/" className={styles.brand} aria-label="Lighthouse home"><span className={styles.brandIcon}><Image src="/lighthouse-logo.svg" alt="" width={27} height={27} /></span><span>LIGHTHOUSE<small>ACCOUNT INTELLIGENCE</small></span></Link>
+          <Link href="/" className={styles.brand} aria-label="Lighthouse home"><LighthouseBrandMark size={35} /><span>LIGHTHOUSE<small>ACCOUNT INTELLIGENCE</small></span></Link>
           <nav className={styles.nav} aria-label="Dashboard navigation">
             <Link href="/live" aria-current="page" className={styles.navDashboard}>Dashboard</Link><Link href="/" className={styles.navAccounts}>Accounts</Link><Link href="/portfolio" className={styles.navPortfolio}>Portfolio</Link>
           </nav>
