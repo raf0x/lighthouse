@@ -193,10 +193,8 @@ function Network({ active, visited, selected, onSelect, reduced, paused, caseAge
             {!inCase && <small className={styles.agentOutOfCase}>Not on this case</small>}
           </span>
           {inCase && <span className={styles.agentSequence} aria-hidden="true">
-            {caseAgents.indexOf(agent.id) + 1}
-            {agent.id !== 'harbor' && <span className={styles.desktopAI}>AI</span>}
+            <span className={styles.desktopStepWord}>STEP</span> {caseAgents.indexOf(agent.id) + 1}
           </span>}
-          {!inCase && agent.id !== 'harbor' && <span className={styles.desktopIdleAI} aria-hidden="true">AI</span>}
           <span className={styles.agentStatus} aria-hidden="true">{isActive ? <span className={styles.statusPulse} /> : isVisited ? '✓' : '·'}</span>
         </button>;
       })}
@@ -374,7 +372,7 @@ export default function LiveDashboard() {
                 <span className={styles.stageStatus}><span className={styles.liveDot} />{playing ? 'Playing' : 'Paused'}</span>
               </div>
               <div className={styles.desktopNetwork}>
-                <p className={styles.desktopAgentExplainer}><strong>Simulated AI specialists, one job each.</strong> Harbor is a person.</p>
+                <p className={styles.desktopAgentExplainer}><strong>Simulated AI specialists, one job each.</strong> Harbor is a person. Step numbers show the handoff order for this fictional case.</p>
                 <Network active={active} visited={visited} selected={selectedAgent} onSelect={inspectAgent} reduced={motionReduced || !playing} paused={!playing} caseAgents={scene.events.map(event => event.agent)} reviewed={approved} story={getStory(inspectionCase ?? activeCase)} inspecting={selectedAgent !== null} sampleScore={scene.score} />
               </div>
               <div className={styles.mobileJourney} aria-label="Ordered account case stages">
