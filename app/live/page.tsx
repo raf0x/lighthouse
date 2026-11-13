@@ -37,6 +37,18 @@ const roleDetails: Record<AgentId, { purpose: string; input: string; output: str
   harbor: { purpose: 'Keep the decision human', input: 'The suggested brief or opportunity', output: 'A local demo review acknowledgement only', handoff: 'A Customer Success manager decides; nothing is sent' },
 };
 
+/** Visible desktop specialties describe scripted roles, not independently running services. */
+const specialistTasks: Record<AgentId, string> = {
+  beacon: 'Assesses health',
+  undertow: 'Flags risks',
+  waypoint: 'Sets priorities',
+  current: 'Tracks adoption',
+  relay: 'Maps contacts',
+  aperture: 'Explores growth',
+  dispatch: 'Drafts briefs',
+  harbor: 'Reviews decisions',
+};
+
 function roleLabel(agent: Agent) {
   return agent.id === 'harbor' ? 'Human gate' : agent.role;
 }
@@ -167,7 +179,13 @@ function Network({ active, visited, selected, onSelect, reduced, paused, caseAge
           aria-label={`${agent.name}, ${roleLabel(agent)}, ${isActive ? (agent.id === 'harbor' ? (reviewed ? 'reviewed locally' : 'awaiting human review') : paused ? 'paused on this step' : 'simulating') : isVisited ? 'completed' : (caseAgents.includes(agent.id) ? 'up next in this case' : 'not used in this case')}. View details`}
         >
           <span className={styles.agentSymbol} aria-hidden="true"><span className={styles.agentGlyphAura} /><AgentIcon size={28} strokeWidth={1.9} /></span>
-          <span className={styles.agentText}><strong>{agent.name}</strong><small>{roleLabel(agent)}</small></span>
+          <span className={styles.agentText}>
+            <strong>{agent.name}</strong>
+            <small className={styles.agentSpecialty}>
+              <span className={styles.agentKind} data-human={agent.id === 'harbor'}>{agent.id === 'harbor' ? 'HUMAN' : 'AI'}</span>
+              <span>{specialistTasks[agent.id]}</span>
+            </small>
+          </span>
           {inCase && <span className={styles.agentSequence} aria-hidden="true">{caseAgents.indexOf(agent.id) + 1}</span>}
           <span className={styles.agentStatus} aria-hidden="true">{isActive ? <span className={styles.statusPulse} /> : isVisited ? '✓' : '·'}</span>
         </button>;
@@ -346,6 +364,7 @@ export default function LiveDashboard() {
                 <span className={styles.stageStatus}><span className={styles.liveDot} />{playing ? 'Playing' : 'Paused'}</span>
               </div>
               <div className={styles.desktopNetwork}>
+                <p className={styles.desktopAgentExplainer}><strong>7 simulated AI agents</strong> with distinct tasks. <strong>Harbor</strong> is the human reviewer. Select a specialist to see its scripted evidence and handoff.</p>
                 <Network active={active} visited={visited} selected={selectedAgent} onSelect={inspectAgent} reduced={motionReduced || !playing} paused={!playing} caseAgents={scene.events.map(event => event.agent)} reviewed={approved} story={getStory(inspectionCase ?? activeCase)} inspecting={selectedAgent !== null} sampleScore={scene.score} />
               </div>
               <div className={styles.mobileJourney} aria-label="Ordered account case stages">
