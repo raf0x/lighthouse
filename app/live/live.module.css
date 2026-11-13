@@ -1595,7 +1595,8 @@
     line-height:1.5;
   }
   .desktopAgentExplainer strong{color:var(--ink);font-weight:750}
-  .shell[data-embed="true"] .desktopAgentExplainer{display:none}
+  .shell[data-embed="true"] .desktopAgentExplainer{padding:2px 12px 8px}
+  .shell[data-embed="true"] .desktopStepHelp{display:none}
   .desktopNetwork .agentText{
     display:flex;
     flex-direction:column;
