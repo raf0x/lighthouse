@@ -46,7 +46,7 @@ const specialistTasks: Record<AgentId, string> = {
   dispatch: 'Drafts the brief',
   aperture: 'Looks for expansion',
   relay: 'Maps relationships',
-  harbor: 'Human. Makes the call',
+  harbor: 'Human decision.',
 };
 
 function roleLabel(agent: Agent) {
@@ -372,7 +372,7 @@ export default function LiveDashboard() {
                 <span className={styles.stageStatus}><span className={styles.liveDot} />{playing ? 'Playing' : 'Paused'}</span>
               </div>
               <div className={styles.desktopNetwork}>
-                <p className={styles.desktopAgentExplainer}><strong>Simulated AI specialists, one job each.</strong> Harbor is a person. Step numbers show the handoff order for this fictional case.</p>
+                <p className={styles.desktopAgentExplainer}><strong>Simulated AI specialists, one job each.</strong> Harbor is a person.<span className={styles.desktopStepHelp}> Step numbers show the handoff order for this fictional case.</span></p>
                 <Network active={active} visited={visited} selected={selectedAgent} onSelect={inspectAgent} reduced={motionReduced || !playing} paused={!playing} caseAgents={scene.events.map(event => event.agent)} reviewed={approved} story={getStory(inspectionCase ?? activeCase)} inspecting={selectedAgent !== null} sampleScore={scene.score} />
               </div>
               <div className={styles.mobileJourney} aria-label="Ordered account case stages">
