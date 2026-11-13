@@ -82,58 +82,6 @@ function electricPath(agent: Agent, phase: number, amplitude = 16) {
   return path + ' L 500 310';
 }
 
-/**
- * Desktop beacon instrument, drawn in SVG so the tower stays crisp at any scale.
- * The orbital light is CSS-driven; mobile retains its established brand mark.
- */
-function BeaconEmblem() {
-  return (
-    <span className={styles.beaconOrb} aria-hidden="true">
-      <span className={styles.beaconOrbSweep} />
-      <svg className={styles.beaconTower} viewBox="0 0 100 100" fill="none" focusable="false">
-        <defs>
-          <linearGradient id="beaconTowerFace" x1="34" y1="49" x2="65" y2="76" gradientUnits="userSpaceOnUse">
-            <stop stopColor="#F4FCFF" />
-            <stop offset=".44" stopColor="#C7E8F5" />
-            <stop offset="1" stopColor="#70ABCC" />
-          </linearGradient>
-          <linearGradient id="beaconTowerSide" x1="55" y1="46" x2="68" y2="78" gradientUnits="userSpaceOnUse">
-            <stop stopColor="#5788B0" />
-            <stop offset="1" stopColor="#1B4B78" />
-          </linearGradient>
-          <linearGradient id="beaconRoof" x1="40" y1="19" x2="62" y2="34" gradientUnits="userSpaceOnUse">
-            <stop stopColor="#F8FFFF" />
-            <stop offset="1" stopColor="#8CC4DD" />
-          </linearGradient>
-          <radialGradient id="beaconLamp" cx="0" cy="0" r="1" gradientTransform="translate(50 36) rotate(90) scale(15)">
-            <stop stopColor="#FFFFFF" />
-            <stop offset=".19" stopColor="#F2FCFF" />
-            <stop offset=".52" stopColor="#B6EDFF" stopOpacity=".65" />
-            <stop offset="1" stopColor="#8FD9FF" stopOpacity="0" />
-          </radialGradient>
-        </defs>
-        <ellipse cx="50" cy="83" rx="23" ry="4.8" fill="#052446" opacity=".48" />
-        <path d="M34 79h32l4 5H30l4-5Z" fill="#A3CEE3" />
-        <path d="M39 77 43 45h16l6 32v3H39v-3Z" fill="url(#beaconTowerFace)" />
-        <path d="M55 45h4l6 32v3H56l-1-35Z" fill="url(#beaconTowerSide)" />
-        <path d="M44 49 40.6 76" stroke="#FFFFFF" strokeWidth="1.5" opacity=".78" />
-        <path d="M41 62h20M39.7 73h23.2" stroke="#3E81AE" strokeOpacity=".47" strokeWidth="1.9" />
-        <path d="M47 80V68a3 3 0 0 1 6 0v12" fill="#164674" />
-        <path d="M48.5 71v7" stroke="#70A5C3" strokeWidth="1.3" strokeLinecap="round" />
-        <path d="M37.5 43h25v4h-25z" fill="#B4DEEF" />
-        <path d="M40 32.5h20v11H40z" fill="#1B4A75" stroke="#B5E1F1" strokeWidth="1.6" />
-        <path d="M43.5 34.5h13v7h-13z" fill="#E8FAFF" />
-        <path d="M46.7 34.5v7M53.3 34.5v7" stroke="#5D91B9" strokeWidth="1.2" />
-        <circle className={styles.beaconLanternLight} cx="50" cy="36" r="14" fill="url(#beaconLamp)" />
-        <path d="M37 32 50 21l13 11H37Z" fill="url(#beaconRoof)" stroke="#D4F0FB" strokeWidth="1" />
-        <path d="M47 21.7V18h6v3.7" stroke="#D4F2FF" strokeWidth="2" strokeLinecap="round" />
-        <path d="M36 83h28" stroke="#F3FFFF" strokeWidth="1.5" strokeLinecap="round" opacity=".82" />
-      </svg>
-      <span className={styles.beaconOrbGlass} />
-    </span>
-  );
-}
-
 function Network({ active, visited, selected, onSelect, reduced, paused, caseAgents, reviewed, story, inspecting, sampleScore }: {
   active: AgentId; visited: AgentId[]; selected: AgentId | null; onSelect: (agent: AgentId | null) => void; reduced: boolean; paused: boolean; caseAgents: AgentId[]; reviewed: boolean; story: ReturnType<typeof getStory>; inspecting: boolean; sampleScore: number;
 }) {
@@ -213,7 +161,7 @@ function Network({ active, visited, selected, onSelect, reduced, paused, caseAge
           <span className={styles.logoHalo} />
           <Image src="/lighthouse-logo.svg" alt="" width={68} height={68} priority className={styles.lighthouseMark} />
           <span className={styles.logoGlint} />
-          <BeaconEmblem />
+          <span className={styles.grokLantern} />
         </div>
         <strong className={styles.hubScore} style={{color:bandColor(healthBand(sampleScore))}}>{sampleScore}<small>/100</small></strong>
         <small>SAMPLE HEALTH</small>
