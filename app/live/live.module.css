@@ -1584,7 +1584,7 @@
 
 
 /* Desktop network semantics: one quiet AI marker per specialist, a distinct human gate. */
-.desktopAgentExplainer,.desktopAI,.desktopIdleAI,.desktopHarborPerson{display:none}
+.desktopAgentExplainer,.desktopStepWord,.desktopHarborPerson{display:none}
 @media(min-width:700px){
   .desktopAgentExplainer{
     display:block;
@@ -1617,37 +1617,21 @@
     line-height:1.2;
     font-weight:550;
   }
-  .desktopNetwork .agentSequence:has(.desktopAI){
+  .desktopNetwork .agentSequence{
     display:inline-flex;
     align-items:center;
     justify-content:center;
     gap:3px;
     width:auto;
-    min-width:39px;
-    padding:0 5px;
+    min-width:52px;
+    padding:0 6px;
     border-radius:999px;
     font-variant-numeric:tabular-nums;
+    font-size:9px;
+    font-weight:800;
   }
-  .desktopNetwork .desktopAI{
+  .desktopNetwork .desktopStepWord{
     display:inline;
-    font:800 8px/1 var(--font-geist),Geist,system-ui,sans-serif;
-    letter-spacing:.035em;
-    color:inherit;
-  }
-  .desktopNetwork .desktopIdleAI{
-    position:absolute;
-    top:-10px;
-    left:-8px;
-    z-index:5;
-    display:grid;
-    place-items:center;
-    height:21px;
-    min-width:25px;
-    padding:0 5px;
-    border-radius:999px;
-    border:1px dashed var(--muted);
-    background:var(--deep);
-    color:var(--muted);
     font:800 8px/1 var(--font-geist),Geist,system-ui,sans-serif;
     letter-spacing:.035em;
   }
@@ -1678,5 +1662,5 @@
 @media(min-width:700px) and (max-width:1150px){
   .desktopNetwork .agentSpecialty{font-size:10px!important}
   .desktopNetwork .agentOutOfCase{font-size:9px!important}
-  .desktopNetwork .agentSequence:has(.desktopAI){min-width:36px}
+  .desktopNetwork .agentSequence{min-width:48px}
 }
