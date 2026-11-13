@@ -1725,8 +1725,8 @@
       rgba(240,202,124,.10) 331deg,
       rgba(255,226,153,.30) 350deg,
       transparent 360deg);
-    -webkit-mask-image:radial-gradient(circle,transparent 0 30%,#000 43%,rgba(0,0,0,.65) 65%,transparent 82%);
-    mask-image:radial-gradient(circle,transparent 0 30%,#000 43%,rgba(0,0,0,.65) 65%,transparent 82%);
+    -webkit-mask-image:radial-gradient(circle,#000 0 32%,rgba(0,0,0,.92) 52%,transparent 84%);
+    mask-image:radial-gradient(circle,#000 0 32%,rgba(0,0,0,.92) 52%,transparent 84%);
     animation:beaconRevolution 10s linear infinite;
   }
   .desktopNetwork .beaconBeam{
@@ -1735,11 +1735,73 @@
       rgba(245,194,89,.05) 337deg,
       rgba(255,229,171,.24) 352deg,
       transparent 360deg);
-    -webkit-mask-image:radial-gradient(circle,transparent 0 31%,#000 43%,transparent 82%);
-    mask-image:radial-gradient(circle,transparent 0 31%,#000 43%,transparent 82%);
+    -webkit-mask-image:radial-gradient(circle,#000 0 30%,rgba(0,0,0,.88) 48%,transparent 82%);
+    mask-image:radial-gradient(circle,#000 0 30%,rgba(0,0,0,.88) 48%,transparent 82%);
     animation:beaconRevolution 10s linear infinite;
   }
   .desktopNetwork .beaconSweep::after{opacity:.32}
+  /* The original default-theme blue gradients have higher specificity.
+     Override them explicitly so both themes share the lantern's warm light. */
+  .shell[data-mode="light"] .desktopNetwork .beaconSweep::before{
+    background:conic-gradient(from -40deg,
+      transparent 0deg 291deg,
+      rgba(199,122,28,.02) 307deg,
+      rgba(217,135,31,.13) 328deg,
+      rgba(217,148,39,.35) 345deg,
+      rgba(238,178,72,.49) 353deg,
+      transparent 360deg);
+  }
+  .shell[data-mode="light"] .desktopNetwork .beaconBeam{
+    background:conic-gradient(from -40deg,
+      transparent 0deg 328deg,
+      rgba(204,130,33,.03) 336deg,
+      rgba(223,155,46,.40) 351deg,
+      transparent 360deg);
+  }
+  /* Same 10-second phase in the central lens and the external sweep.
+     The hub's own surface completes the beam rather than leaving a gap. */
+  .desktopNetwork .centerHub::before{
+    content:"";
+    position:absolute;
+    inset:1px;
+    z-index:0;
+    border-radius:50%;
+    pointer-events:none;
+    background:conic-gradient(from -40deg,
+      transparent 0deg 297deg,
+      rgba(225,172,72,.02) 315deg,
+      rgba(243,192,101,.12) 335deg,
+      rgba(251,213,138,.26) 353deg,
+      transparent 360deg);
+    -webkit-mask-image:radial-gradient(circle,transparent 0 16%,#000 35%,rgba(0,0,0,.85) 64%,transparent 94%);
+    mask-image:radial-gradient(circle,transparent 0 16%,#000 35%,rgba(0,0,0,.85) 64%,transparent 94%);
+    animation:beaconRevolution 10s linear infinite;
+  }
+  .desktopNetwork .hubGlyph,
+  .desktopNetwork .hubScore,
+  .desktopNetwork .centerHub > small{
+    position:relative;
+    z-index:1;
+  }
+  /* A soft moving highlight within the photograph makes the lantern read as
+     the source of the light without moving the tower image itself. */
+  .desktopNetwork .grokLantern::before{
+    content:"";
+    position:absolute;
+    inset:0;
+    z-index:1;
+    border-radius:50%;
+    pointer-events:none;
+    background:conic-gradient(from -40deg,
+      transparent 0deg 298deg,
+      rgba(255,205,113,.03) 325deg,
+      rgba(255,222,149,.21) 348deg,
+      rgba(255,240,187,.35) 354deg,
+      transparent 360deg);
+    -webkit-mask-image:radial-gradient(circle,transparent 0 12%,#000 25%,#000 76%,transparent 95%);
+    mask-image:radial-gradient(circle,transparent 0 12%,#000 25%,#000 76%,transparent 95%);
+    animation:beaconRevolution 10s linear infinite;
+  }
   .shell[data-mode="dark"] .desktopNetwork .grokLantern{
     border-color:#b69c67;
     box-shadow:
@@ -1751,5 +1813,7 @@
 }
 @media(min-width:700px) and (prefers-reduced-motion:reduce){
   .desktopNetwork .beaconSweep::before,
-  .desktopNetwork .beaconBeam{animation:none!important}
+  .desktopNetwork .beaconBeam,
+  .desktopNetwork .centerHub::before,
+  .desktopNetwork .grokLantern::before{animation:none!important}
 }
