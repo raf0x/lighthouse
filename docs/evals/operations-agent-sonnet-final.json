@@ -1,0 +1,1140 @@
+{
+  "version": "lighthouse-agent-eval-v1",
+  "startedAt": "2026-11-15T21:31:16.856Z",
+  "model": "claude-sonnet-4-6",
+  "scope": "Synthetic fixtures only; category/citation validation is automatic, narrative needs human review.",
+  "cases": [
+    {
+      "caseId": "OPS-102",
+      "passed": true,
+      "expected": {
+        "decision": "needs_information",
+        "findingIds": [
+          "payment_missing"
+        ]
+      },
+      "status": 200,
+      "run": {
+        "version": "investigator-v3",
+        "runId": "c147a1e7-feb8-4af4-a60e-91c52d49b4dc",
+        "caseId": "OPS-102",
+        "inputSignature": "[\"operations-v1\",\"OPS-102\",\"2026-11-15T14:00:00.000Z\",\"Atlas Sports US, Inc.\",\"ORD-2402\",4800000,\"USD\",160,\"2026-11-18T14:00:00.000Z\",\"INV-7602\",\"Atlas Sports US, Inc.\",4800000,\"USD\",\"\",\"missing\",0,\"USD\",\"\",\"missing\",\"Partner Operations\"]",
+        "model": "claude-sonnet-4-6",
+        "completedAt": "2026-11-15T21:32:08.869Z",
+        "elapsedMs": 51951,
+        "report": {
+          "decision": "needs_information",
+          "summary": "Case OPS-102 / ORD-2402: Atlas Sports US, Inc. has placed a ticket order for 160 tickets totalling USD 48,000.00. The invoice entity matches the approved billing entity and the invoice amount matches the order total. No duplicate invoice exists. However, the payment ledger status is \"missing\" — no payment has been recorded in the ledger at all. The CRM also shows payment status as \"missing\". Because both sources agree the payment is missing, no payment_conflict applies, but payment_missing is triggered as a blocker. The allocation deadline is Nov 18, 9:00 AM EST; the scenario clock is Nov 15, 9:00 AM EST, leaving 72 hours — outside the 24-hour near-deadline window, so no deadline finding applies. Decision: needs_information pending Finance confirmation of a cleared, referenced payment.",
+          "recommendation": "Finance must confirm whether a cleared payment of USD 48,000.00 has been received for ORD-2402 and supply a valid payment reference to update the ledger. Until the ledger reflects a cleared, referenced payment, the case cannot advance. Once Finance resolves the payment_missing finding, ask Ticketing Operations for human release review of the allocation.",
+          "owner": "Finance",
+          "findings": [
+            {
+              "id": "payment_missing",
+              "explanation": "The payment ledger status is 'missing' and the recorded amount is USD 0.00 with no payment reference supplied. There is no ledger entry at all for ORD-2402. Policy requires a referenced, cleared payment for the exact order amount and currency before release can be considered. Finance must locate or confirm receipt of payment and supply a valid payment reference before this case can advance.",
+              "sourceIds": [
+                "payment",
+                "policy"
+              ]
+            }
+          ],
+          "citations": [
+            {
+              "sourceId": "account",
+              "field": "Approved billing entity",
+              "value": "Atlas Sports US, Inc."
+            },
+            {
+              "sourceId": "order",
+              "field": "Order total",
+              "value": "USD 48,000.00"
+            },
+            {
+              "sourceId": "order",
+              "field": "Allocation deadline",
+              "value": "Nov 18, 9:00 AM EST"
+            },
+            {
+              "sourceId": "order",
+              "field": "Scenario clock",
+              "value": "Nov 15, 9:00 AM EST"
+            },
+            {
+              "sourceId": "invoice",
+              "field": "Billed entity",
+              "value": "Atlas Sports US, Inc."
+            },
+            {
+              "sourceId": "invoice",
+              "field": "Invoice total",
+              "value": "USD 48,000.00"
+            },
+            {
+              "sourceId": "invoice",
+              "field": "Other active invoice",
+              "value": "None in this sample"
+            },
+            {
+              "sourceId": "payment",
+              "field": "Ledger status",
+              "value": "missing"
+            },
+            {
+              "sourceId": "payment",
+              "field": "Recorded amount",
+              "value": "USD 0.00"
+            },
+            {
+              "sourceId": "payment",
+              "field": "Payment reference",
+              "value": "Not supplied"
+            },
+            {
+              "sourceId": "crm",
+              "field": "Payment status",
+              "value": "missing"
+            },
+            {
+              "sourceId": "policy",
+              "field": "Payment",
+              "value": "A referenced, cleared payment for the exact order amount and currency is required. Conflicting records need Finance review."
+            }
+          ],
+          "questions": [
+            {
+              "findingId": "payment_missing",
+              "question": "The payment ledger for ORD-2402 shows no entry (status: missing, recorded amount: USD 0.00, no payment reference). Can Finance locate and confirm whether a payment of USD 48,000.00 has been received and cleared for this order, and if so, provide the payment reference so the ledger can be updated?",
+              "owner": "Finance"
+            }
+          ],
+          "drafts": {
+            "internal": "INTERNAL CASE NOTE — OPS-102 / ORD-2402\n\nPartner: Atlas Sports\nApproved billing entity: Atlas Sports US, Inc.\nOrder: ORD-2402 | 160 tickets | USD 48,000.00\nAllocation deadline: Nov 18, 9:00 AM EST (72 hours from scenario clock Nov 15, 9:00 AM EST)\n\nSUMMARY OF FINDINGS\n\n1. [BLOCKER] payment_missing — The payment ledger for ORD-2402 shows status 'missing', recorded amount USD 0.00, and no payment reference. The CRM also shows payment status as 'missing'. Policy requires a referenced, cleared payment for the exact order amount and currency before release can proceed.\n\nCHECKS PASSED\n- Entity: Invoice billed entity 'Atlas Sports US, Inc.' matches approved billing entity 'Atlas Sports US, Inc.'. No mismatch.\n- Invoice: INV-7602 total USD 48,000.00 matches order total USD 48,000.00. No duplicate invoice (None in this sample).\n- Currency: Both order and invoice are USD. No currency conflict.\n- Deadline: 72 hours remain until allocation deadline. No near-deadline or elapsed-deadline condition applies.\n\nACTION REQUIRED — Finance\nPlease locate and confirm whether a payment of USD 48,000.00 has been received and cleared for ORD-2402. If confirmed, supply the payment reference so the ledger can be updated. Finance confirmation of CLEARED funds is required — receipt or funds in process is not sufficient.\n\nTicket release is not confirmed and requires human review.\n\nThe supplied records show no ledger entry for this order. Do not release tickets until Finance confirms cleared funds and Ticketing Operations completes human release review.",
+            "client": "Dear Atlas Sports team,\n\nThank you for your order ORD-2402 (160 tickets, USD 48,000.00).\n\nWe are writing regarding the payment status for this order. The supplied records show that no payment has been recorded in our ledger for ORD-2402. Our policy requires a referenced, cleared payment before we can proceed with ticket allocation.\n\nTo move this forward, please confirm whether payment of USD 48,000.00 has been submitted for this order and, if so, provide the payment reference number and confirmation that funds have cleared, so our Finance team can locate and verify the entry.\n\nPlease note: Ticket release is not confirmed and requires human review.\n\nYour allocation deadline is Nov 18, 9:00 AM EST. To allow sufficient time for Finance verification and internal review, we encourage you to respond as soon as possible.\n\nThe supplied records show no cleared payment on file at this time. We are unable to confirm ticket availability or release until this matter is resolved.\n\nPlease reach out to your account contact with the payment details at your earliest convenience.\n\nThank you for your prompt attention."
+          }
+        },
+        "trace": [
+          {
+            "step": 1,
+            "kind": "model",
+            "name": "Claude response",
+            "detail": "Call 1: 2429 input tokens, 57 output tokens; stop: tool_use.",
+            "ok": true
+          },
+          {
+            "step": 2,
+            "kind": "tool",
+            "name": "read_records",
+            "detail": "Read Account record, Ticket order, Invoice register, Payment ledger, CRM payment note, Release policy.",
+            "ok": true
+          },
+          {
+            "step": 3,
+            "kind": "model",
+            "name": "Claude response",
+            "detail": "Call 2: 3051 input tokens, 1673 output tokens; stop: tool_use.",
+            "ok": true
+          },
+          {
+            "step": 4,
+            "kind": "validation",
+            "name": "Policy and citation checks",
+            "detail": "Reconcile finding categories with the records: missing []; unsupported [deadline_near]. Re-read relevant records and revise the explanation, questions, action, and drafts; do not only change category labels.",
+            "ok": false
+          },
+          {
+            "step": 5,
+            "kind": "model",
+            "name": "Claude response",
+            "detail": "Call 3: 4913 input tokens, 1675 output tokens; stop: tool_use.",
+            "ok": true
+          },
+          {
+            "step": 6,
+            "kind": "validation",
+            "name": "Policy and citation checks",
+            "detail": "Finding categories and decision match the policy engine; quoted fields match the records. Narrative and drafts still need human review.",
+            "ok": true
+          }
+        ],
+        "usage": {
+          "inputTokens": 10393,
+          "outputTokens": 3405,
+          "modelCalls": 3,
+          "estimatedUsd": 0.082254
+        },
+        "validationAttempts": 2,
+        "firstSubmissionPassed": false
+      }
+    },
+    {
+      "caseId": "OPS-103",
+      "passed": true,
+      "expected": {
+        "decision": "needs_information",
+        "findingIds": [
+          "payment_conflict",
+          "payment_pending"
+        ]
+      },
+      "status": 200,
+      "run": {
+        "version": "investigator-v3",
+        "runId": "64e86a80-18d1-478f-9c39-efd6827cc72a",
+        "caseId": "OPS-103",
+        "inputSignature": "[\"operations-v1\",\"OPS-103\",\"2026-11-15T14:00:00.000Z\",\"Mariner Hospitality US, Inc.\",\"ORD-2403\",4800000,\"USD\",160,\"2026-11-18T14:00:00.000Z\",\"INV-7603\",\"Mariner Hospitality US, Inc.\",4800000,\"USD\",\"\",\"pending\",4800000,\"USD\",\"PAY-5303\",\"cleared\",\"Partner Operations\"]",
+        "model": "claude-sonnet-4-6",
+        "completedAt": "2026-11-15T21:32:40.930Z",
+        "elapsedMs": 31914,
+        "report": {
+          "decision": "needs_information",
+          "summary": "Case OPS-103 / ORD-2403: Mariner Hospitality US, Inc. — 160 tickets, USD 48,000.00. Entity and invoice checks pass. A payment reference (PAY-5303) exists, so payment_missing does not apply. However, the CRM shows the payment as \"cleared\" while the payment ledger shows \"pending,\" triggering payment_conflict. Because the ledger is not cleared, payment_amount is not evaluated. The allocation deadline is Nov 18, 9:00 AM EST; the scenario clock is Nov 15, 9:00 AM EST — 72 hours remain, so deadline_near does not apply. The payment conflict is a blocker requiring Finance resolution before the case can advance to human release review.",
+          "recommendation": "Assign to Finance to resolve the payment_conflict and payment_pending findings. Finance must reconcile the discrepancy between the CRM 'cleared' status and the ledger 'pending' status for PAY-5303, and confirm cleared funds in the ledger. Once the ledger reflects a cleared status, ask Ticketing Operations for human release review of the 160-ticket allocation for ORD-2403 before the Nov 18, 9:00 AM EST deadline.",
+          "owner": "Finance",
+          "findings": [
+            {
+              "id": "payment_conflict",
+              "explanation": "The CRM payment note records the payment status as 'cleared', but the payment ledger records it as 'pending'. These two authoritative sources disagree on whether funds have settled. Per policy, conflicting records require Finance review. This is a blocker; ticket release cannot proceed until Finance confirms the true cleared status in the ledger.",
+              "sourceIds": [
+                "crm",
+                "payment",
+                "policy"
+              ]
+            },
+            {
+              "id": "payment_pending",
+              "explanation": "The payment ledger status for PAY-5303 (linked to ORD-2403) is explicitly 'pending'. A cleared payment for the exact order amount and currency is required by policy before release. Finance must confirm that funds have fully cleared and update the ledger accordingly.",
+              "sourceIds": [
+                "payment",
+                "policy"
+              ]
+            }
+          ],
+          "citations": [
+            {
+              "sourceId": "account",
+              "field": "Approved billing entity",
+              "value": "Mariner Hospitality US, Inc."
+            },
+            {
+              "sourceId": "order",
+              "field": "Order total",
+              "value": "USD 48,000.00"
+            },
+            {
+              "sourceId": "order",
+              "field": "Allocation deadline",
+              "value": "Nov 18, 9:00 AM EST"
+            },
+            {
+              "sourceId": "order",
+              "field": "Scenario clock",
+              "value": "Nov 15, 9:00 AM EST"
+            },
+            {
+              "sourceId": "invoice",
+              "field": "Billed entity",
+              "value": "Mariner Hospitality US, Inc."
+            },
+            {
+              "sourceId": "invoice",
+              "field": "Invoice total",
+              "value": "USD 48,000.00"
+            },
+            {
+              "sourceId": "invoice",
+              "field": "Other active invoice",
+              "value": "None in this sample"
+            },
+            {
+              "sourceId": "payment",
+              "field": "Ledger status",
+              "value": "pending"
+            },
+            {
+              "sourceId": "payment",
+              "field": "Payment reference",
+              "value": "PAY-5303"
+            },
+            {
+              "sourceId": "payment",
+              "field": "Recorded amount",
+              "value": "USD 48,000.00"
+            },
+            {
+              "sourceId": "crm",
+              "field": "Payment status",
+              "value": "cleared"
+            },
+            {
+              "sourceId": "policy",
+              "field": "Payment",
+              "value": "A referenced, cleared payment for the exact order amount and currency is required. Conflicting records need Finance review."
+            }
+          ],
+          "questions": [
+            {
+              "findingId": "payment_conflict",
+              "question": "The CRM shows payment for ORD-2403 as 'cleared', but the payment ledger (PAY-5303) shows 'pending'. Can Finance confirm the true settlement status and update the ledger to reflect cleared funds if settlement has occurred?",
+              "owner": "Finance"
+            },
+            {
+              "findingId": "payment_pending",
+              "question": "The payment ledger for PAY-5303 (ORD-2403, USD 48,000.00) remains in 'pending' status. Can Finance confirm when cleared funds are expected and update the ledger once settlement is confirmed?",
+              "owner": "Finance"
+            }
+          ],
+          "drafts": {
+            "internal": "INTERNAL CASE NOTE — OPS-103 / ORD-2403\n\nPartner: Mariner Hospitality\nApproved entity: Mariner Hospitality US, Inc.\nOrder: ORD-2403 | 160 tickets | USD 48,000.00\nDeadline: Nov 18, 9:00 AM EST (72 hours from scenario clock)\n\nSTATUS: Needs Information — assigned to Finance\n\nChecks passed:\n- Entity: Invoice billed entity matches approved account entity (Mariner Hospitality US, Inc.).\n- Invoice: INV-7603 matches order amount (USD 48,000.00), same currency, no duplicate active invoice.\n- Payment reference: PAY-5303 is present; reference_missing does not apply.\n\nBlockers:\n1. payment_conflict: The CRM payment note shows status 'cleared', but the payment ledger shows 'pending' for PAY-5303. These records conflict and require Finance reconciliation.\n2. payment_pending: The payment ledger status is 'pending'. Policy requires a cleared payment before release can be considered.\n\nRequired Finance actions:\n- Reconcile the CRM 'cleared' status against the ledger 'pending' status for PAY-5303 (ORD-2403, USD 48,000.00).\n- Confirm cleared funds and update the ledger to reflect the correct settlement status.\n\nOnce Finance confirms cleared status in the ledger, the case should be escalated to Ticketing Operations for human release review ahead of the Nov 18, 9:00 AM EST deadline.\n\nTicket release is not confirmed and requires human review.",
+            "client": "Dear Mariner Hospitality Team,\n\nThank you for your order ORD-2403 (160 tickets, USD 48,000.00).\n\nThe supplied records show that your invoice (INV-7603) is correctly issued to Mariner Hospitality US, Inc. and matches the order amount. However, we are currently unable to advance your order to release review.\n\nThe reason is a discrepancy in our payment records: the payment reference PAY-5303 appears as 'cleared' in one system but as 'pending' in our payment ledger. Our Finance team needs to reconcile these records and confirm that funds have fully cleared before the order can proceed.\n\nWe are not able to confirm ticket release at this time. Ticket release is not confirmed and requires human review.\n\nIf you have a payment confirmation or remittance advice for PAY-5303 that you believe may assist in resolving this discrepancy, please share it with your account contact. The supplied records show an allocation deadline of Nov 18, 9:00 AM EST, and we are working to resolve this matter in advance of that date.\n\nWe will keep you informed as the review progresses.\n\nThank you for your patience.\nLighthouse Partner Operations"
+          }
+        },
+        "trace": [
+          {
+            "step": 1,
+            "kind": "model",
+            "name": "Claude response",
+            "detail": "Call 1: 2429 input tokens, 57 output tokens; stop: tool_use.",
+            "ok": true
+          },
+          {
+            "step": 2,
+            "kind": "tool",
+            "name": "read_records",
+            "detail": "Read Account record, Ticket order, Invoice register, Payment ledger, CRM payment note, Release policy.",
+            "ok": true
+          },
+          {
+            "step": 3,
+            "kind": "model",
+            "name": "Claude response",
+            "detail": "Call 2: 3068 input tokens, 1725 output tokens; stop: tool_use.",
+            "ok": true
+          },
+          {
+            "step": 4,
+            "kind": "validation",
+            "name": "Policy and citation checks",
+            "detail": "Finding categories and decision match the policy engine; quoted fields match the records. Narrative and drafts still need human review.",
+            "ok": true
+          }
+        ],
+        "usage": {
+          "inputTokens": 5497,
+          "outputTokens": 1782,
+          "modelCalls": 2,
+          "estimatedUsd": 0.043221
+        },
+        "validationAttempts": 1,
+        "firstSubmissionPassed": true
+      }
+    },
+    {
+      "caseId": "OPS-104",
+      "passed": true,
+      "expected": {
+        "decision": "blocked",
+        "findingIds": [
+          "payment_pending",
+          "deadline_near"
+        ]
+      },
+      "status": 200,
+      "run": {
+        "version": "investigator-v3",
+        "runId": "371662b7-6120-4180-9989-61cc0355b102",
+        "caseId": "OPS-104",
+        "inputSignature": "[\"operations-v1\",\"OPS-104\",\"2026-11-15T14:00:00.000Z\",\"Cedar Events US, Inc.\",\"ORD-2404\",4800000,\"USD\",160,\"2026-11-15T18:00:00.000Z\",\"INV-7604\",\"Cedar Events US, Inc.\",4800000,\"USD\",\"\",\"pending\",4800000,\"USD\",\"PAY-5304\",\"pending\",\"Partner Operations\"]",
+        "model": "claude-sonnet-4-6",
+        "completedAt": "2026-11-15T21:33:28.314Z",
+        "elapsedMs": 47245,
+        "report": {
+          "decision": "blocked",
+          "summary": "Case OPS-104 / ORD-2404: Cedar Events US, Inc. has placed a 160-ticket order for USD 48,000.00 with an allocation deadline of Nov 15, 1:00 PM EST (scenario clock: Nov 15, 9:00 AM EST — 4 hours remaining). The invoice entity matches the approved billing entity and the invoice amount matches the order. No duplicate invoice exists. The payment ledger shows a pending entry (PAY-5304, USD 48,000.00), and the CRM also shows pending — statuses agree, so no conflict is raised. However, a pending payment is a blocker: policy requires cleared funds. The deadline is within 24 hours, flagged for attention. Decision: blocked on pending payment.",
+          "recommendation": "Finance should urgently confirm whether PAY-5304 has cleared and update the ledger accordingly. The allocation deadline is approximately 4 hours away. Once Finance confirms cleared funds, ask Ticketing Operations for human release review. Do not release tickets or assume an extension to the deadline.",
+          "owner": "Finance",
+          "findings": [
+            {
+              "id": "payment_pending",
+              "explanation": "The payment ledger (PAY-5304, USD 48,000.00, linked to ORD-2404) carries a status of 'pending'. Policy requires a cleared, referenced payment before ticket release. Finance must confirm that funds have fully cleared. This is a blocker.",
+              "sourceIds": [
+                "payment",
+                "policy"
+              ]
+            },
+            {
+              "id": "deadline_near",
+              "explanation": "The allocation deadline is Nov 15, 1:00 PM EST. The scenario clock is Nov 15, 9:00 AM EST, leaving approximately 4 hours — within the 24-hour escalation window defined by policy. This is an attention flag. The pending payment blocker must be resolved before the deadline expires or a new allocation decision will be required.",
+              "sourceIds": [
+                "order",
+                "policy"
+              ]
+            }
+          ],
+          "citations": [
+            {
+              "sourceId": "account",
+              "field": "Approved billing entity",
+              "value": "Cedar Events US, Inc."
+            },
+            {
+              "sourceId": "order",
+              "field": "Order total",
+              "value": "USD 48,000.00"
+            },
+            {
+              "sourceId": "order",
+              "field": "Allocation deadline",
+              "value": "Nov 15, 1:00 PM EST"
+            },
+            {
+              "sourceId": "order",
+              "field": "Scenario clock",
+              "value": "Nov 15, 9:00 AM EST"
+            },
+            {
+              "sourceId": "invoice",
+              "field": "Billed entity",
+              "value": "Cedar Events US, Inc."
+            },
+            {
+              "sourceId": "invoice",
+              "field": "Invoice total",
+              "value": "USD 48,000.00"
+            },
+            {
+              "sourceId": "invoice",
+              "field": "Other active invoice",
+              "value": "None in this sample"
+            },
+            {
+              "sourceId": "payment",
+              "field": "Ledger status",
+              "value": "pending"
+            },
+            {
+              "sourceId": "payment",
+              "field": "Recorded amount",
+              "value": "USD 48,000.00"
+            },
+            {
+              "sourceId": "payment",
+              "field": "Payment reference",
+              "value": "PAY-5304"
+            },
+            {
+              "sourceId": "crm",
+              "field": "Payment status",
+              "value": "pending"
+            },
+            {
+              "sourceId": "policy",
+              "field": "Payment",
+              "value": "A referenced, cleared payment for the exact order amount and currency is required. Conflicting records need Finance review."
+            }
+          ],
+          "questions": [
+            {
+              "findingId": "payment_pending",
+              "question": "Payment PAY-5304 (USD 48,000.00, linked to ORD-2404) is currently showing as pending in the ledger. Can Finance confirm whether funds have fully cleared and, if so, update the ledger status to cleared? The allocation deadline is Nov 15, 1:00 PM EST — approximately 4 hours from the scenario clock.",
+              "owner": "Finance"
+            },
+            {
+              "findingId": "deadline_near",
+              "question": "The allocation deadline for ORD-2404 is Nov 15, 1:00 PM EST, which is within 24 hours of the scenario clock (Nov 15, 9:00 AM EST). If the pending payment PAY-5304 is not confirmed as cleared before this deadline, can Ticketing Operations advise on the escalation path or whether a new allocation decision is required?",
+              "owner": "Ticketing Operations"
+            }
+          ],
+          "drafts": {
+            "internal": "Case OPS-104 / ORD-2404 — Internal Review Note\n\nPartner: Cedar Events (approved billing entity: Cedar Events US, Inc.)\nOrder: ORD-2404 | 160 tickets | USD 48,000.00\nInvoice: INV-7604 | USD 48,000.00 | Entity matches — no issues\nPayment: PAY-5304 | USD 48,000.00 | Ledger status: PENDING\nAllocation deadline: Nov 15, 1:00 PM EST (approx. 4 hours from scenario clock)\n\nThe supplied records show that the invoice entity and amount are aligned with the order. No duplicate invoice exists. However, payment PAY-5304 is pending in both the ledger and CRM — Finance confirmation of cleared funds is required before this case can proceed.\n\nTicket release is not confirmed and requires human review.\n\nRequired action: Finance must confirm whether PAY-5304 has fully cleared and update the ledger status. Given the deadline is within 4 hours, this is time-sensitive. If funds are not confirmed cleared before Nov 15, 1:00 PM EST, Ticketing Operations must be consulted on the escalation path — policy does not permit assuming a deadline extension.",
+            "client": "Dear Cedar Events team,\n\nThank you for your order ORD-2404 (160 tickets, USD 48,000.00).\n\nThe supplied records show that your invoice (INV-7604) is correctly issued and matches the order. However, payment PAY-5304 is currently showing as pending in our records, and we require Finance confirmation that funds have fully cleared before we can proceed.\n\nTicket release is not confirmed and requires human review.\n\nPlease note that the allocation deadline for this order is Nov 15, 1:00 PM EST. We encourage you to follow up with your finance team to ensure payment clearance is confirmed as soon as possible. If you have a remittance advice or bank confirmation for PAY-5304, please share it with us to assist with verification.\n\nWe will route this case for the appropriate internal review once payment clearance is confirmed.\n\nThank you for your prompt attention to this matter."
+          }
+        },
+        "trace": [
+          {
+            "step": 1,
+            "kind": "model",
+            "name": "Claude response",
+            "detail": "Call 1: 2429 input tokens, 57 output tokens; stop: tool_use.",
+            "ok": true
+          },
+          {
+            "step": 2,
+            "kind": "tool",
+            "name": "read_records",
+            "detail": "Read Account record, Ticket order, Invoice register, Payment ledger, CRM payment note, Release policy.",
+            "ok": true
+          },
+          {
+            "step": 3,
+            "kind": "model",
+            "name": "Claude response",
+            "detail": "Call 2: 3056 input tokens, 1558 output tokens; stop: tool_use.",
+            "ok": true
+          },
+          {
+            "step": 4,
+            "kind": "validation",
+            "name": "Policy and citation checks",
+            "detail": "Decision must be blocked under the supplied policy. Recheck the underlying findings and revise all affected prose.",
+            "ok": false
+          },
+          {
+            "step": 5,
+            "kind": "model",
+            "name": "Claude response",
+            "detail": "Call 3: 4796 input tokens, 1656 output tokens; stop: tool_use.",
+            "ok": true
+          },
+          {
+            "step": 6,
+            "kind": "validation",
+            "name": "Policy and citation checks",
+            "detail": "Finding categories and decision match the policy engine; quoted fields match the records. Narrative and drafts still need human review.",
+            "ok": true
+          }
+        ],
+        "usage": {
+          "inputTokens": 10281,
+          "outputTokens": 3271,
+          "modelCalls": 3,
+          "estimatedUsd": 0.079908
+        },
+        "validationAttempts": 2,
+        "firstSubmissionPassed": false
+      }
+    },
+    {
+      "caseId": "OPS-106",
+      "passed": true,
+      "expected": {
+        "decision": "blocked",
+        "findingIds": [
+          "payment_amount"
+        ]
+      },
+      "status": 200,
+      "run": {
+        "version": "investigator-v3",
+        "runId": "71192d88-8c2c-4d4f-92fc-c24b5eac8cb1",
+        "caseId": "OPS-106",
+        "inputSignature": "[\"operations-v1\",\"OPS-106\",\"2026-11-15T14:00:00.000Z\",\"Bayview Partners US, Inc.\",\"ORD-2406\",4800000,\"USD\",160,\"2026-11-18T14:00:00.000Z\",\"INV-7606\",\"Bayview Partners US, Inc.\",4800000,\"USD\",\"\",\"cleared\",3000000,\"USD\",\"PAY-5306\",\"cleared\",\"Partner Operations\"]",
+        "model": "claude-sonnet-4-6",
+        "completedAt": "2026-11-15T21:33:53.429Z",
+        "elapsedMs": 24993,
+        "report": {
+          "decision": "blocked",
+          "summary": "Case OPS-106 / ORD-2406: Bayview Partners US, Inc. Invoice INV-7606 matches the approved billing entity and order currency. No duplicate invoice exists. However, the payment ledger (PAY-5306) shows a cleared amount of USD 30,000.00 against an order total of USD 48,000.00 — a shortfall of USD 18,000.00. The CRM and ledger both show \"cleared\" status, so no payment conflict exists. The deadline is Nov 18, 9:00 AM EST; the scenario clock is Nov 15, 9:00 AM EST, leaving 72 hours — not within the 24-hour near-deadline window. The case is blocked on the payment amount discrepancy. Ticket release is not confirmed and requires human review.",
+          "recommendation": "The case is blocked due to a payment amount shortfall. Finance must confirm that the full USD 48,000.00 has cleared — either by updating the ledger with a corrected or supplementary payment record — before this case can be escalated to Ticketing Operations for human release review. Do not assume an extension to the Nov 18, 9:00 AM EST allocation deadline.",
+          "owner": "Finance",
+          "findings": [
+            {
+              "id": "payment_amount",
+              "explanation": "The payment ledger (PAY-5306) records a cleared amount of USD 30,000.00, but the order total is USD 48,000.00. Both currencies are USD and the ledger status is cleared, so the payment_amount rule applies. The shortfall is USD 18,000.00. Policy requires a cleared payment for the exact order amount before release can be considered.",
+              "sourceIds": [
+                "payment",
+                "order",
+                "policy"
+              ]
+            }
+          ],
+          "citations": [
+            {
+              "sourceId": "account",
+              "field": "Approved billing entity",
+              "value": "Bayview Partners US, Inc."
+            },
+            {
+              "sourceId": "order",
+              "field": "Order total",
+              "value": "USD 48,000.00"
+            },
+            {
+              "sourceId": "order",
+              "field": "Allocation deadline",
+              "value": "Nov 18, 9:00 AM EST"
+            },
+            {
+              "sourceId": "order",
+              "field": "Scenario clock",
+              "value": "Nov 15, 9:00 AM EST"
+            },
+            {
+              "sourceId": "invoice",
+              "field": "Billed entity",
+              "value": "Bayview Partners US, Inc."
+            },
+            {
+              "sourceId": "invoice",
+              "field": "Invoice total",
+              "value": "USD 48,000.00"
+            },
+            {
+              "sourceId": "invoice",
+              "field": "Other active invoice",
+              "value": "None in this sample"
+            },
+            {
+              "sourceId": "payment",
+              "field": "Ledger status",
+              "value": "cleared"
+            },
+            {
+              "sourceId": "payment",
+              "field": "Recorded amount",
+              "value": "USD 30,000.00"
+            },
+            {
+              "sourceId": "payment",
+              "field": "Payment reference",
+              "value": "PAY-5306"
+            },
+            {
+              "sourceId": "crm",
+              "field": "Payment status",
+              "value": "cleared"
+            },
+            {
+              "sourceId": "policy",
+              "field": "Payment",
+              "value": "A referenced, cleared payment for the exact order amount and currency is required. Conflicting records need Finance review."
+            }
+          ],
+          "questions": [
+            {
+              "findingId": "payment_amount",
+              "question": "The payment ledger (PAY-5306) records a cleared amount of USD 30,000.00 against an order total of USD 48,000.00. Can Finance confirm whether the remaining USD 18,000.00 has been received and cleared, or provide a corrected payment record that accounts for the full order amount?",
+              "owner": "Finance"
+            }
+          ],
+          "drafts": {
+            "internal": "Case OPS-106 / ORD-2406 — BLOCKED: Payment Amount Shortfall\n\nThe supplied records show the following:\n\n- Approved billing entity: Bayview Partners US, Inc.\n- Invoice INV-7606: USD 48,000.00, entity matches, no duplicate invoice.\n- Payment PAY-5306: Ledger status is cleared, but recorded amount is USD 30,000.00 against an order total of USD 48,000.00 (shortfall: USD 18,000.00).\n- CRM status: cleared — consistent with ledger, so no payment conflict.\n- Allocation deadline: Nov 18, 9:00 AM EST. Scenario clock: Nov 15, 9:00 AM EST. 72 hours remain; no near-deadline flag triggered.\n\nBlocking finding: payment_amount — cleared payment does not cover the full order total.\n\nAction required (Finance): Please confirm whether the remaining USD 18,000.00 has been received and cleared, or provide a corrected/supplementary payment record covering the full USD 48,000.00. Until the full amount is confirmed cleared, this case cannot proceed.\n\nTicket release is not confirmed and requires human review.",
+            "client": "Dear Bayview Partners,\n\nThank you for your order ORD-2406.\n\nThe supplied records show that payment reference PAY-5306 has cleared for USD 30,000.00; however, the order total is USD 48,000.00. A balance of USD 18,000.00 remains unaccounted for in the payment ledger.\n\nTo move this case forward, we need Finance to confirm that the full order amount of USD 48,000.00 has cleared. Please ensure that any outstanding payment is submitted and that your finance team can provide confirmation of cleared funds for the remaining balance.\n\nPlease note that the allocation deadline for this order is Nov 18, 9:00 AM EST. We are unable to extend this deadline on your behalf.\n\nTicket release is not confirmed and requires human review.\n\nWe will keep this case open pending Finance confirmation. Please reach out if you have any questions."
+          }
+        },
+        "trace": [
+          {
+            "step": 1,
+            "kind": "model",
+            "name": "Claude response",
+            "detail": "Call 1: 2429 input tokens, 57 output tokens; stop: tool_use.",
+            "ok": true
+          },
+          {
+            "step": 2,
+            "kind": "tool",
+            "name": "read_records",
+            "detail": "Read Account record, Ticket order, Invoice register, Payment ledger, CRM payment note, Release policy.",
+            "ok": true
+          },
+          {
+            "step": 3,
+            "kind": "model",
+            "name": "Claude response",
+            "detail": "Call 2: 3062 input tokens, 1402 output tokens; stop: tool_use.",
+            "ok": true
+          },
+          {
+            "step": 4,
+            "kind": "validation",
+            "name": "Policy and citation checks",
+            "detail": "Finding categories and decision match the policy engine; quoted fields match the records. Narrative and drafts still need human review.",
+            "ok": true
+          }
+        ],
+        "usage": {
+          "inputTokens": 5491,
+          "outputTokens": 1459,
+          "modelCalls": 2,
+          "estimatedUsd": 0.038358
+        },
+        "validationAttempts": 1,
+        "firstSubmissionPassed": true
+      }
+    },
+    {
+      "caseId": "OPS-107",
+      "passed": true,
+      "expected": {
+        "decision": "blocked",
+        "findingIds": [
+          "invoice_currency",
+          "payment_currency"
+        ]
+      },
+      "status": 200,
+      "run": {
+        "version": "investigator-v3",
+        "runId": "64fede62-92c1-4d12-91c9-998b2b3e791e",
+        "caseId": "OPS-107",
+        "inputSignature": "[\"operations-v1\",\"OPS-107\",\"2026-11-15T14:00:00.000Z\",\"Solstice Travel US, Inc.\",\"ORD-2407\",4800000,\"USD\",160,\"2026-11-18T14:00:00.000Z\",\"INV-7607\",\"Solstice Travel US, Inc.\",4800000,\"CAD\",\"\",\"cleared\",4800000,\"CAD\",\"PAY-5307\",\"cleared\",\"Partner Operations\"]",
+        "model": "claude-sonnet-4-6",
+        "completedAt": "2026-11-15T21:34:47.363Z",
+        "elapsedMs": 53837,
+        "report": {
+          "decision": "blocked",
+          "summary": "Case OPS-107 / ORD-2407: Solstice Travel US, Inc. has placed a 160-ticket order totalling USD 48,000.00 with an allocation deadline of Nov 18, 9:00 AM EST (scenario clock: Nov 15, 9:00 AM EST — 72 hours remaining, not near). The billing entity on invoice INV-7607 matches the approved account entity. No duplicate invoice exists. However, invoice INV-7607 is denominated in CAD 48,000.00 while the order requires USD 48,000.00 — a currency mismatch. Payment ledger PAY-5307 is cleared for CAD 48,000.00, which also does not match the order currency of USD. Both currency discrepancies are blockers that Finance must resolve before the case can proceed to human release review.",
+          "recommendation": "The case is blocked by two currency mismatches: invoice INV-7607 is in CAD rather than the required USD, and payment PAY-5307 is recorded in CAD rather than USD. Finance must validate and correct the invoice currency and confirm a cleared USD payment matching the order total of USD 48,000.00. Once Finance resolves both issues, ask Ticketing Operations for human release review of the 160-ticket allocation for ORD-2407.",
+          "owner": "Finance",
+          "findings": [
+            {
+              "id": "invoice_currency",
+              "explanation": "Invoice INV-7607 is billed in CAD 48,000.00, but order ORD-2407 requires USD 48,000.00. The invoice currency does not match the order currency. Policy states the invoice must match the order amount and currency. This is a blocker.",
+              "sourceIds": [
+                "invoice",
+                "order",
+                "policy"
+              ]
+            },
+            {
+              "id": "payment_currency",
+              "explanation": "Payment ledger PAY-5307 records CAD 48,000.00, while order ORD-2407 is denominated in USD 48,000.00. The payment currency does not match the order currency. Policy requires a cleared payment in the exact order currency. The ledger is not missing and the reference PAY-5307 is present, so this currency mismatch is a blocker.",
+              "sourceIds": [
+                "payment",
+                "order",
+                "policy"
+              ]
+            }
+          ],
+          "citations": [
+            {
+              "sourceId": "account",
+              "field": "Approved billing entity",
+              "value": "Solstice Travel US, Inc."
+            },
+            {
+              "sourceId": "order",
+              "field": "Order total",
+              "value": "USD 48,000.00"
+            },
+            {
+              "sourceId": "order",
+              "field": "Allocation deadline",
+              "value": "Nov 18, 9:00 AM EST"
+            },
+            {
+              "sourceId": "order",
+              "field": "Scenario clock",
+              "value": "Nov 15, 9:00 AM EST"
+            },
+            {
+              "sourceId": "invoice",
+              "field": "Billed entity",
+              "value": "Solstice Travel US, Inc."
+            },
+            {
+              "sourceId": "invoice",
+              "field": "Invoice total",
+              "value": "CAD 48,000.00"
+            },
+            {
+              "sourceId": "invoice",
+              "field": "Other active invoice",
+              "value": "None in this sample"
+            },
+            {
+              "sourceId": "payment",
+              "field": "Ledger status",
+              "value": "cleared"
+            },
+            {
+              "sourceId": "payment",
+              "field": "Recorded amount",
+              "value": "CAD 48,000.00"
+            },
+            {
+              "sourceId": "payment",
+              "field": "Payment reference",
+              "value": "PAY-5307"
+            },
+            {
+              "sourceId": "crm",
+              "field": "Payment status",
+              "value": "cleared"
+            },
+            {
+              "sourceId": "policy",
+              "field": "Invoice",
+              "value": "Exactly one active invoice must match the order amount and currency."
+            }
+          ],
+          "questions": [
+            {
+              "findingId": "invoice_currency",
+              "question": "Invoice INV-7607 is denominated in CAD 48,000.00, but order ORD-2407 requires USD 48,000.00. Can Finance validate and correct the invoice to reflect the order currency of USD?",
+              "owner": "Finance"
+            },
+            {
+              "findingId": "payment_currency",
+              "question": "Payment ledger PAY-5307 records CAD 48,000.00, but order ORD-2407 is in USD 48,000.00. Can Finance confirm whether a cleared USD 48,000.00 payment exists for ORD-2407 and clarify how the currency discrepancy on the ledger should be resolved?",
+              "owner": "Finance"
+            }
+          ],
+          "drafts": {
+            "internal": "INTERNAL CASE NOTE — OPS-107 / ORD-2407\n\nPartner: Solstice Travel\nApproved billing entity: Solstice Travel US, Inc.\nOrder: ORD-2407 | USD 48,000.00 | 160 tickets\nAllocation deadline: Nov 18, 9:00 AM EST (72 hours from scenario clock — not near)\n\nTicket release is not confirmed and requires human review.\n\nThe supplied records show two currency blockers:\n\n1. INVOICE CURRENCY MISMATCH (invoice_currency)\n   Invoice INV-7607 is billed in CAD 48,000.00. Order ORD-2407 requires USD 48,000.00. Policy requires the invoice currency to match the order currency.\n\n2. PAYMENT CURRENCY MISMATCH (payment_currency)\n   Payment ledger PAY-5307 records CAD 48,000.00. The order requires USD 48,000.00. Policy requires a cleared payment in the exact order currency.\n\nNo duplicate invoice was found (Other active invoice: None in this sample). Billing entity on the invoice matches the approved account entity (Solstice Travel US, Inc.). CRM and ledger both show cleared status — no payment conflict. Payment reference PAY-5307 is present — no missing reference.\n\nACTION REQUIRED — Finance:\n- Validate and correct invoice INV-7607 to reflect USD 48,000.00.\n- Confirm whether a cleared USD 48,000.00 payment exists for ORD-2407 and resolve the CAD/USD discrepancy on the ledger.\n\nOnce Finance resolves both currency issues, Ticketing Operations should be asked to perform human release review of the 160-ticket allocation.",
+            "client": "Dear Solstice Travel Team,\n\nThank you for your order ORD-2407 for 160 tickets.\n\nTicket release is not confirmed and requires human review.\n\nThe supplied records show that invoice INV-7607 is denominated in CAD 48,000.00, while order ORD-2407 is placed in USD 48,000.00. Additionally, payment PAY-5307 on the ledger is recorded in CAD rather than USD. Our policy requires that both the invoice and the confirmed payment match the order currency of USD 48,000.00.\n\nTo move this case forward, Finance must review and correct the invoice currency and confirm that cleared funds in USD have been received for the full order amount. We are unable to proceed with ticket allocation until these currency discrepancies are resolved.\n\nPlease work with your Finance team to ensure the correct documentation and payment currency are in place. If you have questions, please contact your account representative.\n\nThank you,\nLighthouse Partner Operations"
+          }
+        },
+        "trace": [
+          {
+            "step": 1,
+            "kind": "model",
+            "name": "Claude response",
+            "detail": "Call 1: 2429 input tokens, 57 output tokens; stop: tool_use.",
+            "ok": true
+          },
+          {
+            "step": 2,
+            "kind": "tool",
+            "name": "read_records",
+            "detail": "Read Account record, Ticket order, Invoice register, Payment ledger, CRM payment note, Release policy.",
+            "ok": true
+          },
+          {
+            "step": 3,
+            "kind": "model",
+            "name": "Claude response",
+            "detail": "Call 2: 3067 input tokens, 1824 output tokens; stop: tool_use.",
+            "ok": true
+          },
+          {
+            "step": 4,
+            "kind": "validation",
+            "name": "Policy and citation checks",
+            "detail": "Reconcile finding categories with the records: missing []; unsupported [deadline_near]. Re-read relevant records and revise the explanation, questions, action, and drafts; do not only change category labels.",
+            "ok": false
+          },
+          {
+            "step": 5,
+            "kind": "model",
+            "name": "Claude response",
+            "detail": "Call 3: 5102 input tokens, 1849 output tokens; stop: tool_use.",
+            "ok": true
+          },
+          {
+            "step": 6,
+            "kind": "validation",
+            "name": "Policy and citation checks",
+            "detail": "Finding categories and decision match the policy engine; quoted fields match the records. Narrative and drafts still need human review.",
+            "ok": true
+          }
+        ],
+        "usage": {
+          "inputTokens": 10598,
+          "outputTokens": 3730,
+          "modelCalls": 3,
+          "estimatedUsd": 0.087744
+        },
+        "validationAttempts": 2,
+        "firstSubmissionPassed": false
+      }
+    },
+    {
+      "caseId": "OPS-108",
+      "passed": true,
+      "expected": {
+        "decision": "blocked",
+        "findingIds": [
+          "duplicate_invoice"
+        ]
+      },
+      "status": 200,
+      "run": {
+        "version": "investigator-v3",
+        "runId": "f7673f5c-85f9-499b-af5f-1fc245ebb8b9",
+        "caseId": "OPS-108",
+        "inputSignature": "[\"operations-v1\",\"OPS-108\",\"2026-11-15T14:00:00.000Z\",\"Coastline Foods US, Inc.\",\"ORD-2408\",4800000,\"USD\",160,\"2026-11-18T14:00:00.000Z\",\"INV-7608\",\"Coastline Foods US, Inc.\",4800000,\"USD\",\"INV-7608-B\",\"cleared\",4800000,\"USD\",\"PAY-5308\",\"cleared\",\"Partner Operations\"]",
+        "model": "claude-sonnet-4-6",
+        "completedAt": "2026-11-15T21:35:10.178Z",
+        "elapsedMs": 22723,
+        "report": {
+          "decision": "blocked",
+          "summary": "Case OPS-108 / ORD-2408 (Coastline Foods). The billing entity on INV-7608 matches the approved account entity. The payment ledger is cleared for the correct amount and currency, and CRM status agrees. However, a second active invoice (INV-7608-B) exists alongside INV-7608, violating the one-active-invoice rule. The allocation deadline is Nov 18, 9:00 AM EST; the scenario clock is Nov 15, 9:00 AM EST — 72 hours remain, so no deadline finding applies. The duplicate invoice is a blocker and must be resolved before release can proceed.",
+          "recommendation": "Finance must confirm which of the two active invoices (INV-7608 or INV-7608-B) is the correct instrument for ORD-2408 and void or cancel the other before this case can advance. Once exactly one active invoice remains and all other checks are confirmed, ask Ticketing Operations for human release review.",
+          "owner": "Finance",
+          "findings": [
+            {
+              "id": "duplicate_invoice",
+              "explanation": "The invoice register for INV-7608 discloses a second active invoice, INV-7608-B, linked to the same order ORD-2408. Policy requires exactly one active invoice matching the order amount and currency. Having two active invoices is a blocker regardless of whether the amounts agree, because it creates ambiguity over which instrument governs the transaction and could result in double-collection.",
+              "sourceIds": [
+                "invoice",
+                "order",
+                "policy"
+              ]
+            }
+          ],
+          "citations": [
+            {
+              "sourceId": "account",
+              "field": "Approved billing entity",
+              "value": "Coastline Foods US, Inc."
+            },
+            {
+              "sourceId": "order",
+              "field": "Order total",
+              "value": "USD 48,000.00"
+            },
+            {
+              "sourceId": "order",
+              "field": "Allocation deadline",
+              "value": "Nov 18, 9:00 AM EST"
+            },
+            {
+              "sourceId": "order",
+              "field": "Scenario clock",
+              "value": "Nov 15, 9:00 AM EST"
+            },
+            {
+              "sourceId": "invoice",
+              "field": "Billed entity",
+              "value": "Coastline Foods US, Inc."
+            },
+            {
+              "sourceId": "invoice",
+              "field": "Invoice total",
+              "value": "USD 48,000.00"
+            },
+            {
+              "sourceId": "invoice",
+              "field": "Other active invoice",
+              "value": "INV-7608-B"
+            },
+            {
+              "sourceId": "payment",
+              "field": "Ledger status",
+              "value": "cleared"
+            },
+            {
+              "sourceId": "payment",
+              "field": "Recorded amount",
+              "value": "USD 48,000.00"
+            },
+            {
+              "sourceId": "payment",
+              "field": "Payment reference",
+              "value": "PAY-5308"
+            },
+            {
+              "sourceId": "crm",
+              "field": "Payment status",
+              "value": "cleared"
+            },
+            {
+              "sourceId": "policy",
+              "field": "Invoice",
+              "value": "Exactly one active invoice must match the order amount and currency."
+            }
+          ],
+          "questions": [
+            {
+              "findingId": "duplicate_invoice",
+              "question": "Two active invoices — INV-7608 and INV-7608-B — are linked to order ORD-2408. Which invoice is the correct, governing instrument for this order, and can the other be voided or cancelled so that exactly one active invoice remains?",
+              "owner": "Finance"
+            }
+          ],
+          "drafts": {
+            "internal": "Case OPS-108 / ORD-2408 — Coastline Foods\n\nThis case is blocked due to a duplicate invoice.\n\nThe supplied records show two active invoices linked to order ORD-2408: INV-7608 and INV-7608-B. Policy requires exactly one active invoice matching the order amount and currency. Until one of these invoices is voided or cancelled, the case cannot advance.\n\nOther checks for reference:\n- Billing entity: INV-7608 shows \"Coastline Foods US, Inc.\", which matches the approved account entity. No entity issue.\n- Payment: Ledger status is cleared for USD 48,000.00 (reference PAY-5308); CRM status also shows cleared. No payment conflict.\n- Deadline: Nov 18, 9:00 AM EST — 72 hours remain at scenario clock (Nov 15, 9:00 AM EST). No deadline pressure at this time.\n\nRequired action (Finance): Identify which invoice — INV-7608 or INV-7608-B — is the correct governing instrument for ORD-2408, and void or cancel the other so that exactly one active invoice remains.\n\nTicket release is not confirmed and requires human review.",
+            "client": "Dear Coastline Foods team,\n\nThank you for your order ORD-2408.\n\nThe supplied records show two active invoices associated with your order: INV-7608 and INV-7608-B. Our policy requires exactly one active invoice per order. We are unable to proceed until this is resolved.\n\nOur Finance team will be in touch to clarify which invoice should remain active and to void the other. No action is required from you at this time, but please be prepared to confirm the correct invoice if asked.\n\nTicket release is not confirmed and requires human review.\n\nThank you for your patience."
+          }
+        },
+        "trace": [
+          {
+            "step": 1,
+            "kind": "model",
+            "name": "Claude response",
+            "detail": "Call 1: 2429 input tokens, 57 output tokens; stop: tool_use.",
+            "ok": true
+          },
+          {
+            "step": 2,
+            "kind": "tool",
+            "name": "read_records",
+            "detail": "Read Account record, Ticket order, Invoice register, Payment ledger, CRM payment note, Release policy.",
+            "ok": true
+          },
+          {
+            "step": 3,
+            "kind": "model",
+            "name": "Claude response",
+            "detail": "Call 2: 3065 input tokens, 1273 output tokens; stop: tool_use.",
+            "ok": true
+          },
+          {
+            "step": 4,
+            "kind": "validation",
+            "name": "Policy and citation checks",
+            "detail": "Finding categories and decision match the policy engine; quoted fields match the records. Narrative and drafts still need human review.",
+            "ok": true
+          }
+        ],
+        "usage": {
+          "inputTokens": 5494,
+          "outputTokens": 1330,
+          "modelCalls": 2,
+          "estimatedUsd": 0.036432
+        },
+        "validationAttempts": 1,
+        "firstSubmissionPassed": true
+      }
+    },
+    {
+      "caseId": "OPS-109",
+      "passed": true,
+      "expected": {
+        "decision": "needs_information",
+        "findingIds": [
+          "entity_missing"
+        ]
+      },
+      "status": 200,
+      "run": {
+        "version": "investigator-v3",
+        "runId": "e97ff1b2-e3f5-4562-92f8-8ab78844fc6a",
+        "caseId": "OPS-109",
+        "inputSignature": "[\"operations-v1\",\"OPS-109\",\"2026-11-15T14:00:00.000Z\",\"\",\"ORD-2409\",4800000,\"USD\",160,\"2026-11-18T14:00:00.000Z\",\"INV-7609\",\"Meridian Sponsors US, Inc.\",4800000,\"USD\",\"\",\"cleared\",4800000,\"USD\",\"PAY-5309\",\"cleared\",\"Partner Operations\"]",
+        "model": "claude-sonnet-4-6",
+        "completedAt": "2026-11-15T21:35:34.955Z",
+        "elapsedMs": 24669,
+        "report": {
+          "decision": "needs_information",
+          "summary": "Case OPS-109 / ORD-2409: Meridian Sponsors, 160 tickets, USD 48,000.00. The account record has no approved billing entity (\"Not supplied\"), while the invoice (INV-7609) names \"Meridian Sponsors US, Inc.\" This triggers entity_missing, which is a needs_information blocker. All other checks are clear: invoice amount and currency match the order, no duplicate invoice exists, the payment ledger shows cleared status of USD 48,000.00 with reference PAY-5309 matching the order, CRM also shows cleared (no conflict), and the allocation deadline of Nov 18, 9:00 AM EST is 72 hours away from the scenario clock of Nov 15, 9:00 AM EST (deadline_near does not apply). The case cannot proceed until Partner Operations supplies and confirms the approved billing entity.",
+          "recommendation": "Request that Partner Operations supplies the approved billing entity for Meridian Sponsors. Once the approved entity is on file and confirmed to match the invoice entity on INV-7609, ask Ticketing Operations for human release review of the 160-ticket allocation for ORD-2409. Do not release tickets or treat the case as approved until that review is complete.",
+          "owner": "Partner Operations",
+          "findings": [
+            {
+              "id": "entity_missing",
+              "explanation": "The account record's 'Approved billing entity' is 'Not supplied'. Without an approved entity on file, it is impossible to validate whether the invoice entity 'Meridian Sponsors US, Inc.' is correct. Per policy, missing entities require clarification before release can be considered. This is a blocker requiring Partner Operations to supply the approved billing entity.",
+              "sourceIds": [
+                "account",
+                "invoice",
+                "policy"
+              ]
+            }
+          ],
+          "citations": [
+            {
+              "sourceId": "account",
+              "field": "Approved billing entity",
+              "value": "Not supplied"
+            },
+            {
+              "sourceId": "account",
+              "field": "Partner",
+              "value": "Meridian Sponsors"
+            },
+            {
+              "sourceId": "invoice",
+              "field": "Billed entity",
+              "value": "Meridian Sponsors US, Inc."
+            },
+            {
+              "sourceId": "invoice",
+              "field": "Invoice total",
+              "value": "USD 48,000.00"
+            },
+            {
+              "sourceId": "invoice",
+              "field": "Other active invoice",
+              "value": "None in this sample"
+            },
+            {
+              "sourceId": "order",
+              "field": "Order total",
+              "value": "USD 48,000.00"
+            },
+            {
+              "sourceId": "order",
+              "field": "Allocation deadline",
+              "value": "Nov 18, 9:00 AM EST"
+            },
+            {
+              "sourceId": "order",
+              "field": "Scenario clock",
+              "value": "Nov 15, 9:00 AM EST"
+            },
+            {
+              "sourceId": "payment",
+              "field": "Ledger status",
+              "value": "cleared"
+            },
+            {
+              "sourceId": "payment",
+              "field": "Recorded amount",
+              "value": "USD 48,000.00"
+            },
+            {
+              "sourceId": "payment",
+              "field": "Payment reference",
+              "value": "PAY-5309"
+            },
+            {
+              "sourceId": "crm",
+              "field": "Payment status",
+              "value": "cleared"
+            },
+            {
+              "sourceId": "policy",
+              "field": "Entity",
+              "value": "Invoice entity must match the approved account entity. Missing entities require clarification."
+            }
+          ],
+          "questions": [
+            {
+              "findingId": "entity_missing",
+              "question": "The account record for Meridian Sponsors (ORD-2409) has no approved billing entity on file. Please supply the approved billing entity so we can validate it against the invoice entity 'Meridian Sponsors US, Inc.' (INV-7609). If the invoice entity is incorrect, please also advise Finance to correct the invoice to match the approved entity.",
+              "owner": "Partner Operations"
+            }
+          ],
+          "drafts": {
+            "internal": "INTERNAL NOTE — OPS-109 / ORD-2409\n\nTicket release is not confirmed and requires human review.\n\nThe supplied records show that the account for Meridian Sponsors has no approved billing entity on file (field: 'Approved billing entity' = 'Not supplied'). The invoice INV-7609 names 'Meridian Sponsors US, Inc.' but we cannot validate this against an approved entity until one is recorded.\n\nAll other checks passed:\n- Invoice total USD 48,000.00 matches order total USD 48,000.00.\n- No duplicate active invoice.\n- Payment ledger (PAY-5309) shows cleared status for USD 48,000.00, consistent with CRM.\n- Allocation deadline is Nov 18, 9:00 AM EST — 72 hours from scenario clock; no deadline pressure at this time.\n\nAction required: Partner Operations must supply the approved billing entity for this account. If the invoice entity does not match once the approved entity is confirmed, Finance should be asked to correct the invoice. Do not proceed to ticket release until the entity is validated and Ticketing Operations completes a human release review.",
+            "client": "Dear Meridian Sponsors team,\n\nThank you for your order ORD-2409 (160 tickets, USD 48,000.00).\n\nTicket release is not confirmed and requires human review.\n\nThe supplied records show that no approved billing entity is currently on file for your account. We need this information to validate the billing entity listed on invoice INV-7609 ('Meridian Sponsors US, Inc.') before we can progress your order.\n\nCould you please confirm the full legal name of the approved billing entity for your account? Our Partner Operations team will follow up directly.\n\nWe will not be able to advance this order until the billing entity is confirmed. Please note that the allocation deadline for this order is Nov 18, 9:00 AM EST.\n\nThank you for your prompt attention to this matter."
+          }
+        },
+        "trace": [
+          {
+            "step": 1,
+            "kind": "model",
+            "name": "Claude response",
+            "detail": "Call 1: 2429 input tokens, 57 output tokens; stop: tool_use.",
+            "ok": true
+          },
+          {
+            "step": 2,
+            "kind": "tool",
+            "name": "read_records",
+            "detail": "Read Account record, Ticket order, Invoice register, Payment ledger, CRM payment note, Release policy.",
+            "ok": true
+          },
+          {
+            "step": 3,
+            "kind": "model",
+            "name": "Claude response",
+            "detail": "Call 2: 3058 input tokens, 1374 output tokens; stop: tool_use.",
+            "ok": true
+          },
+          {
+            "step": 4,
+            "kind": "validation",
+            "name": "Policy and citation checks",
+            "detail": "Finding categories and decision match the policy engine; quoted fields match the records. Narrative and drafts still need human review.",
+            "ok": true
+          }
+        ],
+        "usage": {
+          "inputTokens": 5487,
+          "outputTokens": 1431,
+          "modelCalls": 2,
+          "estimatedUsd": 0.037926
+        },
+        "validationAttempts": 1,
+        "firstSubmissionPassed": true
+      }
+    }
+  ],
+  "totals": {
+    "passed": 7,
+    "failed": 0,
+    "inputTokens": 53241,
+    "outputTokens": 16408,
+    "estimatedUsd": 0.40584300000000006
+  },
+  "updatedAt": "2026-11-15T21:35:34.993Z"
+}

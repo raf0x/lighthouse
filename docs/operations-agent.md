@@ -33,6 +33,8 @@ Successful runs are stored locally under a versioned case key, with exact eviden
 
 The report records acceptance, exact category matches, first-submission success, repair attempts, provider-reported tokens, estimated cost, elapsed time, generated text, and tool traces. A passing category benchmark does not by itself establish accuracy on real customer documents. Real uploads, persistent case memory, shared authenticated review, and external write actions are outside this increment.
 
+The [November 15 validation report](operations-agent-validation.md) records the live results, failed attempts, manual narrative findings, and browser QA scope.
+
 ## Public contracts used
 
 - [Anthropic: handle tool calls](https://platform.claude.com/docs/en/agents-and-tools/tool-use/handle-tool-calls)

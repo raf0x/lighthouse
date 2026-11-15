@@ -1,0 +1,311 @@
+{
+  "version": "investigator-v3",
+  "runId": "bd810113-2475-42bf-9d52-269ee613d857",
+  "caseId": "OPS-101",
+  "inputSignature": "[\"operations-v1\",\"OPS-101\",\"2026-11-15T14:00:00.000Z\",\"Portside Collectibles US, Inc.\",\"ORD-2401\",4800000,\"USD\",160,\"2026-11-16T10:00:00.000Z\",\"INV-7601\",\"Portside Collectibles Canada, Ltd.\",4800000,\"USD\",\"\",\"pending\",4800000,\"USD\",\"PAY-5301\",\"pending\",\"Partner Operations\"]",
+  "model": "claude-sonnet-4-6",
+  "completedAt": "2026-11-15T21:30:39.839Z",
+  "elapsedMs": 66297,
+  "report": {
+    "decision": "blocked",
+    "summary": "Case OPS-101 / ORD-2401: Portside Collectibles, 160 tickets, USD 48,000.00. Three findings require resolution before release can be considered. (1) Entity mismatch: the invoice bills \"Portside Collectibles Canada, Ltd.\" but the approved account entity is \"Portside Collectibles US, Inc.\" \u2014 Finance must correct the invoice. (2) Payment is in pending status on both the CRM and the ledger; Finance must confirm cleared funds. (3) The allocation deadline is Nov 16, 5:00 AM EST and the scenario clock is Nov 15, 9:00 AM EST \u2014 approximately 20 hours away \u2014 triggering a deadline_near attention flag. No duplicate invoice exists. Currencies and amounts are consistent across order and invoice.",
+    "recommendation": "Two blockers must be resolved before this case can advance to human release review: (1) Finance must issue a corrected invoice naming the approved entity 'Portside Collectibles US, Inc.' in place of 'Portside Collectibles Canada, Ltd.'; (2) Finance must confirm that payment PAY-5301 has cleared and update the ledger accordingly. Given the allocation deadline of Nov 16, 5:00 AM EST (approximately 20 hours away on the scenario clock), resolution is urgent. Once both blockers are cleared, ask Ticketing Operations for human release review. Ticket release is not confirmed and requires human review.",
+    "owner": "Finance",
+    "findings": [
+      {
+        "id": "entity_mismatch",
+        "explanation": "The approved billing entity on the account is 'Portside Collectibles US, Inc.' but the invoice (INV-7601) bills 'Portside Collectibles Canada, Ltd.' After normalizing whitespace and case these names differ and no alias inference is permitted. Finance must validate and correct the invoice to match the approved entity; the approved entity must not be changed to accommodate the invoice.",
+        "sourceIds": [
+          "account",
+          "invoice",
+          "policy"
+        ]
+      },
+      {
+        "id": "payment_pending",
+        "explanation": "The payment ledger (PAY-5301) shows Ledger status: 'pending'. A cleared payment is required by policy before release can proceed. Finance must confirm that funds have cleared and update the ledger status accordingly.",
+        "sourceIds": [
+          "payment",
+          "policy"
+        ]
+      },
+      {
+        "id": "deadline_near",
+        "explanation": "The allocation deadline is Nov 16, 5:00 AM EST. The scenario clock is Nov 15, 9:00 AM EST, leaving approximately 20 hours \u2014 within the 24-hour escalation window. This is an attention flag; it does not itself block review, but the open blockers above must be resolved urgently given the approaching deadline.",
+        "sourceIds": [
+          "order",
+          "policy"
+        ]
+      }
+    ],
+    "citations": [
+      {
+        "sourceId": "account",
+        "field": "Approved billing entity",
+        "value": "Portside Collectibles US, Inc."
+      },
+      {
+        "sourceId": "account",
+        "field": "Partner",
+        "value": "Portside Collectibles"
+      },
+      {
+        "sourceId": "order",
+        "field": "Order total",
+        "value": "USD 48,000.00"
+      },
+      {
+        "sourceId": "order",
+        "field": "Allocation deadline",
+        "value": "Nov 16, 5:00 AM EST"
+      },
+      {
+        "sourceId": "order",
+        "field": "Scenario clock",
+        "value": "Nov 15, 9:00 AM EST"
+      },
+      {
+        "sourceId": "invoice",
+        "field": "Billed entity",
+        "value": "Portside Collectibles Canada, Ltd."
+      },
+      {
+        "sourceId": "invoice",
+        "field": "Invoice total",
+        "value": "USD 48,000.00"
+      },
+      {
+        "sourceId": "invoice",
+        "field": "Other active invoice",
+        "value": "None in this sample"
+      },
+      {
+        "sourceId": "payment",
+        "field": "Ledger status",
+        "value": "pending"
+      },
+      {
+        "sourceId": "payment",
+        "field": "Payment reference",
+        "value": "PAY-5301"
+      },
+      {
+        "sourceId": "crm",
+        "field": "Payment status",
+        "value": "pending"
+      },
+      {
+        "sourceId": "policy",
+        "field": "Entity",
+        "value": "Invoice entity must match the approved account entity. Missing entities require clarification."
+      }
+    ],
+    "questions": [
+      {
+        "findingId": "entity_mismatch",
+        "question": "The invoice INV-7601 names 'Portside Collectibles Canada, Ltd.' but the approved billing entity is 'Portside Collectibles US, Inc.' Can Finance validate whether a corrected invoice billing the approved entity 'Portside Collectibles US, Inc.' can be issued for ORD-2401, and confirm once the corrected invoice is on file?",
+        "owner": "Finance"
+      },
+      {
+        "findingId": "payment_pending",
+        "question": "Payment PAY-5301 linked to ORD-2401 shows a ledger status of 'pending'. Can Finance confirm whether funds have fully cleared and, if so, update the ledger status to 'cleared' so the payment condition for release can be satisfied?",
+        "owner": "Finance"
+      },
+      {
+        "findingId": "deadline_near",
+        "question": "The allocation deadline for ORD-2401 is Nov 16, 5:00 AM EST, approximately 20 hours from the scenario clock. Given the open entity mismatch and pending payment blockers, can Ticketing Operations advise whether the current allocation can be held or whether an escalation decision is needed if blockers are not resolved before the deadline?",
+        "owner": "Ticketing Operations"
+      }
+    ],
+    "drafts": {
+      "internal": "INTERNAL CASE NOTE \u2014 OPS-101 / ORD-2401\n\nPartner: Portside Collectibles\nOrder: ORD-2401 | 160 tickets | USD 48,000.00\nDeadline: Nov 16, 5:00 AM EST (~20 hours from scenario clock)\n\nTicket release is not confirmed and requires human review.\n\nThe supplied records show two blockers:\n\n1. ENTITY MISMATCH (blocker)\nThe approved billing entity on the account is 'Portside Collectibles US, Inc.' Invoice INV-7601 bills 'Portside Collectibles Canada, Ltd.' These do not match. Finance must validate and issue a corrected invoice naming the approved entity. The approved entity must not be altered to accommodate the invoice.\n\n2. PAYMENT PENDING (blocker)\nPayment PAY-5301 (USD 48,000.00) is in 'pending' status on both the ledger and the CRM. Policy requires a cleared payment. Finance must confirm cleared funds and update the ledger status before this condition is satisfied.\n\n3. DEADLINE NEAR (attention)\nThe allocation deadline is within 20 hours. If the two blockers above are not resolved before Nov 16, 5:00 AM EST, Ticketing Operations must be consulted for an escalation or new allocation decision. We cannot assume an extension.\n\nNo duplicate invoice. Invoice currency and amount match the order (USD 48,000.00). CRM and ledger both show 'pending' \u2014 no payment_conflict applies.\n\nRequired actions:\n- Finance: Issue corrected invoice for approved entity 'Portside Collectibles US, Inc.'\n- Finance: Confirm PAY-5301 cleared and update ledger\n- Ticketing Operations: Advise on deadline risk if blockers persist\n- Once cleared: route to Ticketing Operations for human release review",
+      "client": "Dear Portside Collectibles,\n\nThank you for your order ORD-2401 (160 tickets, USD 48,000.00).\n\nTicket release is not confirmed and requires human review.\n\nThe supplied records show two items that must be resolved before your order can advance:\n\n1. Invoice entity: The invoice on file names 'Portside Collectibles Canada, Ltd.' The approved billing entity for your account is 'Portside Collectibles US, Inc.' A corrected invoice reflecting the approved entity is required. Please work with your finance team to provide an updated invoice at your earliest convenience.\n\n2. Payment status: Payment reference PAY-5301 (USD 48,000.00) is currently showing as pending. We require Finance confirmation of cleared funds before the payment condition can be satisfied.\n\nPlease note that the allocation deadline for this order is Nov 16, 5:00 AM EST. Prompt resolution of both items is important given this timeline.\n\nOnce both items are addressed, the case will be routed for human release review. We are unable to confirm ticket availability or release at this stage.\n\nIf you have questions, please contact your account representative.\n\nThank you."
+    }
+  },
+  "trace": [
+    {
+      "step": 1,
+      "kind": "model",
+      "name": "Claude response",
+      "detail": "Call 1: 2429 input tokens, 57 output tokens; stop: tool_use.",
+      "ok": true
+    },
+    {
+      "step": 2,
+      "kind": "tool",
+      "name": "read_records",
+      "detail": "Read Account record, Ticket order, Invoice register, Payment ledger, CRM payment note, Release policy.",
+      "ok": true
+    },
+    {
+      "step": 3,
+      "kind": "model",
+      "name": "Claude response",
+      "detail": "Call 2: 3068 input tokens, 2060 output tokens; stop: tool_use.",
+      "ok": true
+    },
+    {
+      "step": 4,
+      "kind": "validation",
+      "name": "Policy and citation checks",
+      "detail": "Decision must be blocked under the supplied policy. Recheck the underlying findings and revise all affected prose.",
+      "ok": false
+    },
+    {
+      "step": 5,
+      "kind": "model",
+      "name": "Claude response",
+      "detail": "Call 3: 5311 input tokens, 2135 output tokens; stop: tool_use.",
+      "ok": true
+    },
+    {
+      "step": 6,
+      "kind": "validation",
+      "name": "Policy and citation checks",
+      "detail": "Finding categories and decision match the policy engine; quoted fields match the records. Narrative and drafts still need human review.",
+      "ok": true
+    }
+  ],
+  "usage": {
+    "inputTokens": 10808,
+    "outputTokens": 4252,
+    "modelCalls": 3,
+    "estimatedUsd": 0.096204
+  },
+  "validationAttempts": 2,
+  "firstSubmissionPassed": false,
+  "sourceRecords": [
+    {
+      "id": "account",
+      "title": "Account record",
+      "source": "Synthetic partner account",
+      "fields": [
+        {
+          "label": "Partner",
+          "value": "Portside Collectibles"
+        },
+        {
+          "label": "Approved billing entity",
+          "value": "Portside Collectibles US, Inc."
+        },
+        {
+          "label": "Account owner",
+          "value": "Partner Operations"
+        }
+      ]
+    },
+    {
+      "id": "order",
+      "title": "Ticket order",
+      "source": "ORD-2401",
+      "fields": [
+        {
+          "label": "Order total",
+          "value": "USD\u00a048,000.00"
+        },
+        {
+          "label": "Ticket quantity",
+          "value": "160"
+        },
+        {
+          "label": "Allocation deadline",
+          "value": "Nov 16, 5:00 AM EST"
+        },
+        {
+          "label": "Scenario clock",
+          "value": "Nov 15, 9:00 AM EST"
+        }
+      ]
+    },
+    {
+      "id": "invoice",
+      "title": "Invoice register",
+      "source": "INV-7601",
+      "fields": [
+        {
+          "label": "Billed entity",
+          "value": "Portside Collectibles Canada, Ltd."
+        },
+        {
+          "label": "Invoice total",
+          "value": "USD\u00a048,000.00"
+        },
+        {
+          "label": "Linked order",
+          "value": "ORD-2401"
+        },
+        {
+          "label": "Other active invoice",
+          "value": "None in this sample"
+        }
+      ]
+    },
+    {
+      "id": "payment",
+      "title": "Payment ledger",
+      "source": "Synthetic finance ledger",
+      "fields": [
+        {
+          "label": "Ledger status",
+          "value": "pending"
+        },
+        {
+          "label": "Recorded amount",
+          "value": "USD\u00a048,000.00"
+        },
+        {
+          "label": "Payment reference",
+          "value": "PAY-5301"
+        },
+        {
+          "label": "Linked order",
+          "value": "ORD-2401"
+        }
+      ]
+    },
+    {
+      "id": "crm",
+      "title": "CRM payment note",
+      "source": "Synthetic CRM snapshot",
+      "fields": [
+        {
+          "label": "Payment status",
+          "value": "pending"
+        },
+        {
+          "label": "Linked order",
+          "value": "ORD-2401"
+        }
+      ]
+    },
+    {
+      "id": "policy",
+      "title": "Release policy",
+      "source": "Demo policy \u00b7 v1",
+      "fields": [
+        {
+          "label": "Entity",
+          "value": "Invoice entity must match the approved account entity. Missing entities require clarification."
+        },
+        {
+          "label": "Invoice",
+          "value": "Exactly one active invoice must match the order amount and currency."
+        },
+        {
+          "label": "Payment",
+          "value": "A referenced, cleared payment for the exact order amount and currency is required. Conflicting records need Finance review."
+        },
+        {
+          "label": "Deadline",
+          "value": "Escalate deadlines within 24 hours. After expiry, obtain a new allocation decision; never assume an extension."
+        },
+        {
+          "label": "Human review",
+          "value": "A reviewer approves the proposed plan. This demo cannot send messages, change invoices, or release tickets."
+        }
+      ]
+    }
+  ],
+  "humanReviewRequired": true,
+  "limitations": "Validation checks decision/category agreement and exact field citations. It does not prove every narrative statement. Local record; not authenticated provenance."
+}
