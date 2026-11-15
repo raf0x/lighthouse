@@ -16,6 +16,7 @@ Customer information is often scattered across usage trends, support activity, r
 
 ## What the demo demonstrates
 
+- **Partner Operations:** an [interactive exception workspace](https://lighthouse-alpha-two.vercel.app/operations) with ten synthetic ticket-order cases, cited policy checks, editable evidence and message templates, local human review, and downloadable review packets. This route uses deterministic rules, with no AI model calls or external actions.
 - **Accounts:** an account workspace with health signals, risk indicators, usage information, and context for follow-up.
 - **Portfolio:** a consolidated view of account health, renewal exposure, and prioritization across a sample portfolio.
 - **AI-assisted analysis:** account health analysis and executive briefing workflows, using an Anthropic integration when configured.
@@ -23,6 +24,8 @@ Customer information is often scattered across usage trends, support activity, r
 - **Responsive layouts:** desktop and mobile presentations of the same account-management workflow.
 
 The sample records and calculated indicators are for demonstration. Lighthouse is not connected to an employer's CRM or real client data.
+
+See [the operations workflow and evaluation cases](docs/operations-workspace.md) for its scope, review boundaries, and implementation notes.
 
 ## Product decisions
 
@@ -59,6 +62,8 @@ For a production build:
 npm run build
 npm run start
 ```
+
+Run the regression checks with `npm test` and TypeScript checks with `npm run typecheck`.
 
 ## About
 

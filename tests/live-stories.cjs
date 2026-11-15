@@ -57,12 +57,14 @@ assert.ok(page.includes('styles.instrumentGrid'), 'network-first composition mus
 assert.ok(page.includes('styles.mobileJourney'), 'mobile must have a case-ordered journey');
 assert.ok(page.includes('scene.events.map((event,index) =>'), 'mobile sequence uses actual story order');
 assert.ok(page.includes('sampleScore={scene.score}'), 'hub must reflect current fictional account');
-assert.ok(!page.includes('<polyline'), 'crossing case chords must not return');
+const networkSource = page.slice(page.indexOf('function Network('), page.indexOf('function Sparkline('));
+assert.ok(!networkSource.includes('<polyline'), 'crossing case chords must not return inside the network; chart sparklines are allowed');
 assert.ok(page.includes('caseAgents.indexOf(agent.id) + 1'), 'numbered roles convey case order');
 assert.ok(page.includes('styles.agentSequence'), 'in-case desktop roles expose their step numbers');
 assert.ok(!page.includes('showFloatingControls'), 'duplicate floating dock must not obscure content');
 assert.ok(page.includes('style={{color:bandColor(healthBand(sampleScore))}}'), 'hub number uses semantic health color');
-assert.ok(page.indexOf('{selected && <section className={styles.networkDetail}') < page.indexOf('<div className={styles.network}>'), 'inspector must appear before orbital canvas');
+const inspectorIndex = page.indexOf('className={styles.networkDetail}');
+assert.ok(inspectorIndex >= 0 && inspectorIndex < page.indexOf('<div className={styles.network}>'), 'inspector must appear before orbital canvas');
 assert.ok(!page.includes('className={styles.metrics}'), 'large redundant KPI tiles must not return');
 assert.ok(!page.includes('className={styles.feed}'), 'duplicated always-visible activity feed must not return');
 assert.ok(!page.includes('className={styles.bottomGrid}'), 'repeated bottom panels must not return');
