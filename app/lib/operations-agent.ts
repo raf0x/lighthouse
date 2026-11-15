@@ -1,6 +1,7 @@
 import { assessCase, evidenceFor, inputSignature, operationCases, validCase, type Decision, type Drafts, type OperationCase } from './operations';
 
-export const AGENT_VERSION = 'investigator-v1';
+export const AGENT_VERSION = 'investigator-v2';
+export const REVIEW_NOTICE = 'Ticket release is not confirmed and requires human review.';
 export const AGENT_MODEL = 'claude-haiku-4-5-20251001';
 export const AGENT_LIMITS = { modelCalls: 4, outputTokensPerCall: 2400, contextCharacters: 60000, timeoutMs: 50000, bodyBytes: 12000 } as const;
 export const SOURCE_IDS = ['account', 'order', 'invoice', 'payment', 'crm', 'policy'] as const;
@@ -48,6 +49,7 @@ export function validateAgentReport(value: unknown, input: OperationCase, readId
   if (!text(value.summary, 1200) || !text(value.recommendation, 1000)) errors.push('Provide a concise summary and action within the text limits.');
   if (value.owner !== expected.owner) errors.push(`The first blocking category assigns the primary owner to ${expected.owner}; do not copy the account owner.`);
   if (!object(value.drafts) || !text(value.drafts.internal, 4000) || !text(value.drafts.client, 3000)) errors.push('Provide both bounded, nonempty message drafts.');
+  else if (![value.drafts.internal, value.drafts.client].every(d => typeof d === 'string' && d.includes(REVIEW_NOTICE))) errors.push(`Both drafts must include this exact boundary: "${REVIEW_NOTICE}" Do not contradict it elsewhere.`);
   const findings = value.findings;
   if (!Array.isArray(findings) || findings.length > FINDING_IDS.length) errors.push('Findings must be a bounded array.');
   else {
@@ -85,6 +87,8 @@ export function validateAgentReport(value: unknown, input: OperationCase, readId
   }
   const narrative = [value.summary, value.recommendation, ...(Array.isArray(findings) ? findings.map(f => f?.explanation) : []), ...(Array.isArray(questions) ? questions.map(q => q?.question) : []), object(value.drafts) && value.drafts.internal, object(value.drafts) && value.drafts.client].filter(v => typeof v === 'string').join('\n');
   if (/https?:\/\/|\b(?:I|we) (?:have |already )?(?:sent|released|issued|updated|reissued|refunded)\b/i.test(narrative)) errors.push('Do not invent external links or claim that actions have been executed.');
+  if (/\b(?:tickets?|allocation|order)\b[^.!?\n]{0,45}\b(?:are|is|have been|has been) (?:already )?approved\b|\b(?:we|I) (?:will|can|shall) (?:(?:proceed with|be) )?(?:releas\w*|approv\w*)\b|\b(?:we|I) (?:will|can|shall) confirm (?:the )?ticket release\b|\bproceed with (?:the )?ticket release\b|\b(?:approve|authorize) (?:the )?ticket allocation\b|\b(?:release|allocation) (?:is|has been) (?:confirmed|approved|guaranteed)\b/i.test(narrative)) errors.push('The proposed text implies approval or promises ticket release. Only propose a human release review; never approve allocation, promise release, or say approval already exists.');
+  if (/[<>]/.test(narrative)) errors.push('Use plain prose without markup fragments or angle brackets.');
   if (errors.length) return { errors: [...new Set(errors)] };
   // Project the permitted fields; unknown model-generated properties never enter application state.
   const r = value as unknown as AgentReport;

@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { ArrowRight, CheckCheck, CircleAlert, Download, FileText, LoaderCircle, Search, ShieldCheck, Square } from 'lucide-react';
-import { decisionLabels, evidenceFor, inputSignature, type OperationCase } from '../lib/operations';
+import { decisionLabels, evidenceFor, type OperationCase } from '../lib/operations';
 import { AGENT_VERSION, restoreAgentRun, type AgentRun, type AgentFailure, type AgentAvailability } from '../lib/operations-agent';
 import styles from './operations.module.css';
 
@@ -41,7 +41,7 @@ export default function AgentInvestigation({ input, onSource, onApply }: { input
       if (!checked) { setFailure({ code: 'invalid_response', error: 'The response did not match the current evidence and was rejected.' }); return; }
       setRun(checked);
       try { localStorage.setItem(key, JSON.stringify(checked)); setStorageError(false); } catch { setStorageError(true); }
-    } catch (error) {
+    } catch {
       if (mounted.current) setFailure({ code: abort.signal.aborted ? 'cancelled' : 'connection', error: abort.signal.aborted ? 'Stopped waiting for this investigation. An in-flight provider request may still incur usage. No drafts were applied.' : 'The connection was interrupted. No automatic retry was made; any completed provider calls may still incur usage.' });
     } finally { if (mounted.current) setRunning(false); abortRef.current = null; }
   }

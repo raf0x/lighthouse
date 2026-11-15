@@ -1,0 +1,1265 @@
+{
+  "version": "lighthouse-agent-eval-v1",
+  "startedAt": "2026-11-15T21:15:40.074Z",
+  "model": "claude-haiku-4-5-20251001",
+  "scope": "Synthetic fixtures only; category/citation validation is automatic, narrative needs human review.",
+  "cases": [
+    {
+      "caseId": "OPS-102",
+      "passed": true,
+      "expected": {
+        "decision": "needs_information",
+        "findingIds": [
+          "payment_missing"
+        ]
+      },
+      "status": 200,
+      "run": {
+        "version": "investigator-v1",
+        "runId": "328199fe-9416-4ecf-a348-b84e73f467b0",
+        "caseId": "OPS-102",
+        "inputSignature": "[\"operations-v1\",\"OPS-102\",\"2026-11-15T14:00:00.000Z\",\"Atlas Sports US, Inc.\",\"ORD-2402\",4800000,\"USD\",160,\"2026-11-18T14:00:00.000Z\",\"INV-7602\",\"Atlas Sports US, Inc.\",4800000,\"USD\",\"\",\"missing\",0,\"USD\",\"\",\"missing\",\"Partner Operations\"]",
+        "model": "claude-haiku-4-5-20251001",
+        "completedAt": "2026-11-15T21:16:01.386Z",
+        "elapsedMs": 21249,
+        "report": {
+          "decision": "needs_information",
+          "summary": "Order ORD-2402 for Atlas Sports cannot proceed to release review. The payment ledger shows no recorded payment (USD 0.00, status \"missing\"), and the CRM also reports payment status as \"missing.\" The invoice (INV-7602) is correctly matched to the order and billing entity, but without a cleared payment, the order fails the release policy requirement. Finance must confirm payment status and provide the payment reference before allocation can proceed.",
+          "recommendation": "Hold order ORD-2402 pending Finance confirmation of payment. Do not proceed to ticket allocation until Finance provides: (1) confirmation that payment has been received and cleared, (2) the payment amount (must equal USD 48,000.00), (3) the payment currency (must match order currency USD), and (4) the payment reference for ledger recording. Once these details are supplied and verified, the order can proceed to human release review. Note: The allocation deadline is Nov 18, 9:00 AM EST (72 hours from scenario clock); monitor for escalation if payment confirmation is delayed beyond 24 hours from now.",
+          "owner": "Finance",
+          "findings": [
+            {
+              "id": "payment_missing",
+              "explanation": "The payment ledger shows ledger status 'missing' with recorded amount USD 0.00. The CRM payment status is also 'missing.' Policy requires a referenced, cleared payment for the exact order amount and currency (USD 48,000.00) before release. No payment has been recorded in the ledger.",
+              "sourceIds": [
+                "payment",
+                "crm",
+                "policy"
+              ]
+            }
+          ],
+          "citations": [
+            {
+              "sourceId": "account",
+              "field": "Approved billing entity",
+              "value": "Atlas Sports US, Inc."
+            },
+            {
+              "sourceId": "invoice",
+              "field": "Billed entity",
+              "value": "Atlas Sports US, Inc."
+            },
+            {
+              "sourceId": "invoice",
+              "field": "Invoice total",
+              "value": "USD 48,000.00"
+            },
+            {
+              "sourceId": "invoice",
+              "field": "Linked order",
+              "value": "ORD-2402"
+            },
+            {
+              "sourceId": "order",
+              "field": "Order total",
+              "value": "USD 48,000.00"
+            },
+            {
+              "sourceId": "order",
+              "field": "Allocation deadline",
+              "value": "Nov 18, 9:00 AM EST"
+            },
+            {
+              "sourceId": "order",
+              "field": "Scenario clock",
+              "value": "Nov 15, 9:00 AM EST"
+            },
+            {
+              "sourceId": "payment",
+              "field": "Ledger status",
+              "value": "missing"
+            },
+            {
+              "sourceId": "payment",
+              "field": "Recorded amount",
+              "value": "USD 0.00"
+            },
+            {
+              "sourceId": "payment",
+              "field": "Payment reference",
+              "value": "Not supplied"
+            },
+            {
+              "sourceId": "payment",
+              "field": "Linked order",
+              "value": "ORD-2402"
+            },
+            {
+              "sourceId": "crm",
+              "field": "Payment status",
+              "value": "missing"
+            },
+            {
+              "sourceId": "crm",
+              "field": "Linked order",
+              "value": "ORD-2402"
+            },
+            {
+              "sourceId": "policy",
+              "field": "Payment",
+              "value": "A referenced, cleared payment for the exact order amount and currency is required. Conflicting records need Finance review."
+            }
+          ],
+          "questions": [
+            {
+              "findingId": "payment_missing",
+              "question": "Finance: The payment ledger for order ORD-2402 shows no recorded payment (USD 0.00) and the CRM also reports payment status as 'missing.' Has payment been received from Atlas Sports for the USD 48,000.00 invoice? If so, please provide the payment amount, date, currency, and reference number for ledger recording.",
+              "owner": "Finance"
+            }
+          ],
+          "drafts": {
+            "internal": "Case OPS-102 / ORD-2402: Atlas Sports order for 160 tickets (USD 48,000.00) is blocked on payment. Invoice INV-7602 is correctly matched to the approved billing entity (Atlas Sports US, Inc.) and order amount. However, the payment ledger shows no recorded payment (status 'missing', amount USD 0.00, reference 'Not supplied'). The CRM also reports payment status as 'missing.' Per release policy, a referenced, cleared payment is required before allocation. Finance must confirm: (1) whether payment has been received, (2) the payment amount and date, (3) the payment currency, and (4) the payment reference. Allocation deadline is Nov 18, 9:00 AM EST. Awaiting Finance response.",
+            "client": "Thank you for your order ORD-2402 with Lighthouse. We are processing your request for 160 tickets. Our records show that invoice INV-7602 for USD 48,000.00 has been issued to Atlas Sports US, Inc. To complete your allocation, we need to confirm receipt of payment. Our Finance team is reviewing your account and will contact you shortly if additional information is needed. Your allocation deadline is Nov 18, 9:00 AM EST. Please ensure payment is submitted promptly to avoid delays."
+          }
+        },
+        "trace": [
+          {
+            "step": 1,
+            "kind": "model",
+            "name": "Claude response",
+            "detail": "Call 1: 2212 input tokens, 57 output tokens; stop: tool_use.",
+            "ok": true
+          },
+          {
+            "step": 2,
+            "kind": "tool",
+            "name": "read_records",
+            "detail": "Read Account record, Ticket order, Invoice register, Payment ledger, CRM payment note, Release policy.",
+            "ok": true
+          },
+          {
+            "step": 3,
+            "kind": "model",
+            "name": "Claude response",
+            "detail": "Call 2: 2834 input tokens, 1665 output tokens; stop: tool_use.",
+            "ok": true
+          },
+          {
+            "step": 4,
+            "kind": "validation",
+            "name": "Policy and citation checks",
+            "detail": "Reconcile finding categories with the records: missing []; unsupported [reference_missing, deadline_near]. Re-read relevant records and revise the explanation, questions, action, and drafts; do not only change category labels. Questions must identify an actual finding and a responsible team.",
+            "ok": false
+          },
+          {
+            "step": 5,
+            "kind": "model",
+            "name": "Claude response",
+            "detail": "Call 3: 4390 input tokens, 1274 output tokens; stop: tool_use.",
+            "ok": true
+          },
+          {
+            "step": 6,
+            "kind": "validation",
+            "name": "Policy and citation checks",
+            "detail": "Finding categories and decision match the policy engine; quoted fields match the records. Narrative and drafts still need human review.",
+            "ok": true
+          }
+        ],
+        "usage": {
+          "inputTokens": 9436,
+          "outputTokens": 2996,
+          "modelCalls": 3,
+          "estimatedUsd": 0.024416
+        },
+        "validationAttempts": 2,
+        "firstSubmissionPassed": false
+      }
+    },
+    {
+      "caseId": "OPS-103",
+      "passed": true,
+      "expected": {
+        "decision": "needs_information",
+        "findingIds": [
+          "payment_conflict",
+          "payment_pending"
+        ]
+      },
+      "status": 200,
+      "run": {
+        "version": "investigator-v1",
+        "runId": "4ccc2405-fd44-430f-b015-c28ae7f2033b",
+        "caseId": "OPS-103",
+        "inputSignature": "[\"operations-v1\",\"OPS-103\",\"2026-11-15T14:00:00.000Z\",\"Mariner Hospitality US, Inc.\",\"ORD-2403\",4800000,\"USD\",160,\"2026-11-18T14:00:00.000Z\",\"INV-7603\",\"Mariner Hospitality US, Inc.\",4800000,\"USD\",\"\",\"pending\",4800000,\"USD\",\"PAY-5303\",\"cleared\",\"Partner Operations\"]",
+        "model": "claude-haiku-4-5-20251001",
+        "completedAt": "2026-11-15T21:16:24.041Z",
+        "elapsedMs": 22544,
+        "report": {
+          "decision": "needs_information",
+          "summary": "Case OPS-103 (ORD-2403) involves a USD 48,000 ticket order for 160 units with an allocation deadline of Nov 18, 9:00 AM EST. The invoice and payment records show matching amounts and entities. However, two critical issues prevent release: (1) the payment ledger status is \"pending\" while the CRM payment note shows \"cleared,\" creating a conflict that must be resolved by Finance; and (2) the payment ledger shows a pending status, indicating the payment has not yet cleared in the financial system.",
+          "recommendation": "Hold release pending Finance resolution of the payment status conflict and pending payment status. The invoice entity matches the approved account entity (Mariner Hospitality US, Inc.), the invoice amount and currency match the order (USD 48,000.00), and a payment reference exists (PAY-5303). However, the discrepancy between ledger status (pending) and CRM status (cleared), combined with the pending ledger status, must be clarified before authorization. Finance must confirm whether payment has actually cleared and resolve the conflicting records. Once Finance confirms cleared payment status, the case can proceed to human review for allocation decision. The allocation deadline is Nov 18, 9:00 AM EST (3 days from scenario clock).",
+          "owner": "Finance",
+          "findings": [
+            {
+              "id": "payment_conflict",
+              "explanation": "The payment ledger shows status 'pending' while the CRM payment note shows status 'cleared' for the same order ORD-2403 and payment reference PAY-5303 (USD 48,000.00). This conflict between ledger and CRM records must be resolved to confirm actual payment status before release authorization.",
+              "sourceIds": [
+                "crm",
+                "payment",
+                "policy"
+              ]
+            },
+            {
+              "id": "payment_pending",
+              "explanation": "The payment ledger for ORD-2403 shows status 'pending' with recorded amount USD 48,000.00 and payment reference PAY-5303. The policy requires a cleared payment for the exact order amount and currency. The pending status indicates the payment has not yet cleared in the financial system.",
+              "sourceIds": [
+                "payment",
+                "policy"
+              ]
+            }
+          ],
+          "citations": [
+            {
+              "sourceId": "account",
+              "field": "Partner",
+              "value": "Mariner Hospitality"
+            },
+            {
+              "sourceId": "account",
+              "field": "Approved billing entity",
+              "value": "Mariner Hospitality US, Inc."
+            },
+            {
+              "sourceId": "order",
+              "field": "Order total",
+              "value": "USD 48,000.00"
+            },
+            {
+              "sourceId": "order",
+              "field": "Ticket quantity",
+              "value": "160"
+            },
+            {
+              "sourceId": "order",
+              "field": "Allocation deadline",
+              "value": "Nov 18, 9:00 AM EST"
+            },
+            {
+              "sourceId": "order",
+              "field": "Scenario clock",
+              "value": "Nov 15, 9:00 AM EST"
+            },
+            {
+              "sourceId": "invoice",
+              "field": "Billed entity",
+              "value": "Mariner Hospitality US, Inc."
+            },
+            {
+              "sourceId": "invoice",
+              "field": "Invoice total",
+              "value": "USD 48,000.00"
+            },
+            {
+              "sourceId": "invoice",
+              "field": "Linked order",
+              "value": "ORD-2403"
+            },
+            {
+              "sourceId": "invoice",
+              "field": "Other active invoice",
+              "value": "None in this sample"
+            },
+            {
+              "sourceId": "payment",
+              "field": "Ledger status",
+              "value": "pending"
+            },
+            {
+              "sourceId": "payment",
+              "field": "Recorded amount",
+              "value": "USD 48,000.00"
+            },
+            {
+              "sourceId": "payment",
+              "field": "Payment reference",
+              "value": "PAY-5303"
+            },
+            {
+              "sourceId": "payment",
+              "field": "Linked order",
+              "value": "ORD-2403"
+            },
+            {
+              "sourceId": "crm",
+              "field": "Payment status",
+              "value": "cleared"
+            },
+            {
+              "sourceId": "crm",
+              "field": "Linked order",
+              "value": "ORD-2403"
+            },
+            {
+              "sourceId": "policy",
+              "field": "Entity",
+              "value": "Invoice entity must match the approved account entity. Missing entities require clarification."
+            },
+            {
+              "sourceId": "policy",
+              "field": "Invoice",
+              "value": "Exactly one active invoice must match the order amount and currency."
+            },
+            {
+              "sourceId": "policy",
+              "field": "Payment",
+              "value": "A referenced, cleared payment for the exact order amount and currency is required. Conflicting records need Finance review."
+            }
+          ],
+          "questions": [
+            {
+              "findingId": "payment_conflict",
+              "question": "The payment ledger for ORD-2403 shows status 'pending' (PAY-5303, USD 48,000.00) while the CRM payment note shows status 'cleared' for the same order. Which status is authoritative, and has payment actually been received and cleared in the financial system?",
+              "owner": "Finance"
+            },
+            {
+              "findingId": "payment_pending",
+              "question": "The payment ledger shows status 'pending' for PAY-5303 (USD 48,000.00) linked to ORD-2403. When is this payment expected to clear, and what is the current status in the payment processing system?",
+              "owner": "Finance"
+            }
+          ],
+          "drafts": {
+            "internal": "Case OPS-103 (ORD-2403): Payment status conflict and pending payment detected. Ledger shows 'pending' for PAY-5303 (USD 48,000.00) while CRM shows 'cleared' for the same order. Entity and invoice validation passed: Mariner Hospitality US, Inc. matches approved billing entity; invoice total USD 48,000.00 matches order total. Payment reference PAY-5303 is recorded. Finance must resolve: (1) the ledger/CRM status discrepancy, and (2) the pending payment status. Allocation deadline Nov 18, 9:00 AM EST (3 days from scenario clock Nov 15, 9:00 AM EST).",
+            "client": "Thank you for submitting order ORD-2403 for 160 tickets (USD 48,000.00). We are reviewing your payment and allocation details. Our records show a pending payment status that requires clarification from our Finance team. We will follow up with you once this is resolved. Your allocation deadline is Nov 18, 9:00 AM EST."
+          }
+        },
+        "trace": [
+          {
+            "step": 1,
+            "kind": "model",
+            "name": "Claude response",
+            "detail": "Call 1: 2212 input tokens, 57 output tokens; stop: tool_use.",
+            "ok": true
+          },
+          {
+            "step": 2,
+            "kind": "tool",
+            "name": "read_records",
+            "detail": "Read Account record, Ticket order, Invoice register, Payment ledger, CRM payment note, Release policy.",
+            "ok": true
+          },
+          {
+            "step": 3,
+            "kind": "model",
+            "name": "Claude response",
+            "detail": "Call 2: 2851 input tokens, 1764 output tokens; stop: tool_use.",
+            "ok": true
+          },
+          {
+            "step": 4,
+            "kind": "validation",
+            "name": "Policy and citation checks",
+            "detail": "Reconcile finding categories with the records: missing [payment_pending]; unsupported [deadline_near]. Re-read relevant records and revise the explanation, questions, action, and drafts; do not only change category labels.",
+            "ok": false
+          },
+          {
+            "step": 5,
+            "kind": "model",
+            "name": "Claude response",
+            "detail": "Call 3: 4449 input tokens, 1581 output tokens; stop: tool_use.",
+            "ok": true
+          },
+          {
+            "step": 6,
+            "kind": "validation",
+            "name": "Policy and citation checks",
+            "detail": "Finding categories and decision match the policy engine; quoted fields match the records. Narrative and drafts still need human review.",
+            "ok": true
+          }
+        ],
+        "usage": {
+          "inputTokens": 9512,
+          "outputTokens": 3402,
+          "modelCalls": 3,
+          "estimatedUsd": 0.026522
+        },
+        "validationAttempts": 2,
+        "firstSubmissionPassed": false
+      }
+    },
+    {
+      "caseId": "OPS-104",
+      "passed": true,
+      "expected": {
+        "decision": "blocked",
+        "findingIds": [
+          "payment_pending",
+          "deadline_near"
+        ]
+      },
+      "status": 200,
+      "run": {
+        "version": "investigator-v1",
+        "runId": "91f41cc1-bc0f-4fc5-9be6-3758bb77e87e",
+        "caseId": "OPS-104",
+        "inputSignature": "[\"operations-v1\",\"OPS-104\",\"2026-11-15T14:00:00.000Z\",\"Cedar Events US, Inc.\",\"ORD-2404\",4800000,\"USD\",160,\"2026-11-15T18:00:00.000Z\",\"INV-7604\",\"Cedar Events US, Inc.\",4800000,\"USD\",\"\",\"pending\",4800000,\"USD\",\"PAY-5304\",\"pending\",\"Partner Operations\"]",
+        "model": "claude-haiku-4-5-20251001",
+        "completedAt": "2026-11-15T21:16:50.194Z",
+        "elapsedMs": 26075,
+        "report": {
+          "decision": "blocked",
+          "summary": "Order ORD-2404 for Cedar Events is blocked pending payment clearance. The payment ledger shows a pending status, which is a blocker under policy. The allocation deadline is Nov 15, 1:00 PM EST, with approximately 4 hours remaining from the scenario clock (Nov 15, 9:00 AM EST). Entity and invoice details match correctly. Finance must confirm payment clearance before the order can proceed to release review.",
+          "recommendation": "Block order ORD-2404 pending payment clearance. Finance must confirm that payment PAY-5304 will clear before Nov 15, 1:00 PM EST. If clearance is uncertain, Ticketing Operations should contact Cedar Events immediately to request a deadline extension or confirm their ability to meet the current deadline. Once payment clears and the deadline is confirmed achievable, the order is ready for human release review.",
+          "owner": "Finance",
+          "findings": [
+            {
+              "id": "payment_pending",
+              "explanation": "Payment ledger shows 'pending' status for USD 48,000.00 (PAY-5304). Policy requires a cleared payment for the exact order amount and currency before release. Pending payments block allocation.",
+              "sourceIds": [
+                "payment",
+                "policy"
+              ]
+            },
+            {
+              "id": "deadline_near",
+              "explanation": "Allocation deadline is Nov 15, 1:00 PM EST; scenario clock is Nov 15, 9:00 AM EST. Approximately 4 hours remain. Policy requires escalation for deadlines within 24 hours.",
+              "sourceIds": [
+                "order",
+                "policy"
+              ]
+            }
+          ],
+          "citations": [
+            {
+              "sourceId": "account",
+              "field": "Approved billing entity",
+              "value": "Cedar Events US, Inc."
+            },
+            {
+              "sourceId": "account",
+              "field": "Partner",
+              "value": "Cedar Events"
+            },
+            {
+              "sourceId": "order",
+              "field": "Order total",
+              "value": "USD 48,000.00"
+            },
+            {
+              "sourceId": "order",
+              "field": "Allocation deadline",
+              "value": "Nov 15, 1:00 PM EST"
+            },
+            {
+              "sourceId": "order",
+              "field": "Scenario clock",
+              "value": "Nov 15, 9:00 AM EST"
+            },
+            {
+              "sourceId": "invoice",
+              "field": "Billed entity",
+              "value": "Cedar Events US, Inc."
+            },
+            {
+              "sourceId": "invoice",
+              "field": "Invoice total",
+              "value": "USD 48,000.00"
+            },
+            {
+              "sourceId": "invoice",
+              "field": "Linked order",
+              "value": "ORD-2404"
+            },
+            {
+              "sourceId": "invoice",
+              "field": "Other active invoice",
+              "value": "None in this sample"
+            },
+            {
+              "sourceId": "payment",
+              "field": "Ledger status",
+              "value": "pending"
+            },
+            {
+              "sourceId": "payment",
+              "field": "Recorded amount",
+              "value": "USD 48,000.00"
+            },
+            {
+              "sourceId": "payment",
+              "field": "Payment reference",
+              "value": "PAY-5304"
+            },
+            {
+              "sourceId": "payment",
+              "field": "Linked order",
+              "value": "ORD-2404"
+            },
+            {
+              "sourceId": "crm",
+              "field": "Payment status",
+              "value": "pending"
+            },
+            {
+              "sourceId": "crm",
+              "field": "Linked order",
+              "value": "ORD-2404"
+            },
+            {
+              "sourceId": "policy",
+              "field": "Payment",
+              "value": "A referenced, cleared payment for the exact order amount and currency is required. Conflicting records need Finance review."
+            },
+            {
+              "sourceId": "policy",
+              "field": "Deadline",
+              "value": "Escalate deadlines within 24 hours. After expiry, obtain a new allocation decision; never assume an extension."
+            }
+          ],
+          "questions": [
+            {
+              "findingId": "payment_pending",
+              "question": "Finance: Payment PAY-5304 for USD 48,000.00 remains in pending status. Can you confirm the expected clearance date and time? If clearance will not occur before the Nov 15, 1:00 PM EST deadline, should we request a deadline extension from the partner?",
+              "owner": "Finance"
+            },
+            {
+              "findingId": "deadline_near",
+              "question": "Ticketing Operations: The allocation deadline for ORD-2404 is Nov 15, 1:00 PM EST (4 hours from scenario clock). Should we proactively contact Cedar Events to confirm they can meet this deadline, or do we need to escalate for a new allocation decision?",
+              "owner": "Ticketing Operations"
+            }
+          ],
+          "drafts": {
+            "internal": "Case OPS-104 / ORD-2404: Cedar Events order for 160 tickets (USD 48,000.00) is blocked pending payment clearance. Payment ledger shows PAY-5304 in pending status; both ledger and CRM agree on pending status. Invoice INV-7604 correctly matches the approved entity (Cedar Events US, Inc.) and order amount. Allocation deadline is Nov 15, 1:00 PM EST with 4 hours remaining. Finance must confirm payment clearance timeline. If payment will not clear by deadline, Ticketing Operations must escalate for a new allocation decision. No entity mismatch, duplicate invoice, or currency issues detected. Awaiting Finance confirmation on payment status and Ticketing confirmation on deadline feasibility.",
+            "client": "Thank you for your order ORD-2404. We are processing your 160-ticket allocation for USD 48,000.00. We have received your payment reference PAY-5304 and are monitoring its clearance. Your allocation deadline is Nov 15, 1:00 PM EST. We will confirm ticket release once payment clears and the deadline is confirmed. If you have any questions about your order status, please contact us."
+          }
+        },
+        "trace": [
+          {
+            "step": 1,
+            "kind": "model",
+            "name": "Claude response",
+            "detail": "Call 1: 2212 input tokens, 57 output tokens; stop: tool_use.",
+            "ok": true
+          },
+          {
+            "step": 2,
+            "kind": "tool",
+            "name": "read_records",
+            "detail": "Read Account record, Ticket order, Invoice register, Payment ledger, CRM payment note, Release policy.",
+            "ok": true
+          },
+          {
+            "step": 3,
+            "kind": "model",
+            "name": "Claude response",
+            "detail": "Call 2: 2839 input tokens, 1663 output tokens; stop: tool_use.",
+            "ok": true
+          },
+          {
+            "step": 4,
+            "kind": "validation",
+            "name": "Policy and citation checks",
+            "detail": "Decision must be blocked under the supplied policy. Recheck the underlying findings and revise all affected prose.",
+            "ok": false
+          },
+          {
+            "step": 5,
+            "kind": "model",
+            "name": "Claude response",
+            "detail": "Call 3: 4331 input tokens, 1419 output tokens; stop: tool_use.",
+            "ok": true
+          },
+          {
+            "step": 6,
+            "kind": "validation",
+            "name": "Policy and citation checks",
+            "detail": "Finding categories and decision match the policy engine; quoted fields match the records. Narrative and drafts still need human review.",
+            "ok": true
+          }
+        ],
+        "usage": {
+          "inputTokens": 9382,
+          "outputTokens": 3139,
+          "modelCalls": 3,
+          "estimatedUsd": 0.025077
+        },
+        "validationAttempts": 2,
+        "firstSubmissionPassed": false
+      }
+    },
+    {
+      "caseId": "OPS-105",
+      "passed": true,
+      "expected": {
+        "decision": "ready_for_review",
+        "findingIds": []
+      },
+      "status": 200,
+      "run": {
+        "version": "investigator-v1",
+        "runId": "c0be2dfd-ff70-48d7-982a-33d341d1fea0",
+        "caseId": "OPS-105",
+        "inputSignature": "[\"operations-v1\",\"OPS-105\",\"2026-11-15T14:00:00.000Z\",\"Northstar Media US, Inc.\",\"ORD-2405\",4800000,\"USD\",160,\"2026-11-18T14:00:00.000Z\",\"INV-7605\",\"Northstar Media US, Inc.\",4800000,\"USD\",\"\",\"cleared\",4800000,\"USD\",\"PAY-5305\",\"cleared\",\"Partner Operations\"]",
+        "model": "claude-haiku-4-5-20251001",
+        "completedAt": "2026-11-15T21:16:58.669Z",
+        "elapsedMs": 8337,
+        "report": {
+          "decision": "ready_for_review",
+          "summary": "Case OPS-105 (ORD-2405): Northstar Media order for 160 tickets totaling USD 48,000.00. Invoice INV-7605 matches order amount and entity. Payment ledger shows cleared status with USD 48,000.00 recorded against reference PAY-5305. CRM confirms cleared payment status. All entity, invoice, and payment validations pass. Allocation deadline is Nov 18, 9:00 AM EST; scenario clock shows Nov 15, 9:00 AM EST (3 days remaining). No blockers identified. Ready for human release review.",
+          "recommendation": "Approve ticket allocation for ORD-2405. All validation criteria are satisfied: billing entity matches approved account entity, invoice amount and currency align with order, payment is cleared with matching amount and valid reference, and allocation deadline is 3 days away with no urgency. Proceed with ticket release to Northstar Media.",
+          "owner": "Ticketing Operations",
+          "findings": [],
+          "citations": [
+            {
+              "sourceId": "account",
+              "field": "Partner",
+              "value": "Northstar Media"
+            },
+            {
+              "sourceId": "account",
+              "field": "Approved billing entity",
+              "value": "Northstar Media US, Inc."
+            },
+            {
+              "sourceId": "order",
+              "field": "Order total",
+              "value": "USD 48,000.00"
+            },
+            {
+              "sourceId": "order",
+              "field": "Ticket quantity",
+              "value": "160"
+            },
+            {
+              "sourceId": "order",
+              "field": "Allocation deadline",
+              "value": "Nov 18, 9:00 AM EST"
+            },
+            {
+              "sourceId": "order",
+              "field": "Scenario clock",
+              "value": "Nov 15, 9:00 AM EST"
+            },
+            {
+              "sourceId": "invoice",
+              "field": "Billed entity",
+              "value": "Northstar Media US, Inc."
+            },
+            {
+              "sourceId": "invoice",
+              "field": "Invoice total",
+              "value": "USD 48,000.00"
+            },
+            {
+              "sourceId": "invoice",
+              "field": "Linked order",
+              "value": "ORD-2405"
+            },
+            {
+              "sourceId": "invoice",
+              "field": "Other active invoice",
+              "value": "None in this sample"
+            },
+            {
+              "sourceId": "payment",
+              "field": "Ledger status",
+              "value": "cleared"
+            },
+            {
+              "sourceId": "payment",
+              "field": "Recorded amount",
+              "value": "USD 48,000.00"
+            },
+            {
+              "sourceId": "payment",
+              "field": "Payment reference",
+              "value": "PAY-5305"
+            },
+            {
+              "sourceId": "payment",
+              "field": "Linked order",
+              "value": "ORD-2405"
+            },
+            {
+              "sourceId": "crm",
+              "field": "Payment status",
+              "value": "cleared"
+            },
+            {
+              "sourceId": "crm",
+              "field": "Linked order",
+              "value": "ORD-2405"
+            },
+            {
+              "sourceId": "policy",
+              "field": "Entity",
+              "value": "Invoice entity must match the approved account entity. Missing entities require clarification."
+            },
+            {
+              "sourceId": "policy",
+              "field": "Invoice",
+              "value": "Exactly one active invoice must match the order amount and currency."
+            },
+            {
+              "sourceId": "policy",
+              "field": "Payment",
+              "value": "A referenced, cleared payment for the exact order amount and currency is required. Conflicting records need Finance review."
+            },
+            {
+              "sourceId": "policy",
+              "field": "Deadline",
+              "value": "Escalate deadlines within 24 hours. After expiry, obtain a new allocation decision; never assume an extension."
+            }
+          ],
+          "questions": [],
+          "drafts": {
+            "internal": "Case OPS-105 (ORD-2405) is ready for release. Northstar Media's order for 160 tickets (USD 48,000.00) has been fully validated: invoice INV-7605 matches the order amount and approved entity (Northstar Media US, Inc.), payment ledger shows cleared status with USD 48,000.00 recorded under reference PAY-5305, and CRM confirms cleared payment. No entity, invoice, or payment discrepancies detected. Allocation deadline is Nov 18, 9:00 AM EST (3 days from scenario clock Nov 15, 9:00 AM EST). Recommend immediate approval for ticket allocation.",
+            "client": "Thank you for your order ORD-2405. We have completed our review and confirmed that your payment of USD 48,000.00 has been received and processed. Your invoice INV-7605 is on file. Your 160 tickets are approved for allocation, with a deadline of Nov 18, 9:00 AM EST. We will proceed with releasing your tickets shortly."
+          }
+        },
+        "trace": [
+          {
+            "step": 1,
+            "kind": "model",
+            "name": "Claude response",
+            "detail": "Call 1: 2212 input tokens, 57 output tokens; stop: tool_use.",
+            "ok": true
+          },
+          {
+            "step": 2,
+            "kind": "tool",
+            "name": "read_records",
+            "detail": "Read Account record, Ticket order, Invoice register, Payment ledger, CRM payment note, Release policy.",
+            "ok": true
+          },
+          {
+            "step": 3,
+            "kind": "model",
+            "name": "Claude response",
+            "detail": "Call 2: 2845 input tokens, 1069 output tokens; stop: tool_use.",
+            "ok": true
+          },
+          {
+            "step": 4,
+            "kind": "validation",
+            "name": "Policy and citation checks",
+            "detail": "Finding categories and decision match the policy engine; quoted fields match the records. Narrative and drafts still need human review.",
+            "ok": true
+          }
+        ],
+        "usage": {
+          "inputTokens": 5057,
+          "outputTokens": 1126,
+          "modelCalls": 2,
+          "estimatedUsd": 0.010687
+        },
+        "validationAttempts": 1,
+        "firstSubmissionPassed": true
+      }
+    },
+    {
+      "caseId": "OPS-106",
+      "passed": false,
+      "expected": {
+        "decision": "blocked",
+        "findingIds": [
+          "payment_amount"
+        ]
+      },
+      "status": 502,
+      "error": "The investigation reached its four-call limit without passing validation. Use the local assessment; no AI drafts were applied.",
+      "code": "run_limit",
+      "trace": [
+        {
+          "step": 1,
+          "kind": "model",
+          "name": "Claude response",
+          "detail": "Call 1: 2212 input tokens, 57 output tokens; stop: tool_use.",
+          "ok": true
+        },
+        {
+          "step": 2,
+          "kind": "tool",
+          "name": "read_records",
+          "detail": "Read Account record, Ticket order, Invoice register, Payment ledger, CRM payment note, Release policy.",
+          "ok": true
+        },
+        {
+          "step": 3,
+          "kind": "model",
+          "name": "Claude response",
+          "detail": "Call 2: 2845 input tokens, 1203 output tokens; stop: tool_use.",
+          "ok": true
+        },
+        {
+          "step": 4,
+          "kind": "validation",
+          "name": "Policy and citation checks",
+          "detail": "Provide a concise summary and action within the text limits. The first blocking category assigns the primary owner to Finance; do not copy the account owner. Provide both bounded, nonempty message drafts. Reconcile finding categories with the records: missing []; unsupported [deadline_near]. Re-read relevant records and revise the explanation, questions, action, and drafts; do not only change category labels.",
+          "ok": false
+        },
+        {
+          "step": 5,
+          "kind": "model",
+          "name": "Claude response",
+          "detail": "Call 3: 4300 input tokens, 1122 output tokens; stop: tool_use.",
+          "ok": true
+        },
+        {
+          "step": 6,
+          "kind": "validation",
+          "name": "Policy and citation checks",
+          "detail": "Provide a concise summary and action within the text limits. The first blocking category assigns the primary owner to Finance; do not copy the account owner. Provide both bounded, nonempty message drafts.",
+          "ok": false
+        },
+        {
+          "step": 7,
+          "kind": "model",
+          "name": "Claude response",
+          "detail": "Call 4: 5515 input tokens, 727 output tokens; stop: tool_use.",
+          "ok": true
+        },
+        {
+          "step": 8,
+          "kind": "validation",
+          "name": "Policy and citation checks",
+          "detail": "Provide a concise summary and action within the text limits. The first blocking category assigns the primary owner to Finance; do not copy the account owner. Provide both bounded, nonempty message drafts. Findings must be a bounded array. Supply 6–30 exact field citations covering all six sources. Questions must be a bounded array.",
+          "ok": false
+        }
+      ],
+      "usage": {
+        "inputTokens": 14872,
+        "outputTokens": 3109,
+        "modelCalls": 4,
+        "estimatedUsd": 0.030417
+      }
+    },
+    {
+      "caseId": "OPS-107",
+      "passed": true,
+      "expected": {
+        "decision": "blocked",
+        "findingIds": [
+          "invoice_currency",
+          "payment_currency"
+        ]
+      },
+      "status": 200,
+      "run": {
+        "version": "investigator-v1",
+        "runId": "5fcf07c6-f8ab-433f-be72-97b4eb0255a5",
+        "caseId": "OPS-107",
+        "inputSignature": "[\"operations-v1\",\"OPS-107\",\"2026-11-15T14:00:00.000Z\",\"Solstice Travel US, Inc.\",\"ORD-2407\",4800000,\"USD\",160,\"2026-11-18T14:00:00.000Z\",\"INV-7607\",\"Solstice Travel US, Inc.\",4800000,\"CAD\",\"\",\"cleared\",4800000,\"CAD\",\"PAY-5307\",\"cleared\",\"Partner Operations\"]",
+        "model": "claude-haiku-4-5-20251001",
+        "completedAt": "2026-11-15T21:17:37.047Z",
+        "elapsedMs": 13312,
+        "report": {
+          "decision": "blocked",
+          "summary": "Order ORD-2407 for Solstice Travel cannot proceed to release. The invoice currency (CAD) does not match the order currency (USD), creating a critical mismatch. Additionally, the payment amount (CAD 48,000.00) does not match the order amount (USD 48,000.00) due to currency difference. The allocation deadline is Nov 18, 9:00 AM EST, with 3 days remaining from the scenario clock (Nov 15, 9:00 AM EST). Entity and payment status are aligned, but currency discrepancies block approval.",
+          "recommendation": "Block release pending Finance review of currency discrepancies. The invoice and payment are both in CAD, but the order is in USD. Determine whether: (1) the invoice should be corrected to USD, (2) a currency conversion was intended and should be documented, or (3) the order currency is incorrect. Once currency alignment is confirmed and the payment matches the order in both amount and currency, resubmit for approval. The allocation deadline (Nov 18, 9:00 AM EST) allows 3 days for resolution.",
+          "owner": "Finance",
+          "findings": [
+            {
+              "id": "invoice_currency",
+              "explanation": "Invoice currency (CAD) differs from order currency (USD). The invoice shows CAD 48,000.00 while the order specifies USD 48,000.00. Policy requires invoice amount and currency to match the order.",
+              "sourceIds": [
+                "invoice",
+                "order",
+                "policy"
+              ]
+            },
+            {
+              "id": "payment_currency",
+              "explanation": "Payment currency (CAD) differs from order currency (USD). The payment ledger records CAD 48,000.00 against an order denominated in USD 48,000.00. Policy requires payment in the exact order currency.",
+              "sourceIds": [
+                "payment",
+                "order",
+                "policy"
+              ]
+            }
+          ],
+          "citations": [
+            {
+              "sourceId": "account",
+              "field": "Approved billing entity",
+              "value": "Solstice Travel US, Inc."
+            },
+            {
+              "sourceId": "account",
+              "field": "Partner",
+              "value": "Solstice Travel"
+            },
+            {
+              "sourceId": "order",
+              "field": "Order total",
+              "value": "USD 48,000.00"
+            },
+            {
+              "sourceId": "order",
+              "field": "Allocation deadline",
+              "value": "Nov 18, 9:00 AM EST"
+            },
+            {
+              "sourceId": "order",
+              "field": "Scenario clock",
+              "value": "Nov 15, 9:00 AM EST"
+            },
+            {
+              "sourceId": "invoice",
+              "field": "Billed entity",
+              "value": "Solstice Travel US, Inc."
+            },
+            {
+              "sourceId": "invoice",
+              "field": "Invoice total",
+              "value": "CAD 48,000.00"
+            },
+            {
+              "sourceId": "invoice",
+              "field": "Linked order",
+              "value": "ORD-2407"
+            },
+            {
+              "sourceId": "invoice",
+              "field": "Other active invoice",
+              "value": "None in this sample"
+            },
+            {
+              "sourceId": "payment",
+              "field": "Ledger status",
+              "value": "cleared"
+            },
+            {
+              "sourceId": "payment",
+              "field": "Recorded amount",
+              "value": "CAD 48,000.00"
+            },
+            {
+              "sourceId": "payment",
+              "field": "Payment reference",
+              "value": "PAY-5307"
+            },
+            {
+              "sourceId": "payment",
+              "field": "Linked order",
+              "value": "ORD-2407"
+            },
+            {
+              "sourceId": "crm",
+              "field": "Payment status",
+              "value": "cleared"
+            },
+            {
+              "sourceId": "crm",
+              "field": "Linked order",
+              "value": "ORD-2407"
+            },
+            {
+              "sourceId": "policy",
+              "field": "Invoice",
+              "value": "Exactly one active invoice must match the order amount and currency."
+            },
+            {
+              "sourceId": "policy",
+              "field": "Payment",
+              "value": "A referenced, cleared payment for the exact order amount and currency is required. Conflicting records need Finance review."
+            }
+          ],
+          "questions": [
+            {
+              "findingId": "invoice_currency",
+              "question": "Why is the invoice denominated in CAD 48,000.00 when the order ORD-2407 is in USD 48,000.00? Should the invoice be reissued in USD, or is there a documented currency conversion agreement?",
+              "owner": "Finance"
+            },
+            {
+              "findingId": "payment_currency",
+              "question": "The payment ledger shows CAD 48,000.00 cleared for order ORD-2407, but the order is in USD 48,000.00. Was this payment intended to cover the USD order, or does it represent a currency conversion? Please clarify the payment intent and confirm the correct currency.",
+              "owner": "Finance"
+            }
+          ],
+          "drafts": {
+            "internal": "Case OPS-107 (ORD-2407) is blocked due to currency mismatch. Order total is USD 48,000.00, but invoice INV-7607 and payment PAY-5307 are both recorded in CAD 48,000.00. Entity verification passed: billed entity 'Solstice Travel US, Inc.' matches approved account entity. Payment status is cleared in both ledger and CRM, and reference PAY-5307 is present. However, policy requires payment in the exact order currency. Finance must resolve whether the invoice/payment should be converted to USD or if the order currency is incorrect. No duplicate invoices detected. Deadline is Nov 18, 9:00 AM EST (3 days remaining). Escalate to Finance for currency clarification before proceeding.",
+            "client": "Thank you for submitting order ORD-2407. We are reviewing your request and have identified a currency discrepancy that requires clarification. Your order is denominated in USD 48,000.00, but the invoice and payment records show CAD 48,000.00. Our Finance team will contact you to confirm the correct currency and ensure all documentation aligns. We aim to resolve this within 3 days to meet your allocation deadline of Nov 18, 9:00 AM EST. Please stand by for further communication."
+          }
+        },
+        "trace": [
+          {
+            "step": 1,
+            "kind": "model",
+            "name": "Claude response",
+            "detail": "Call 1: 2212 input tokens, 57 output tokens; stop: tool_use.",
+            "ok": true
+          },
+          {
+            "step": 2,
+            "kind": "tool",
+            "name": "read_records",
+            "detail": "Read Account record, Ticket order, Invoice register, Payment ledger, CRM payment note, Release policy.",
+            "ok": true
+          },
+          {
+            "step": 3,
+            "kind": "model",
+            "name": "Claude response",
+            "detail": "Call 2: 2850 input tokens, 1741 output tokens; stop: tool_use.",
+            "ok": true
+          },
+          {
+            "step": 4,
+            "kind": "validation",
+            "name": "Policy and citation checks",
+            "detail": "Finding categories and decision match the policy engine; quoted fields match the records. Narrative and drafts still need human review.",
+            "ok": true
+          }
+        ],
+        "usage": {
+          "inputTokens": 5062,
+          "outputTokens": 1798,
+          "modelCalls": 2,
+          "estimatedUsd": 0.014052
+        },
+        "validationAttempts": 1,
+        "firstSubmissionPassed": true
+      }
+    },
+    {
+      "caseId": "OPS-108",
+      "passed": false,
+      "expected": {
+        "decision": "blocked",
+        "findingIds": [
+          "duplicate_invoice"
+        ]
+      },
+      "status": 502,
+      "error": "The investigation reached its four-call limit without passing validation. Use the local assessment; no AI drafts were applied.",
+      "code": "run_limit",
+      "trace": [
+        {
+          "step": 1,
+          "kind": "model",
+          "name": "Claude response",
+          "detail": "Call 1: 2212 input tokens, 57 output tokens; stop: tool_use.",
+          "ok": true
+        },
+        {
+          "step": 2,
+          "kind": "tool",
+          "name": "read_records",
+          "detail": "Read Account record, Ticket order, Invoice register, Payment ledger, CRM payment note, Release policy.",
+          "ok": true
+        },
+        {
+          "step": 3,
+          "kind": "model",
+          "name": "Claude response",
+          "detail": "Call 2: 2848 input tokens, 1167 output tokens; stop: tool_use.",
+          "ok": true
+        },
+        {
+          "step": 4,
+          "kind": "validation",
+          "name": "Policy and citation checks",
+          "detail": "Provide a concise summary and action within the text limits. The first blocking category assigns the primary owner to Finance; do not copy the account owner. Provide both bounded, nonempty message drafts. Citation does not match the supplied record: order/Linked order.",
+          "ok": false
+        },
+        {
+          "step": 5,
+          "kind": "model",
+          "name": "Claude response",
+          "detail": "Call 3: 4231 input tokens, 996 output tokens; stop: tool_use.",
+          "ok": true
+        },
+        {
+          "step": 6,
+          "kind": "validation",
+          "name": "Policy and citation checks",
+          "detail": "Provide a concise summary and action within the text limits. The first blocking category assigns the primary owner to Finance; do not copy the account owner. Provide both bounded, nonempty message drafts.",
+          "ok": false
+        },
+        {
+          "step": 7,
+          "kind": "model",
+          "name": "Claude response",
+          "detail": "Call 4: 5038 input tokens, 908 output tokens; stop: tool_use.",
+          "ok": true
+        },
+        {
+          "step": 8,
+          "kind": "validation",
+          "name": "Policy and citation checks",
+          "detail": "The first blocking category assigns the primary owner to Finance; do not copy the account owner. Provide both bounded, nonempty message drafts.",
+          "ok": false
+        }
+      ],
+      "usage": {
+        "inputTokens": 14329,
+        "outputTokens": 3128,
+        "modelCalls": 4,
+        "estimatedUsd": 0.029969
+      }
+    },
+    {
+      "caseId": "OPS-109",
+      "passed": false,
+      "expected": {
+        "decision": "needs_information",
+        "findingIds": [
+          "entity_missing"
+        ]
+      },
+      "status": 502,
+      "error": "The investigation reached its four-call limit without passing validation. Use the local assessment; no AI drafts were applied.",
+      "code": "run_limit",
+      "trace": [
+        {
+          "step": 1,
+          "kind": "model",
+          "name": "Claude response",
+          "detail": "Call 1: 2212 input tokens, 57 output tokens; stop: tool_use.",
+          "ok": true
+        },
+        {
+          "step": 2,
+          "kind": "tool",
+          "name": "read_records",
+          "detail": "Read Account record, Ticket order, Invoice register, Payment ledger, CRM payment note, Release policy.",
+          "ok": true
+        },
+        {
+          "step": 3,
+          "kind": "model",
+          "name": "Claude response",
+          "detail": "Call 2: 2841 input tokens, 1016 output tokens; stop: tool_use.",
+          "ok": true
+        },
+        {
+          "step": 4,
+          "kind": "validation",
+          "name": "Policy and citation checks",
+          "detail": "Provide a concise summary and action within the text limits. The first blocking category assigns the primary owner to Partner Operations; do not copy the account owner. Provide both bounded, nonempty message drafts.",
+          "ok": false
+        },
+        {
+          "step": 5,
+          "kind": "model",
+          "name": "Claude response",
+          "detail": "Call 3: 4036 input tokens, 886 output tokens; stop: tool_use.",
+          "ok": true
+        },
+        {
+          "step": 6,
+          "kind": "validation",
+          "name": "Policy and citation checks",
+          "detail": "The first blocking category assigns the primary owner to Partner Operations; do not copy the account owner. Provide both bounded, nonempty message drafts.",
+          "ok": false
+        },
+        {
+          "step": 7,
+          "kind": "model",
+          "name": "Claude response",
+          "detail": "Call 4: 5002 input tokens, 900 output tokens; stop: tool_use.",
+          "ok": true
+        },
+        {
+          "step": 8,
+          "kind": "validation",
+          "name": "Policy and citation checks",
+          "detail": "Provide a concise summary and action within the text limits. The first blocking category assigns the primary owner to Partner Operations; do not copy the account owner. Provide both bounded, nonempty message drafts.",
+          "ok": false
+        }
+      ],
+      "usage": {
+        "inputTokens": 14091,
+        "outputTokens": 2859,
+        "modelCalls": 4,
+        "estimatedUsd": 0.028386
+      }
+    },
+    {
+      "caseId": "OPS-110",
+      "passed": false,
+      "expected": {
+        "decision": "blocked",
+        "findingIds": [
+          "deadline_elapsed"
+        ]
+      },
+      "status": 502,
+      "error": "The investigation reached its four-call limit without passing validation. Use the local assessment; no AI drafts were applied.",
+      "code": "run_limit",
+      "trace": [
+        {
+          "step": 1,
+          "kind": "model",
+          "name": "Claude response",
+          "detail": "Call 1: 2212 input tokens, 57 output tokens; stop: tool_use.",
+          "ok": true
+        },
+        {
+          "step": 2,
+          "kind": "tool",
+          "name": "read_records",
+          "detail": "Read Account record, Ticket order, Invoice register, Payment ledger, CRM payment note, Release policy.",
+          "ok": true
+        },
+        {
+          "step": 3,
+          "kind": "model",
+          "name": "Claude response",
+          "detail": "Call 2: 2842 input tokens, 1103 output tokens; stop: tool_use.",
+          "ok": true
+        },
+        {
+          "step": 4,
+          "kind": "validation",
+          "name": "Policy and citation checks",
+          "detail": "Provide a concise summary and action within the text limits. The first blocking category assigns the primary owner to Ticketing Operations; do not copy the account owner. Provide both bounded, nonempty message drafts.",
+          "ok": false
+        },
+        {
+          "step": 5,
+          "kind": "model",
+          "name": "Claude response",
+          "detail": "Call 3: 4143 input tokens, 974 output tokens; stop: tool_use.",
+          "ok": true
+        },
+        {
+          "step": 6,
+          "kind": "validation",
+          "name": "Policy and citation checks",
+          "detail": "The first blocking category assigns the primary owner to Ticketing Operations; do not copy the account owner. Provide both bounded, nonempty message drafts.",
+          "ok": false
+        },
+        {
+          "step": 7,
+          "kind": "model",
+          "name": "Claude response",
+          "detail": "Call 4: 5199 input tokens, 960 output tokens; stop: tool_use.",
+          "ok": true
+        },
+        {
+          "step": 8,
+          "kind": "validation",
+          "name": "Policy and citation checks",
+          "detail": "Provide a concise summary and action within the text limits. The first blocking category assigns the primary owner to Ticketing Operations; do not copy the account owner. Provide both bounded, nonempty message drafts.",
+          "ok": false
+        }
+      ],
+      "usage": {
+        "inputTokens": 14396,
+        "outputTokens": 3094,
+        "modelCalls": 4,
+        "estimatedUsd": 0.029866
+      }
+    }
+  ],
+  "totals": {
+    "passed": 5,
+    "failed": 4,
+    "inputTokens": 96137,
+    "outputTokens": 24651,
+    "estimatedUsd": 0.219392
+  },
+  "updatedAt": "2026-11-15T21:18:54.739Z"
+}

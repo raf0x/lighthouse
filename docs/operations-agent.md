@@ -6,11 +6,13 @@ The Investigator tab adds one Anthropic tool-using agent to the existing operati
 
 1. The browser submits the selected synthetic case to `POST /api/operations/investigate`. The server validates and projects only evidence-editor fields onto the canonical fixture; immutable order identity and policy cannot be replaced.
 2. Claude receives a record index and the policy, not the expected case findings. It chooses `read_records` calls and receives exact source fields as tool results. All six records must be observed in an earlier model turn before submission.
-3. `submit_investigation` returns structured findings, source references, field quotations, missing-information questions, a recommendation, and two drafts.
+3. Both tools use Anthropic strict tool inputs. `submit_investigation` returns structured findings, source references, field quotations, missing-information questions, a recommendation, and two drafts. Strict mode prevents missing/wrongly typed properties; it does not establish factual accuracy. The current SDK forwards the documented `strict` field with a narrow type extension, without a dependency upgrade.
 4. A deterministic validator requires exact category/decision agreement with the policy engine, relevant source IDs, matching field quotations covering every source, a question for each missing/conflicting-information finding, bounded text, and the expected primary owner. Failed submissions receive feedback within the same bounded run. Free text, truncated output, unknown tools, and exhausted runs are never accepted as successful investigations.
 5. The UI shows actual model/tool/validation events and reported token usage. It never fabricates a reasoning transcript. Applying AI drafts requires an explicit replacement action and clears prior Harbor approval. The original rules-based assessment remains authoritative.
 
-The validator checks **category agreement and quote provenance**. It does not prove every generated sentence, the suitability of a recommendation, or absence of all prompt-injection effects. Narrative and drafts require human review. Tests of the runtime with fake provider responses are software tests, not evidence of live model quality.
+The validator checks **category agreement and quote provenance**. It does not prove every generated sentence, the suitability of a recommendation, or absence of all prompt-injection effects. Narrative and drafts require human review. Tests of the runtime with fake provider responses are software tests, not evidence of live model quality. Repair feedback supplies the policy engine's expected decision, missing/unsupported categories, and primary owner. A repaired submission is guided by the rules engine, not an independent correct first attempt; the evaluation records that distinction.
+
+Live testing exposed approval/release promises in otherwise correctly classified reports. Both drafts must now contain an explicit human-review boundary, and focused text checks reject observed forms of approval claims, release promises, and malformed markup. These checks are deliberately not advertised as comprehensive semantic validation. The run version changed to invalidate earlier cached investigations. Review remains necessary.
 
 ## Access and spending boundaries
 
@@ -35,4 +37,5 @@ The report records acceptance, exact category matches, first-submission success,
 
 - [Anthropic: handle tool calls](https://platform.claude.com/docs/en/agents-and-tools/tool-use/handle-tool-calls)
 - [Anthropic: define tools and tool choice](https://platform.claude.com/docs/en/agents-and-tools/tool-use/define-tools)
+- [Anthropic: strict tool inputs](https://platform.claude.com/docs/en/agents-and-tools/tool-use/strict-tool-use)
 - [Claude Haiku 4.5 model ID and pricing](https://platform.claude.com/docs/en/models/haiku-4-5/overview)
