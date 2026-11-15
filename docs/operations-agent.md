@@ -1,6 +1,6 @@
 # Lighthouse case investigator
 
-The Investigator tab adds one Anthropic tool-using agent to the existing operations workspace. It uses the project's existing `claude-haiku-4-5-20251001` integration. The provider key remains on the server. No mail, invoice, payment, ticket, shell, network-search, or CRM-write tools are exposed.
+The Investigator tab adds one Anthropic tool-using agent to the existing operations workspace. It reuses the project's Anthropic account and SDK. Live evaluation found frequent policy repairs and malformed prose with Haiku 4.5, so this investigator uses the active `claude-sonnet-4-6` snapshot. The older account-analysis endpoint is unchanged. The provider key remains on the server. No mail, invoice, payment, ticket, shell, network-search, or CRM-write tools are exposed.
 
 ## Execution and verification
 
@@ -20,7 +20,7 @@ Live testing exposed approval/release promises in otherwise correctly classified
 - The review branch alone receives `LIGHTHOUSE_AGENT_ENABLED=true`, with the existing sensitive `ANTHROPIC_API_KEY` inherited in preview. Vercel deployment protection remains enabled. Anyone holding a valid preview share link can access that preview; do not publish its access link as a general portfolio demo.
 - A run allows at most four model requests, 2,400 output tokens per response, a 60,000-character message-history limit, and a 50-second overall abort timer. Provider network retries are disabled. Invalid/cross-origin/oversized requests are rejected before provider construction.
 - The worker concurrency guard prevents overlapping requests within one function worker. It is **not** a global rate limiter or daily monetary cap. Separate serverless workers can run concurrently. Public paid execution needs authentication and durable, atomic quotas before enabling it.
-- The UI estimates standard uncached Haiku 4.5 usage at $1/M input and $5/M output tokens, verified November 15, 2026. It is not an account-credit check or invoice. Failed/cancelled requests can incur usage not reported in a completed response.
+- The UI estimates standard uncached Sonnet 4.6 usage at $3/M input and $15/M output tokens, verified November 15, 2026. It is not an account-credit check or invoice. Failed/cancelled requests can incur usage not reported in a completed response.
 - Clicking Stop aborts the browser request and asks the server/provider to stop when disconnect is propagated; it cannot guarantee an in-flight request is unbilled. Switching case or leaving the tab also aborts the observer.
 
 ## State and review
@@ -38,4 +38,4 @@ The report records acceptance, exact category matches, first-submission success,
 - [Anthropic: handle tool calls](https://platform.claude.com/docs/en/agents-and-tools/tool-use/handle-tool-calls)
 - [Anthropic: define tools and tool choice](https://platform.claude.com/docs/en/agents-and-tools/tool-use/define-tools)
 - [Anthropic: strict tool inputs](https://platform.claude.com/docs/en/agents-and-tools/tool-use/strict-tool-use)
-- [Claude Haiku 4.5 model ID and pricing](https://platform.claude.com/docs/en/models/haiku-4-5/overview)
+- [Claude Sonnet 4.6 model ID and pricing](https://platform.claude.com/docs/en/models/sonnet-4-6/overview)

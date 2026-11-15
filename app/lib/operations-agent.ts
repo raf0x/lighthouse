@@ -1,8 +1,8 @@
 import { assessCase, evidenceFor, inputSignature, operationCases, validCase, type Decision, type Drafts, type OperationCase } from './operations';
 
-export const AGENT_VERSION = 'investigator-v2';
+export const AGENT_VERSION = 'investigator-v3';
 export const REVIEW_NOTICE = 'Ticket release is not confirmed and requires human review.';
-export const AGENT_MODEL = 'claude-haiku-4-5-20251001';
+export const AGENT_MODEL = 'claude-sonnet-4-6';
 export const AGENT_LIMITS = { modelCalls: 4, outputTokensPerCall: 2400, contextCharacters: 60000, timeoutMs: 50000, bodyBytes: 12000 } as const;
 export const SOURCE_IDS = ['account', 'order', 'invoice', 'payment', 'crm', 'policy'] as const;
 export const FINDING_IDS = ['entity_missing', 'entity_mismatch', 'duplicate_invoice', 'invoice_currency', 'invoice_amount', 'payment_conflict', 'payment_missing', 'payment_pending', 'reference_missing', 'payment_currency', 'payment_amount', 'deadline_elapsed', 'deadline_near'] as const;
@@ -89,6 +89,7 @@ export function validateAgentReport(value: unknown, input: OperationCase, readId
   if (/https?:\/\/|\b(?:I|we) (?:have |already )?(?:sent|released|issued|updated|reissued|refunded)\b/i.test(narrative)) errors.push('Do not invent external links or claim that actions have been executed.');
   if (/\b(?:tickets?|allocation|order)\b[^.!?\n]{0,45}\b(?:are|is|have been|has been) (?:already )?approved\b|\b(?:we|I) (?:will|can|shall) (?:(?:proceed with|be) )?(?:releas\w*|approv\w*)\b|\b(?:we|I) (?:will|can|shall) confirm (?:the )?ticket release\b|\bproceed with (?:the )?ticket release\b|\b(?:approve|authorize) (?:the )?ticket allocation\b|\b(?:release|allocation) (?:is|has been) (?:confirmed|approved|guaranteed)\b/i.test(narrative)) errors.push('The proposed text implies approval or promises ticket release. Only propose a human release review; never approve allocation, promise release, or say approval already exists.');
   if (/[<>]/.test(narrative)) errors.push('Use plain prose without markup fragments or angle brackets.');
+  if (/"(?:decision|summary|owner|drafts|internal|client|findings|citations)"\s*:/.test(narrative)) errors.push('A prose field contains serialized report properties. Keep each value in its own schema field; return a complete report with plain-language text.');
   if (errors.length) return { errors: [...new Set(errors)] };
   // Project the permitted fields; unknown model-generated properties never enter application state.
   const r = value as unknown as AgentReport;
@@ -103,8 +104,8 @@ export function agentAvailability(env: Record<string, string | undefined>): Agen
   return { enabled, reason: enabled ? 'Live investigation is enabled in this review environment.' : env.VERCEL_ENV === 'production' ? 'Live investigation is available in the private review preview. Local policy checks remain available here.' : 'Live investigation is not enabled in this environment.', model: AGENT_MODEL, limits: AGENT_LIMITS };
 }
 export function estimateUsage(inputTokens: number, outputTokens: number, modelCalls: number): AgentUsage {
-  // Standard uncached Haiku 4.5 list prices, verified 2026-11-15. Not an invoice or account-wide cap.
-  return { inputTokens, outputTokens, modelCalls, estimatedUsd: (inputTokens + outputTokens * 5) / 1_000_000 };
+  // Standard uncached Sonnet 4.6 list prices, verified 2026-11-15. Not an invoice or account-wide cap.
+  return { inputTokens, outputTokens, modelCalls, estimatedUsd: (inputTokens * 3 + outputTokens * 15) / 1_000_000 };
 }
 export function restoreAgentRun(value: unknown, input: OperationCase): AgentRun | null {
   if (!object(value) || value.version !== AGENT_VERSION || value.caseId !== input.id || value.inputSignature !== inputSignature(input) || value.model !== AGENT_MODEL || !text(value.runId, 100) || !text(value.completedAt, 40) || !Number.isFinite(Date.parse(String(value.completedAt))) || typeof value.elapsedMs !== 'number' || value.elapsedMs < 0 || !object(value.usage)) return null;

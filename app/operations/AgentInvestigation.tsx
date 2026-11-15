@@ -75,7 +75,7 @@ export default function AgentInvestigation({ input, onSource, onApply }: { input
       <button className={styles.download} onClick={download}><Download size={15} /> Download agent run</button>
     </>}
     {usage && <dl className={styles.agentUsage}><div><dt>Model calls</dt><dd>{usage.modelCalls}</dd></div><div><dt>Tokens in / out</dt><dd>{usage.inputTokens.toLocaleString()} / {usage.outputTokens.toLocaleString()}</dd></div><div><dt>Estimated usage</dt><dd>${usage.estimatedUsd.toFixed(4)}</dd></div>{run && !failure && <div><dt>Run time</dt><dd>{(run.elapsedMs / 1000).toFixed(1)}s</dd></div>}</dl>}
-    {usage && <p className={styles.small}>Estimate uses standard Haiku 4.5 token rates; excludes taxes and account-specific pricing. Not an account balance or a global spending cap.{failure ? ' Usage includes reported completed responses only; failed or cancelled requests may add charges.' : ''}</p>}
+    {usage && <p className={styles.small}>Estimate uses standard Sonnet 4.6 token rates; excludes taxes and account-specific pricing. Not an account balance or a global spending cap.{failure ? ' Usage includes reported completed responses only; failed or cancelled requests may add charges.' : ''}</p>}
     {trace && <details className={styles.checks}><summary><Search size={16} /> Actual tool activity <ArrowRight size={13} /></summary><ol>{trace.map(t => <li key={t.step}><span>{t.ok ? '✓' : '!'}</span><div><strong>{t.name}</strong><p>{t.detail}</p></div></li>)}</ol><p className={styles.small}>Recorded API responses, tool reads, and validation outcomes. No hidden reasoning transcript.</p></details>}
   </section>;
 }
