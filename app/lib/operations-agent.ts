@@ -3,7 +3,7 @@ import { assessCase, evidenceFor, inputSignature, operationCases, validCase, typ
 export const AGENT_VERSION = 'investigator-v3';
 export const REVIEW_NOTICE = 'Ticket release is not confirmed and requires human review.';
 export const AGENT_MODEL = 'claude-sonnet-4-6';
-export const AGENT_LIMITS = { modelCalls: 4, outputTokensPerCall: 2400, contextCharacters: 60000, timeoutMs: 50000, bodyBytes: 12000 } as const;
+export const AGENT_LIMITS = { modelCalls: 4, outputTokensPerCall: 2400, contextCharacters: 60000, timeoutMs: 90000, bodyBytes: 12000 } as const;
 export const SOURCE_IDS = ['account', 'order', 'invoice', 'payment', 'crm', 'policy'] as const;
 export const FINDING_IDS = ['entity_missing', 'entity_mismatch', 'duplicate_invoice', 'invoice_currency', 'invoice_amount', 'payment_conflict', 'payment_missing', 'payment_pending', 'reference_missing', 'payment_currency', 'payment_amount', 'deadline_elapsed', 'deadline_near'] as const;
 export const OWNERS = ['Finance', 'Partner Operations', 'Ticketing Operations'] as const;

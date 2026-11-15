@@ -18,7 +18,7 @@ async function main(config) {
   const cookieJar = new Map();
   async function call(target, options={}) {
     for(let redirect=0;redirect<5;redirect++) {
-      const response=await fetch(target,{...options,redirect:'manual',headers:{...options.headers,Cookie:[...cookieJar].map(([k,v])=>`${k}=${v}`).join('; ')},signal:AbortSignal.timeout(65000)});
+      const response=await fetch(target,{...options,redirect:'manual',headers:{...options.headers,Cookie:[...cookieJar].map(([k,v])=>`${k}=${v}`).join('; ')},signal:AbortSignal.timeout(100000)});
       for(const cookie of response.headers.getSetCookie()) {const pair=cookie.split(';')[0];const i=pair.indexOf('=');cookieJar.set(pair.slice(0,i),pair.slice(i+1));}
       if([301,302,303,307,308].includes(response.status)) {const next=new URL(response.headers.get('location'),target);if(next.origin!==url.origin)throw new Error('Preview access redirected away; no live requests made.');target=next;continue;}
       return response;

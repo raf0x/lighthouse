@@ -4,7 +4,7 @@ import { AGENT_LIMITS, agentAvailability, canonicalAgentCase } from '../../../li
 import { AgentRunError, runInvestigation } from '../../../lib/operations-agent-runner';
 
 export const runtime = 'nodejs';
-export const maxDuration = 60;
+export const maxDuration = 120;
 export const dynamic = 'force-dynamic';
 const headers = { 'Cache-Control': 'no-store' };
 // A per-worker concurrency guard, not a global rate limit or account-wide spending cap.
