@@ -25,7 +25,8 @@ export type Assessment = {
 };
 export type AuditEntry = { id: string; at: string; event: string; detail: string };
 export type CaseReview = { status: ReviewStatus; reviewer: string; note: string; at: string; inputSignature: string; draftSignature: string };
-export type CaseWorkspace = { input: OperationCase; analyzed: boolean; drafts?: Drafts; review?: CaseReview; history: AuditEntry[] };
+export type DraftOrigin = { model: string; runId: string; completedAt: string };
+export type CaseWorkspace = { input: OperationCase; analyzed: boolean; drafts?: Drafts; draftOrigin?: DraftOrigin; review?: CaseReview; history: AuditEntry[] };
 export const decisionLabels: Record<Decision, string> = { blocked: 'Action needed', needs_information: 'Evidence needed', ready_for_review: 'Ready for review' };
 
 export function money(cents: number, currency: Currency) {
@@ -189,13 +190,15 @@ export function restoreWorkspaces(raw: string | null): Record<string, CaseWorksp
       const review = saved.review;
       const validReview = analyzed && drafts && review && ['approved', 'changes_requested'].includes(review.status) && typeof review.reviewer === 'string' && review.reviewer.trim() && review.reviewer.length <= 100 && typeof review.note === 'string' && review.note.length <= 2000 && typeof review.at === 'string' && Number.isFinite(Date.parse(review.at)) && currentReview(input, drafts, review);
       const history = Array.isArray(saved.history) ? saved.history.filter((e: AuditEntry) => e && typeof e.id === 'string' && typeof e.at === 'string' && Number.isFinite(Date.parse(e.at)) && typeof e.event === 'string' && e.event.length <= 100 && typeof e.detail === 'string' && e.detail.length <= 3000).slice(-100) : [];
-      result[base.id] = { input, analyzed, drafts, review: validReview ? { ...review } : undefined, history };
+      const origin = saved.draftOrigin;
+      const draftOrigin = drafts && origin && typeof origin.model === 'string' && origin.model.length <= 100 && typeof origin.runId === 'string' && origin.runId.length <= 100 && typeof origin.completedAt === 'string' && Number.isFinite(Date.parse(origin.completedAt)) ? { model: origin.model, runId: origin.runId, completedAt: origin.completedAt } : undefined;
+      result[base.id] = { input, analyzed, drafts, draftOrigin, review: validReview ? { ...review } : undefined, history };
     }
     return result;
   } catch { return {}; }
 }
 
-export function exportCase(c: OperationCase, assessment: Assessment, drafts: Drafts, review: CaseReview | undefined, history: AuditEntry[]) {
+export function exportCase(c: OperationCase, assessment: Assessment, drafts: Drafts, review: CaseReview | undefined, history: AuditEntry[], draftOrigin?: DraftOrigin) {
   const reviewed = currentReview(c, drafts, review) ? review : undefined;
-  return `# Lighthouse · ${c.id}\n\nSynthetic scenario · rules-based prototype · no AI model calls · nothing sent or released\n\n## Case\n${c.account} · ${c.orderId}\nScenario time: ${scenarioDate(c.asOf)}\nEngine: ${ENGINE_VERSION}\n\n## Assessment\n${assessment.headline}\n${assessment.summary}\n\n${assessment.findings.map(f => `- ${f.title}: ${f.detail}\n  Sources: ${f.sources.join(', ')}\n  Next step (${f.owner}): ${f.action}`).join('\n')}\n\n## Source records\n${evidenceFor(c).map(doc => `### ${doc.title} [${doc.id}]\nSource: ${doc.source}\n${doc.fields.map(f => `- ${f.label}: ${f.value}`).join('\n')}`).join('\n\n')}\n\n## Internal draft\n${drafts.internal}\n\n## Client draft\n${drafts.client}\n\n## Local review\n${reviewed ? `${reviewed.status} by ${reviewed.reviewer} at ${reviewed.at}\n${reviewed.note}\nThis records review of a plan only. No external action was executed.` : 'Pending human review.'}\n\n## Local activity\n${history.map(e => `- ${e.at} · ${e.event}: ${e.detail}`).join('\n')}\n`;
+  return `# Lighthouse · ${c.id}\n\nSynthetic scenario · rules-based assessment · nothing sent or released\n${draftOrigin ? `AI-assisted drafts (possibly edited): ${draftOrigin.model}\nRun: ${draftOrigin.runId} · ${draftOrigin.completedAt}\nHuman review of narrative remains required.` : 'Current drafts originate from local templates; no AI model calls were needed to generate them.'}\n\n## Case\n${c.account} · ${c.orderId}\nScenario time: ${scenarioDate(c.asOf)}\nEngine: ${ENGINE_VERSION}\n\n## Assessment\n${assessment.headline}\n${assessment.summary}\n\n${assessment.findings.map(f => `- ${f.title}: ${f.detail}\n  Sources: ${f.sources.join(', ')}\n  Next step (${f.owner}): ${f.action}`).join('\n')}\n\n## Source records\n${evidenceFor(c).map(doc => `### ${doc.title} [${doc.id}]\nSource: ${doc.source}\n${doc.fields.map(f => `- ${f.label}: ${f.value}`).join('\n')}`).join('\n\n')}\n\n## Internal draft\n${drafts.internal}\n\n## Client draft\n${drafts.client}\n\n## Local review\n${reviewed ? `${reviewed.status} by ${reviewed.reviewer} at ${reviewed.at}\n${reviewed.note}\nThis records review of a plan only. No external action was executed.` : 'Pending human review.'}\n\n## Local activity\n${history.map(e => `- ${e.at} · ${e.event}: ${e.detail}`).join('\n')}\n`;
 }
