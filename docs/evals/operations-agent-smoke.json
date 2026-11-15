@@ -1,0 +1,95 @@
+{
+  "version": "lighthouse-agent-eval-v1",
+  "startedAt": "2026-11-15T21:09:58.402Z",
+  "model": "claude-haiku-4-5-20251001",
+  "scope": "Synthetic fixtures only; category/citation validation is automatic, narrative needs human review.",
+  "cases": [
+    {
+      "caseId": "OPS-101",
+      "passed": false,
+      "expected": {
+        "decision": "blocked",
+        "findingIds": [
+          "entity_mismatch",
+          "payment_pending",
+          "deadline_near"
+        ]
+      },
+      "status": 502,
+      "error": "The investigation reached its four-call limit without passing validation. Use the local assessment; no AI drafts were applied.",
+      "code": "run_limit",
+      "trace": [
+        {
+          "step": 1,
+          "kind": "model",
+          "name": "Claude response",
+          "detail": "Call 1: 2153 input tokens, 57 output tokens; stop: tool_use.",
+          "ok": true
+        },
+        {
+          "step": 2,
+          "kind": "tool",
+          "name": "read_records",
+          "detail": "Read Account record, Ticket order, Invoice register, Payment ledger, CRM payment note, Release policy.",
+          "ok": true
+        },
+        {
+          "step": 3,
+          "kind": "model",
+          "name": "Claude response",
+          "detail": "Call 2: 2792 input tokens, 2071 output tokens; stop: tool_use.",
+          "ok": true
+        },
+        {
+          "step": 4,
+          "kind": "validation",
+          "name": "Policy and citation checks",
+          "detail": "Decision does not match the release policy. Reconcile every source before classifying the case. Provide a concise summary and action with the correct primary owner under the policy. Finding categories are incomplete or unsupported. Recheck the evidence against all policy conditions. Questions must identify an actual finding and a responsible team.",
+          "ok": false
+        },
+        {
+          "step": 5,
+          "kind": "model",
+          "name": "Claude response",
+          "detail": "Call 3: 4723 input tokens, 1559 output tokens; stop: tool_use.",
+          "ok": true
+        },
+        {
+          "step": 6,
+          "kind": "validation",
+          "name": "Policy and citation checks",
+          "detail": "Decision does not match the release policy. Reconcile every source before classifying the case. Provide a concise summary and action with the correct primary owner under the policy. Finding categories are incomplete or unsupported. Recheck the evidence against all policy conditions. Questions must identify an actual finding and a responsible team.",
+          "ok": false
+        },
+        {
+          "step": 7,
+          "kind": "model",
+          "name": "Claude response",
+          "detail": "Call 4: 6411 input tokens, 1321 output tokens; stop: tool_use.",
+          "ok": true
+        },
+        {
+          "step": 8,
+          "kind": "validation",
+          "name": "Policy and citation checks",
+          "detail": "Decision does not match the release policy. Reconcile every source before classifying the case. Provide a concise summary and action with the correct primary owner under the policy. Finding categories are incomplete or unsupported. Recheck the evidence against all policy conditions.",
+          "ok": false
+        }
+      ],
+      "usage": {
+        "inputTokens": 16079,
+        "outputTokens": 5008,
+        "modelCalls": 4,
+        "estimatedUsd": 0.041119
+      }
+    }
+  ],
+  "totals": {
+    "passed": 0,
+    "failed": 1,
+    "inputTokens": 16079,
+    "outputTokens": 5008,
+    "estimatedUsd": 0.041119
+  },
+  "updatedAt": "2026-11-15T21:10:34.330Z"
+}

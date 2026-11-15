@@ -44,15 +44,19 @@ export function validateAgentReport(value: unknown, input: OperationCase, readId
   const expected = assessCase(input);
   const errors: string[] = [];
   if (SOURCE_IDS.some(id => !readIds.has(id))) errors.push('Read all six source records in an earlier tool turn before submitting.');
-  if (value.decision !== expected.decision) errors.push('Decision does not match the release policy. Reconcile every source before classifying the case.');
-  if (!text(value.summary, 1200) || !text(value.recommendation, 1000) || value.owner !== expected.owner) errors.push('Provide a concise summary and action with the correct primary owner under the policy.');
+  if (value.decision !== expected.decision) errors.push(`Decision must be ${expected.decision} under the supplied policy. Recheck the underlying findings and revise all affected prose.`);
+  if (!text(value.summary, 1200) || !text(value.recommendation, 1000)) errors.push('Provide a concise summary and action within the text limits.');
+  if (value.owner !== expected.owner) errors.push(`The first blocking category assigns the primary owner to ${expected.owner}; do not copy the account owner.`);
   if (!object(value.drafts) || !text(value.drafts.internal, 4000) || !text(value.drafts.client, 3000)) errors.push('Provide both bounded, nonempty message drafts.');
   const findings = value.findings;
   if (!Array.isArray(findings) || findings.length > FINDING_IDS.length) errors.push('Findings must be a bounded array.');
   else {
     const ids = findings.map(f => object(f) ? f.id : undefined);
     const expectedIds = expected.findings.map(f => f.id);
-    if (new Set(ids).size !== ids.length || ids.length !== expectedIds.length || ids.some(id => !expectedIds.includes(id as string))) errors.push('Finding categories are incomplete or unsupported. Recheck the evidence against all policy conditions.');
+    const missing = expectedIds.filter(id => !ids.includes(id));
+    const unsupported = ids.filter(id => !expectedIds.includes(id as string)).map(id => FINDING_IDS.includes(id as typeof FINDING_IDS[number]) ? id : 'unknown category');
+    if (new Set(ids).size !== ids.length) errors.push('Remove duplicate finding categories.');
+    if (missing.length || unsupported.length) errors.push(`Reconcile finding categories with the records: missing [${missing.join(', ')}]; unsupported [${unsupported.join(', ')}]. Re-read relevant records and revise the explanation, questions, action, and drafts; do not only change category labels.`);
     for (const f of findings) {
       if (!object(f) || !text(f.explanation, 800) || !Array.isArray(f.sourceIds) || !f.sourceIds.length || f.sourceIds.length > 6 || f.sourceIds.some(id => typeof id !== 'string' || !readIds.has(id))) { errors.push('Each finding needs a concise explanation and source IDs that were read.'); continue; }
       const matching = expected.findings.find(e => e.id === f.id);
