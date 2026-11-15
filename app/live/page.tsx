@@ -315,7 +315,7 @@ export default function LiveDashboard() {
         <header className={styles.topbar}>
           <Link href="/" className={styles.brand} aria-label="Lighthouse home"><LighthouseBrandMark size={35} /><span>LIGHTHOUSE<small>ACCOUNT INTELLIGENCE</small></span></Link>
           <nav className={styles.nav} aria-label="Dashboard navigation">
-            <Link href="/live" aria-current="page" className={styles.navDashboard}>Dashboard</Link><Link href="/" className={styles.navAccounts}>Accounts</Link><Link href="/portfolio" className={styles.navPortfolio}>Portfolio</Link>
+            <Link href="/live" aria-current="page" className={styles.navDashboard}>Dashboard</Link><Link href="/operations" className={styles.navDashboard}>Operations</Link><Link href="/" className={styles.navAccounts}>Accounts</Link><Link href="/portfolio" className={styles.navPortfolio}>Portfolio</Link>
           </nav>
           <div className={styles.topRight}>
             <div className={styles.topStatus}><span className={styles.liveDot} /> SCRIPTED DEMO <span className={styles.dividerText}>/</span> 7 AGENTS + HUMAN</div>
@@ -328,7 +328,7 @@ export default function LiveDashboard() {
         <section className={styles.instrumentHeader} aria-label="Dashboard introduction">
           <div>
             <h1>See the signals. <em>Before they become surprises.</em></h1>
-            <p>Seven simulated specialists. One human decision. Fictional accounts, scripted handoffs.</p>
+            <p>Seven simulated specialists. One human decision. Fictional accounts, scripted handoffs. <Link href="/operations" style={{ color: 'var(--beam-300)', textDecoration: 'underline', textUnderlineOffset: 3 }}>Try the interactive operations workspace →</Link></p>
           </div>
           <span className={styles.instrumentDisclosure}>SAMPLE DATA · SCRIPTED DEMO</span>
         </section>
