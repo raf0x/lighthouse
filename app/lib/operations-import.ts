@@ -1,10 +1,14 @@
-import { canonicalImportedCase, MAX_IMPORTED_CASES, normalizedTimestamp, operationCases, type AuditEntry, type CaseWorkspace, type Currency, type OperationCase, type PaymentState } from './operations';
+import { assessCase, canonicalImportedCase, currentReview, EVIDENCE_LABELS, evidenceAudit, evidenceChanges, evidenceValues, inputSignature, MAX_IMPORTED_CASES, normalizedTimestamp, operationCases, sameCaseIdentity, type AuditEntry, type CaseWorkspace, type Currency, type OperationCase, type PaymentState } from './operations';
 
 export const IMPORT_MAX_BYTES = 65_536;
 export const CSV_COLUMNS = ['partner', 'approved_entity', 'order_id', 'order_amount', 'order_currency', 'tickets', 'scenario_clock', 'allocation_deadline', 'invoice_id', 'invoice_entity', 'invoice_amount', 'invoice_currency', 'other_active_invoice_id', 'payment_status', 'payment_amount', 'payment_currency', 'payment_reference', 'crm_payment_status'] as const;
 const templateValues = ['Seabrook Events', 'Seabrook Events US, Inc.', 'ORD-5001', '12500.00', 'USD', '50', '2026-11-15T09:00:00-05:00', '2026-11-16T05:00:00-05:00', 'INV-9001', 'Seabrook Events Canada, Ltd.', '12500.00', 'USD', '', 'pending', '12500.00', 'USD', 'PAY-7001', 'pending'];
 const csvCell = (s: string) => /[",\r\n]/.test(s) ? `"${s.replaceAll('"', '""')}"` : s;
 export const CSV_TEMPLATE = CSV_COLUMNS.join(',') + '\r\n' + templateValues.map(csvCell).join(',') + '\r\n';
+export function caseToCsv(input: OperationCase) {
+  const values = evidenceValues(input);
+  return CSV_COLUMNS.join(',') + '\r\n' + CSV_COLUMNS.map(column => csvCell(values[column])).join(',') + '\r\n';
+}
 export type CaseImportResult = { input: OperationCase; errors?: never } | { input?: never; errors: string[] };
 
 /** Bounded comma-separated CSV; quoted commas, escaped quotes, BOM and CRLF supported. */
@@ -83,4 +87,39 @@ export function addImportedCase(workspaces: Record<string, CaseWorkspace>, input
   if (!canonical) throw new Error('The imported records are invalid.');
   const problem = importProblem(canonical, workspaces); if (problem) throw new Error(problem);
   return { ...workspaces, [canonical.id]: { input: canonical, importedOriginal: structuredClone(canonical), analyzed: false, history: [entry] } };
+}
+
+const fixedColumns = ['partner', 'order_id', 'order_amount', 'order_currency', 'tickets'] as const;
+export function evidenceUpdateProblem(current: OperationCase, candidate: OperationCase): string | null {
+  if (!canonicalImportedCase(current) || !canonicalImportedCase(candidate) || current.id !== candidate.id) return 'Only an existing imported case can receive this update.';
+  const a = evidenceValues(current), b = evidenceValues(candidate);
+  const changed = fixedColumns.filter(key => a[key] !== b[key]);
+  if (changed.length) return `This file changes the order identity: ${changed.map(key => EVIDENCE_LABELS[key]).join(', ')}. Keep these fields unchanged when updating this case.`;
+  if (Date.parse(candidate.asOf) < Date.parse(current.asOf)) return 'The scenario clock is earlier than the current evidence. Use the same or a later time; restore the original records separately if needed.';
+  return null;
+}
+
+/** One reviewed replacement, with no network calls. Recheck the exact compared state at acceptance. */
+export function acceptEvidenceUpdate(workspaces: Record<string, CaseWorkspace>, caseId: string, candidate: OperationCase, expectedSignature: string, entry: AuditEntry): Record<string, CaseWorkspace> {
+  const current = workspaces[caseId];
+  if (!current?.importedOriginal) throw new Error('This imported case is no longer available.');
+  if (inputSignature(current.input) !== expectedSignature) throw new Error('The case changed while this file was being reviewed. Close this window and compare the file again.');
+  const next = canonicalImportedCase(candidate);
+  if (!next) throw new Error('The proposed evidence is invalid.');
+  const problem = evidenceUpdateProblem(current.input, next); if (problem) throw new Error(problem);
+  if (!sameCaseIdentity(current.importedOriginal, next)) throw new Error('The original order identity must remain unchanged.');
+  const changes = evidenceChanges(current.input, next);
+  if (!changes.length) throw new Error('No evidence changes found. The current assessment and approval were kept.');
+  const result = assessCase(next);
+  const review = current.drafts && currentReview(current.input, current.drafts, current.review) ? current.review : undefined;
+  const event: AuditEntry = { ...entry, event: 'CSV evidence accepted', detail: `${changes.length} field changes accepted from ${next.imported!.fileName}, row 2. Policy checks rerun; fresh local drafts prepared; previous approval cleared.`, evidence: evidenceAudit(current.input, next, 'csv', review) };
+  return { ...workspaces, [caseId]: { ...current, input: next, analyzed: true, drafts: result.drafts, draftOrigin: undefined, review: undefined, history: [...current.history, event].slice(-100) } };
+}
+
+/** Only the fictional downloaded example has a one-click follow-up. Never infer real payment clearance. */
+export function exampleFollowUp(original: OperationCase): string | null {
+  const values = evidenceValues(original);
+  const example = parseCaseCsv(CSV_TEMPLATE, { id: original.id, fileName: 'lighthouse-case-template.csv', at: original.imported?.at ?? '' }).input;
+  if (!example || JSON.stringify(values) !== JSON.stringify(evidenceValues(example))) return null;
+  return caseToCsv({ ...original, asOf: new Date(Date.parse(original.asOf) + 2 * 3_600_000).toISOString(), invoice: { ...original.invoice, entity: original.approvedEntity }, payment: { ...original.payment, status: 'cleared' }, crmPaymentStatus: 'cleared' });
 }

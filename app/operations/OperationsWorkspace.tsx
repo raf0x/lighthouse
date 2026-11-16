@@ -2,16 +2,17 @@
 
 import { useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
-import { ArrowRight, ArrowUpRight, Check, CheckCheck, ChevronRight, CircleAlert, Clock3, Download, FileText, FolderOpen, ListChecks, PencilLine, Play, RotateCcw, Search, ShieldCheck, X } from 'lucide-react';
+import { ArrowRight, ArrowUpRight, Check, CheckCheck, ChevronRight, CircleAlert, Clock3, Download, FileText, FolderOpen, ListChecks, PencilLine, Play, RotateCcw, Search, ShieldCheck, Upload, X } from 'lucide-react';
 import Header from '../components/Header';
 import AgentInvestigation from './AgentInvestigation';
 import CaseImport from './CaseImport';
-import { addImportedCase } from '../lib/operations-import';
+import EvidenceUpdate, { EvidenceHistory } from './EvidenceUpdate';
+import { acceptEvidenceUpdate, addImportedCase } from '../lib/operations-import';
 import { AGENT_VERSION } from '../lib/operations-agent';
 import type { AgentRun } from '../lib/operations-agent';
 import { accounts } from '../lib/lighthouse';
 import {
-  ENGINE_VERSION, operationCases, assessCase, currentReview, decisionLabels,
+  ENGINE_VERSION, MAX_WORKSPACE_CHARACTERS, operationCases, assessCase, currentReview, decisionLabels, evidenceAudit,
   evidenceFor, exportCase, inputSignature, money, recordReview, restoreWorkspaces, scenarioDate, validCase,
   type AuditEntry, type CaseWorkspace, type Currency, type Drafts, type OperationCase, type PaymentState, type ReviewStatus,
 } from '../lib/operations';
@@ -89,6 +90,7 @@ export default function OperationsWorkspace() {
   const [reviewError, setReviewError] = useState('');
   const [resetting, setResetting] = useState(false);
   const [importing, setImporting] = useState(false);
+  const [updatingEvidence, setUpdatingEvidence] = useState(false);
   const [removing, setRemoving] = useState(false);
   const importedCases = Object.values(workspaces).filter(w => w.importedOriginal).map(w => w.importedOriginal!);
   const allCases = [...importedCases, ...operationCases];
@@ -116,18 +118,18 @@ export default function OperationsWorkspace() {
     const navigate = () => {
       const next = new URLSearchParams(window.location.search).get('case');
       setSelectedId(next || operationCases[0].id);
-      setTab('Assessment'); setReviewMode(null); setEditing(false); setResetting(false); setRemoving(false); setImporting(false); setNotice(''); setReviewError('');
+      setTab('Assessment'); setReviewMode(null); setEditing(false); setUpdatingEvidence(false); setResetting(false); setRemoving(false); setImporting(false); setNotice(''); setReviewError('');
     };
     window.addEventListener('popstate', navigate);
     return () => window.removeEventListener('popstate', navigate);
   }, []);
   useEffect(() => {
     if (!loaded) return;
-    try { localStorage.setItem(STORAGE_KEY, JSON.stringify({ version: ENGINE_VERSION, cases: workspaces })); setStorageError(false); } catch { setStorageError(true); }
+    try { const data = JSON.stringify({ version: ENGINE_VERSION, cases: workspaces }); if (data.length > MAX_WORKSPACE_CHARACTERS) throw new Error('Workspace size limit'); localStorage.setItem(STORAGE_KEY, data); setStorageError(false); } catch { setStorageError(true); }
   }, [workspaces, loaded]);
 
   function selectCase(id: string) {
-    setSelectedId(id); setTab('Assessment'); setReviewMode(null); setReviewNote(''); setReviewError(''); setNotice(''); setResetting(false); setRemoving(false); setEditing(false);
+    setSelectedId(id); setTab('Assessment'); setReviewMode(null); setReviewNote(''); setReviewError(''); setNotice(''); setResetting(false); setRemoving(false); setEditing(false); setUpdatingEvidence(false);
     const url = new URL(window.location.href); url.searchParams.set('case', id); window.history.pushState({}, '', url);
   }
   function update(next: Partial<CaseWorkspace>, entry?: AuditEntry) {
@@ -148,7 +150,9 @@ export default function OperationsWorkspace() {
   }
   function openSource(id: string) { setSourceId(id); setTab('Source records'); }
   function saveEvidence(next: OperationCase) {
-    update({ input: next, analyzed: false, drafts: undefined, draftOrigin: undefined, review: undefined }, activity('Evidence updated', 'Previous assessment and review cleared. New analysis required.'));
+    const entry = activity('Evidence updated', 'Previous assessment and review cleared. New analysis required.');
+    if (input.imported) entry.evidence = evidenceAudit(input, next, 'manual', review);
+    update({ input: next, analyzed: false, drafts: undefined, draftOrigin: undefined, review: undefined }, entry);
     setEditing(false); setReviewMode(null); setReviewError(''); setTab('Assessment'); setNotice('Evidence saved. Run the checks to assess the updated case.');
   }
   function editDraft(kind: keyof Drafts, text: string) {
@@ -175,7 +179,9 @@ export default function OperationsWorkspace() {
     setNotice('Review packet downloaded with the source records and current review status.');
   }
   function reset() {
-    update({ input: base, analyzed: false, drafts: undefined, draftOrigin: undefined, review: undefined }, activity(base.imported ? 'Imported records restored' : 'Sample restored', 'Original evidence restored. Previous review cleared.'));
+    const entry = activity(base.imported ? 'Imported records restored' : 'Sample restored', 'Original evidence restored. Previous review cleared.');
+    if (input.imported) entry.evidence = evidenceAudit(input, base, 'restore', review);
+    update({ input: base, analyzed: false, drafts: undefined, draftOrigin: undefined, review: undefined }, entry);
     setResetting(false); setReviewMode(null); setTab('Assessment'); setNotice(base.imported ? 'Original imported records restored.' : 'Original sample restored.');
   }
   function acceptImport(next: OperationCase) {
@@ -184,6 +190,14 @@ export default function OperationsWorkspace() {
       setImporting(false); setQuery(''); setFilter('all'); selectCase(next.id); setTab('Source records'); setSourceId('account');
       setNotice('Case added. Inspect the records, then analyze this case. No AI call was made.');
     } catch (err) { setNotice(err instanceof Error ? err.message : 'The case could not be added.'); }
+  }
+  function acceptFollowUp(next: OperationCase, expectedSignature: string): string | null {
+    try {
+      setWorkspaces(acceptEvidenceUpdate(workspaces, input.id, next, expectedSignature, activity('CSV evidence accepted', '')));
+      setUpdatingEvidence(false); setReviewMode(null); setReviewError(''); setReviewNote(''); setTab('Assessment');
+      setNotice('Evidence updated and policy checks rerun. Previous approval cleared; fresh local drafts are ready. View Activity for the comparison.');
+      return null;
+    } catch (err) { return err instanceof Error ? err.message : 'This update could not be accepted. The case has not changed.'; }
   }
   function removeImported() {
     if (!base.imported) return;
@@ -219,7 +233,7 @@ export default function OperationsWorkspace() {
           <section className={styles.caseWorkspace} aria-label={`${input.account} case workspace`}>
             <div className={styles.caseHeading}>
               <div><div className={styles.breadcrumb}>{input.imported ? 'Imported case' : input.id} <span>/</span> {input.orderId}</div><h2>{input.account}</h2><p>{input.description}</p></div>
-              <button className={styles.secondary} onClick={() => setEditing(true)} disabled={!loaded}><PencilLine size={15} /> Edit evidence</button>
+              <div className={styles.caseActions}>{input.imported && <button className={styles.primary} onClick={() => setUpdatingEvidence(true)} disabled={!loaded}><Upload size={15} /> Update evidence</button>}<button className={styles.secondary} onClick={() => setEditing(true)} disabled={!loaded}><PencilLine size={15} /> Edit evidence</button></div>
             </div>
             <dl className={styles.facts}><div><dt>Order value</dt><dd>{money(input.orderAmountCents, input.orderCurrency)}</dd></div><div><dt>Tickets</dt><dd>{input.tickets}</dd></div><div><dt>Allocation deadline</dt><dd>{scenarioDate(input.deadline)}</dd></div><div><dt>Owner</dt><dd>{input.owner}</dd></div></dl>
             <div className={styles.flow} aria-label="Case workflow">{['Source records', 'Policy checks', 'Proposed action', 'Harbor · human review'].map((step, i) => <div key={step} data-complete={i === 0 || Boolean(assessment && (i < 3 || review))}><span>{(i === 0 || Boolean(assessment && (i < 3 || review))) ? <Check size={12} /> : i + 1}</span><strong>{step}</strong>{i < 3 && <ChevronRight size={13} className={styles.flowArrow} />}</div>)}</div>
@@ -244,7 +258,7 @@ export default function OperationsWorkspace() {
                 {tab === 'Investigator' && loaded && <AgentInvestigation key={inputSignature(input)} input={input} onSource={openSource} onApply={applyAgentDrafts} />}
                 {tab === 'Source records' && <div><div className={styles.sectionTitle}><h3>Inspect the source</h3><span>{input.imported ? 'CSV fields + fixed demo policy' : 'All records are synthetic'}</span></div><div className={styles.sourceTabs} role="group" aria-label="Source document">{documents.map(doc => <button key={doc.id} aria-pressed={document.id === doc.id} onClick={() => setSourceId(doc.id)}><FileText size={14} />{doc.title}</button>)}</div><article className={styles.document}><div className={styles.documentHeading}><FileText size={23} /><div><span className={styles.eyebrow}>{document.source}</span><h3>{document.title}</h3></div></div><dl>{document.fields.map(field => <div key={field.label}><dt>{field.label}</dt><dd>{field.value}</dd></div>)}</dl><footer>Source reference: [{document.id}] · {input.id}</footer></article><p className={styles.small}>Editing evidence changes the next assessment and clears its approval. The policy and original order totals remain fixed.</p></div>}
                 {tab === 'Message drafts' && (drafts ? <div><div className={styles.sectionTitle}><h3>Prepare the conversation</h3><span>{saved?.draftOrigin ? 'AI-assisted drafts · review required' : 'Editable templates · nothing sent'}</span></div><p className={styles.muted}>Review and edit both drafts. Changing either clears any previous approval.{saved?.draftOrigin && ` Origin: ${saved.draftOrigin.model}. AI wording has not been fact-checked sentence by sentence.`}</p>{([['internal', 'Internal escalation'], ['client', 'Client update']] as const).map(([key, label]) => <label className={styles.draft} key={key}><span><FileText size={16} />{label}</span><textarea aria-label={label} value={drafts[key]} onChange={e => editDraft(key, e.target.value)} maxLength={20000} spellCheck /></label>)}</div> : <div className={styles.emptyPanel}><FileText size={28} /><h3>Drafts follow the evidence.</h3><p>Analyze the case to prepare the internal and client message templates.</p><button className={styles.primary} onClick={analyze} disabled={!loaded}>Analyze this case <ArrowRight size={15} /></button></div>)}
-                {tab === 'Activity' && <div><div className={styles.sectionTitle}><h3>Local activity</h3><span>{saved?.history.length ?? 0} events</span></div><p className={styles.muted}>Actual actions in this browser, separate from the fixed scenario clock. This is a local demo record, not a shared or tamper-proof audit log.</p>{saved?.history.length ? <ol className={styles.history}>{[...saved.history].reverse().map(event => <li key={event.id}><span /><div><strong>{event.event}</strong><p>{event.detail}</p><time dateTime={event.at}>{dateTime(event.at)} ET</time></div></li>)}</ol> : <div className={styles.emptyPanel}><Clock3 size={26} /><h3>No actions recorded yet.</h3><p>Run an assessment to start this case’s activity history.</p></div>}</div>}
+                {tab === 'Activity' && <div><div className={styles.sectionTitle}><h3>Local activity</h3><span>{saved?.history.length ?? 0} events</span></div><p className={styles.muted}>The latest 100 actions in this browser, separate from the scenario clock. Expand evidence updates to see what changed. This local record is not a shared or tamper-proof audit log.</p>{saved?.history.length ? <ol className={styles.history}>{[...saved.history].reverse().map(event => <li key={event.id}><span /><div><strong>{event.event}</strong><p>{event.detail}</p>{event.evidence && <EvidenceHistory audit={event.evidence} />}<time dateTime={event.at}>{dateTime(event.at)} ET</time></div></li>)}</ol> : <div className={styles.emptyPanel}><Clock3 size={26} /><h3>No actions recorded yet.</h3><p>Run an assessment to start this case’s activity history.</p></div>}</div>}
               </div>
               <aside className={styles.reviewRail} aria-label="Harbor human review">
                 <div className={styles.reviewHeading}><div className={styles.harborIcon}><ShieldCheck size={22} /></div><div><span className={styles.eyebrow}>HARBOR</span><h3>Human review</h3></div><span className={styles.humanTag}>You</span></div>
@@ -266,6 +280,7 @@ export default function OperationsWorkspace() {
       </main>
     </div>
     {importing && <CaseImport workspaces={workspaces} onAdd={acceptImport} onClose={() => setImporting(false)} />}
+    {updatingEvidence && input.imported && <EvidenceUpdate key={input.id} input={input} original={base} onAccept={acceptFollowUp} onClose={() => setUpdatingEvidence(false)} />}
     {editing && <EvidenceEditor key={input.id} input={input} onClose={() => setEditing(false)} onSave={saveEvidence} />}
   </div>;
 }

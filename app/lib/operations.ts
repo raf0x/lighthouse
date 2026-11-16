@@ -24,12 +24,51 @@ export type Assessment = {
   summary: string; findings: Finding[]; checks: Check[]; drafts: Drafts;
   recommendation: string; owner: string; deadlineHours: number;
 };
-export type AuditEntry = { id: string; at: string; event: string; detail: string };
+export type EvidenceChange = { field: string; label: string; before: string; after: string };
+export type EvidenceAudit = {
+  source: 'csv' | 'manual' | 'restore'; fileName?: string; changes: EvidenceChange[];
+  before: { decision: Decision; findings: string[] }; after: { decision: Decision; findings: string[] };
+  previousReview?: { status: ReviewStatus; reviewer: string; at: string };
+};
+export type AuditEntry = { id: string; at: string; event: string; detail: string; evidence?: EvidenceAudit };
 export type CaseReview = { status: ReviewStatus; reviewer: string; note: string; at: string; inputSignature: string; draftSignature: string };
 export type DraftOrigin = { model: string; runId: string; completedAt: string };
 export type CaseWorkspace = { input: OperationCase; importedOriginal?: OperationCase; analyzed: boolean; drafts?: Drafts; draftOrigin?: DraftOrigin; review?: CaseReview; history: AuditEntry[] };
 export const MAX_IMPORTED_CASES = 20;
+export const MAX_WORKSPACE_CHARACTERS = 2_000_000;
 export const decisionLabels: Record<Decision, string> = { blocked: 'Action needed', needs_information: 'Evidence needed', ready_for_review: 'Ready for review' };
+export const EVIDENCE_LABELS = {
+  partner: 'Partner', approved_entity: 'Approved billing entity', order_id: 'Order ID', order_amount: 'Order amount', order_currency: 'Order currency', tickets: 'Ticket quantity',
+  scenario_clock: 'Scenario clock (ISO)', allocation_deadline: 'Allocation deadline (ISO)', invoice_id: 'Invoice ID', invoice_entity: 'Entity on invoice', invoice_amount: 'Invoice amount', invoice_currency: 'Invoice currency',
+  other_active_invoice_id: 'Other active invoice ID', payment_status: 'Finance ledger status', payment_amount: 'Recorded payment amount', payment_currency: 'Payment currency', payment_reference: 'Payment reference', crm_payment_status: 'CRM payment status',
+} as const;
+export function evidenceValues(c: OperationCase): Record<keyof typeof EVIDENCE_LABELS, string> {
+  return { partner: c.account, approved_entity: c.approvedEntity, order_id: c.orderId, order_amount: (c.orderAmountCents / 100).toFixed(2), order_currency: c.orderCurrency, tickets: String(c.tickets),
+    scenario_clock: c.asOf, allocation_deadline: c.deadline, invoice_id: c.invoice.id, invoice_entity: c.invoice.entity, invoice_amount: (c.invoice.amountCents / 100).toFixed(2), invoice_currency: c.invoice.currency,
+    other_active_invoice_id: c.duplicateInvoiceId, payment_status: c.payment.status, payment_amount: (c.payment.amountCents / 100).toFixed(2), payment_currency: c.payment.currency, payment_reference: c.payment.reference, crm_payment_status: c.crmPaymentStatus };
+}
+export function evidenceChanges(before: OperationCase, after: OperationCase): EvidenceChange[] {
+  const a = evidenceValues(before), b = evidenceValues(after);
+  return (Object.keys(EVIDENCE_LABELS) as (keyof typeof EVIDENCE_LABELS)[]).filter(field => a[field] !== b[field]).map(field => ({ field, label: EVIDENCE_LABELS[field], before: a[field], after: b[field] }));
+}
+export function evidenceAudit(before: OperationCase, after: OperationCase, source: EvidenceAudit['source'], review?: CaseReview): EvidenceAudit {
+  const outcome = (c: OperationCase) => { const result = assessCase(c); return { decision: result.decision, findings: result.findings.map(f => f.title) }; };
+  return { source, ...(source === 'csv' ? { fileName: after.imported?.fileName } : {}), changes: evidenceChanges(before, after), before: outcome(before), after: outcome(after),
+    ...(review && review.inputSignature === inputSignature(before) ? { previousReview: { status: review.status, reviewer: review.reviewer, at: review.at } } : {}) };
+}
+function validEvidenceAudit(value: unknown): value is EvidenceAudit {
+  const e = value as EvidenceAudit;
+  const text = (v: unknown, max: number): v is string => typeof v === 'string' && v.length <= max && !/[\u0000-\u001f\u007f]/.test(v);
+  const outcome = (v: EvidenceAudit['before']) => v && Object.hasOwn(decisionLabels, v.decision) && Array.isArray(v.findings) && v.findings.length <= 20 && v.findings.every(f => text(f, 150));
+  return Boolean(e && ['csv', 'manual', 'restore'].includes(e.source) && (e.source !== 'csv' || (text(e.fileName, 200) && e.fileName.toLowerCase().endsWith('.csv')))
+    && Array.isArray(e.changes) && e.changes.length <= 18 && new Set(e.changes.map(c => c?.field)).size === e.changes.length
+    && e.changes.every(c => c && Object.hasOwn(EVIDENCE_LABELS, c.field) && c.label === EVIDENCE_LABELS[c.field as keyof typeof EVIDENCE_LABELS] && text(c.before, 500) && text(c.after, 500))
+    && outcome(e.before) && outcome(e.after) && (!e.previousReview || (['approved', 'changes_requested'].includes(e.previousReview.status) && text(e.previousReview.reviewer, 100) && e.previousReview.reviewer.trim() && normalizedTimestamp(e.previousReview.at))));
+}
+function exportActivity(e: AuditEntry) {
+  const a = e.evidence;
+  return `- ${e.at} · ${e.event}: ${e.detail}` + (a ? `\n  Policy: ${decisionLabels[a.before.decision]} → ${decisionLabels[a.after.decision]}\n  Before findings: ${a.before.findings.join('; ') || 'None'}\n  After findings: ${a.after.findings.join('; ') || 'None'}${a.previousReview ? `\n  Previous review cleared: ${a.previousReview.status} by ${a.previousReview.reviewer} at ${a.previousReview.at}` : ''}\n${a.changes.map(change => `  ${change.label}: ${JSON.stringify(change.before)} → ${JSON.stringify(change.after)}`).join('\n')}` : '');
+}
 
 export function money(cents: number, currency: Currency) {
   // Evidence strings are a wire contract: locale display patterns vary by browser.
@@ -117,7 +156,8 @@ export function canonicalImportedCase(value: unknown): OperationCase | null {
     imported: { format: 'case-csv-v1', fileName: c.imported.fileName, at: normalizedTimestamp(c.imported.at)!, row: 2 } };
 }
 export function sameCaseIdentity(a: OperationCase, b: OperationCase) {
-  const identity = (c: OperationCase) => JSON.stringify([c.id, c.account, c.asOf, c.orderId, c.orderAmountCents, c.orderCurrency, c.tickets, c.invoice.id, c.imported]);
+  // Follow-up files may advance the scenario clock or replace an invoice. The order stays fixed.
+  const identity = (c: OperationCase) => JSON.stringify([c.id, c.account, c.orderId, c.orderAmountCents, c.orderCurrency, c.tickets]);
   return identity(a) === identity(b);
 }
 export function validCase(value: unknown): value is OperationCase {
@@ -231,7 +271,7 @@ export function currentReview(c: OperationCase, drafts: Drafts, review?: CaseRev
 }
 
 export function restoreWorkspaces(raw: string | null): Record<string, CaseWorkspace> {
-  if (!raw || raw.length > 2_000_000) return {};
+  if (!raw || raw.length > MAX_WORKSPACE_CHARACTERS) return {};
   try {
     const parsed = JSON.parse(raw);
     if (parsed.version !== ENGINE_VERSION || !parsed.cases || typeof parsed.cases !== 'object') return {};
@@ -248,7 +288,7 @@ export function restoreWorkspaces(raw: string | null): Record<string, CaseWorksp
       const drafts = analyzed && saved.drafts && ['internal', 'client'].every(key => typeof saved.drafts[key] === 'string' && saved.drafts[key].length <= 20000) ? { internal: saved.drafts.internal, client: saved.drafts.client } : undefined;
       const review = saved.review;
       const validReview = analyzed && drafts && review && ['approved', 'changes_requested'].includes(review.status) && typeof review.reviewer === 'string' && review.reviewer.trim() && review.reviewer.length <= 100 && typeof review.note === 'string' && review.note.length <= 2000 && typeof review.at === 'string' && Number.isFinite(Date.parse(review.at)) && currentReview(input, drafts, review);
-      const history = Array.isArray(saved.history) ? saved.history.filter((e: AuditEntry) => e && typeof e.id === 'string' && typeof e.at === 'string' && Number.isFinite(Date.parse(e.at)) && typeof e.event === 'string' && e.event.length <= 100 && typeof e.detail === 'string' && e.detail.length <= 3000).slice(-100) : [];
+      const history = Array.isArray(saved.history) ? saved.history.filter((e: AuditEntry) => e && typeof e.id === 'string' && e.id.length <= 100 && typeof e.at === 'string' && Number.isFinite(Date.parse(e.at)) && typeof e.event === 'string' && e.event.length <= 100 && typeof e.detail === 'string' && e.detail.length <= 3000).slice(-100).map((e: AuditEntry) => ({ id: e.id, at: e.at, event: e.event, detail: e.detail, ...(validEvidenceAudit(e.evidence) ? { evidence: e.evidence } : {}) })) : [];
       const origin = saved.draftOrigin;
       const draftOrigin = drafts && origin && typeof origin.model === 'string' && origin.model.length <= 100 && typeof origin.runId === 'string' && origin.runId.length <= 100 && typeof origin.completedAt === 'string' && Number.isFinite(Date.parse(origin.completedAt)) ? { model: origin.model, runId: origin.runId, completedAt: origin.completedAt } : undefined;
       result[base.id] = { input, ...(base.imported ? { importedOriginal: base } : {}), analyzed, drafts, draftOrigin, review: validReview ? { ...review } : undefined, history };
@@ -259,5 +299,5 @@ export function restoreWorkspaces(raw: string | null): Record<string, CaseWorksp
 
 export function exportCase(c: OperationCase, assessment: Assessment, drafts: Drafts, review: CaseReview | undefined, history: AuditEntry[], draftOrigin?: DraftOrigin) {
   const reviewed = currentReview(c, drafts, review) ? review : undefined;
-  return `# Lighthouse · ${c.id}\n\n${c.imported ? `Imported CSV: ${c.imported.fileName} · row 2 · imported ${c.imported.at}\nUser-supplied records; not verified against external systems. Fixed Lighthouse demo policy.` : 'Synthetic scenario'} · rules-based assessment · nothing sent or released\n${draftOrigin ? `AI-assisted drafts (possibly edited): ${draftOrigin.model}\nRun: ${draftOrigin.runId} · ${draftOrigin.completedAt}\nHuman review of narrative remains required.` : 'Current drafts originate from local templates; no AI model calls were needed to generate them.'}\n\n## Case\n${c.account} · ${c.orderId}\nScenario time: ${scenarioDate(c.asOf)}\nEngine: ${ENGINE_VERSION}\n\n## Assessment\n${assessment.headline}\n${assessment.summary}\n\n${assessment.findings.map(f => `- ${f.title}: ${f.detail}\n  Sources: ${f.sources.join(', ')}\n  Next step (${f.owner}): ${f.action}`).join('\n')}\n\n## Source records\n${evidenceFor(c).map(doc => `### ${doc.title} [${doc.id}]\nSource: ${doc.source}\n${doc.fields.map(f => `- ${f.label}: ${f.value}`).join('\n')}`).join('\n\n')}\n\n## Internal draft\n${drafts.internal}\n\n## Client draft\n${drafts.client}\n\n## Local review\n${reviewed ? `${reviewed.status} by ${reviewed.reviewer} at ${reviewed.at}\n${reviewed.note}\nThis records review of a plan only. No external action was executed.` : 'Pending human review.'}\n\n## Local activity\n${history.map(e => `- ${e.at} · ${e.event}: ${e.detail}`).join('\n')}\n`;
+  return `# Lighthouse · ${c.id}\n\n${c.imported ? `Imported CSV: ${c.imported.fileName} · row 2 · imported ${c.imported.at}\nUser-supplied records; not verified against external systems. Fixed Lighthouse demo policy.` : 'Synthetic scenario'} · rules-based assessment · nothing sent or released\n${draftOrigin ? `AI-assisted drafts (possibly edited): ${draftOrigin.model}\nRun: ${draftOrigin.runId} · ${draftOrigin.completedAt}\nHuman review of narrative remains required.` : 'Current drafts originate from local templates; no AI model calls were needed to generate them.'}\n\n## Case\n${c.account} · ${c.orderId}\nScenario time: ${scenarioDate(c.asOf)}\nEngine: ${ENGINE_VERSION}\n\n## Assessment\n${assessment.headline}\n${assessment.summary}\n\n${assessment.findings.map(f => `- ${f.title}: ${f.detail}\n  Sources: ${f.sources.join(', ')}\n  Next step (${f.owner}): ${f.action}`).join('\n')}\n\n## Source records\n${evidenceFor(c).map(doc => `### ${doc.title} [${doc.id}]\nSource: ${doc.source}\n${doc.fields.map(f => `- ${f.label}: ${f.value}`).join('\n')}`).join('\n\n')}\n\n## Internal draft\n${drafts.internal}\n\n## Client draft\n${drafts.client}\n\n## Local review\n${reviewed ? `${reviewed.status} by ${reviewed.reviewer} at ${reviewed.at}\n${reviewed.note}\nThis records review of a plan only. No external action was executed.` : 'Pending human review.'}\n\n## Local activity\n${history.map(exportActivity).join('\n')}\n`;
 }
