@@ -5,6 +5,7 @@ const path = require('node:path');
 const ts = require('typescript');
 require.extensions['.ts'] = (module, filename) => module._compile(ts.transpileModule(fs.readFileSync(filename,'utf8'),{compilerOptions:{module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2022}}).outputText,filename);
 const { operationCases } = require('../app/lib/operations.ts');
+const { AGENT_PROTOCOL_VERSION } = require('../app/lib/operations-agent.ts');
 const expected = {
   'OPS-101':['blocked',['entity_mismatch','payment_pending','deadline_near']],
   'OPS-102':['needs_information',['payment_missing']], 'OPS-103':['needs_information',['payment_conflict','payment_pending']],
@@ -38,7 +39,7 @@ async function main(config) {
   fs.mkdirSync(path.dirname(output),{recursive:true});
   for(const id of chosen){
     const input=operationCases.find(c=>c.id===id);const [decision,ids]=expected[id];
-    const response=await call(new URL('/api/operations/investigate',url),{method:'POST',headers:{Origin:url.origin,'Content-Type':'application/json'},body:JSON.stringify({case:input})});
+    const response=await call(new URL('/api/operations/investigate',url),{method:'POST',headers:{Origin:url.origin,'Content-Type':'application/json','X-Lighthouse-Agent-Protocol':AGENT_PROTOCOL_VERSION},body:JSON.stringify({case:input})});
     const data=await response.json();
     const matched=response.ok&&data.run?.report.decision===decision&&JSON.stringify(data.run.report.findings.map(f=>f.id).sort())===JSON.stringify([...ids].sort());
     const usage=data.run?.usage||data.usage;

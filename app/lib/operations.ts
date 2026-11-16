@@ -30,10 +30,22 @@ export type CaseWorkspace = { input: OperationCase; analyzed: boolean; drafts?: 
 export const decisionLabels: Record<Decision, string> = { blocked: 'Action needed', needs_information: 'Evidence needed', ready_for_review: 'Ready for review' };
 
 export function money(cents: number, currency: Currency) {
-  return new Intl.NumberFormat('en-US', { style: 'currency', currency, currencyDisplay: 'code', maximumFractionDigits: 2 }).format(cents / 100);
+  // Evidence strings are a wire contract: locale display patterns vary by browser.
+  const absolute = Math.abs(cents);
+  const whole = String(Math.trunc(absolute / 100)).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+  return `${cents < 0 ? '-' : ''}${currency} ${whole}.${String(absolute % 100).padStart(2, '0')}`;
 }
 export function scenarioDate(iso: string) {
-  return new Intl.DateTimeFormat('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit', timeZone: 'America/New_York', timeZoneName: 'short' }).format(new Date(iso));
+  const date = new Date(iso);
+  // Use Intl only for time-zone arithmetic, never its browser-specific punctuation,
+  // month/day-period strings, or time-zone labels in exact field citations.
+  const parts = new Intl.DateTimeFormat('en-US', { calendar: 'gregory', numberingSystem: 'latn', year: 'numeric', month: 'numeric', day: 'numeric', hour: 'numeric', minute: 'numeric', hourCycle: 'h23', timeZone: 'America/New_York' }).formatToParts(date);
+  const number = (type: Intl.DateTimeFormatPartTypes) => Number(parts.find(part => part.type === type)!.value);
+  const year = number('year'), month = number('month'), day = number('day'), hour = number('hour') % 24, minute = number('minute');
+  const offset = (Date.UTC(year, month - 1, day, hour, minute) - Math.floor(date.getTime() / 60000) * 60000) / 60000;
+  const zone = offset === -300 ? 'EST' : offset === -240 ? 'EDT' : 'ET';
+  const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+  return `${months[month - 1]} ${day}, ${hour % 12 || 12}:${String(minute).padStart(2, '0')} ${hour < 12 ? 'AM' : 'PM'} ${zone}`;
 }
 const hoursAfter = (hours: number) => new Date(Date.parse(SCENARIO_TIME) + hours * 3_600_000).toISOString();
 function sample(n: number, account: string, initials: string, scenario: string, description: string): OperationCase {

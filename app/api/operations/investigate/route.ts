@@ -1,6 +1,6 @@
 import Anthropic from '@anthropic-ai/sdk';
 import { NextResponse } from 'next/server';
-import { AGENT_LIMITS, agentAvailability, canonicalAgentCase } from '../../../lib/operations-agent';
+import { AGENT_LIMITS, AGENT_PROTOCOL_VERSION, AGENT_REFRESH_MESSAGE, agentAvailability, canonicalAgentCase } from '../../../lib/operations-agent';
 import { AgentRunError, runInvestigation } from '../../../lib/operations-agent-runner';
 
 export const runtime = 'nodejs';
@@ -13,6 +13,7 @@ export function GET() { return NextResponse.json(agentAvailability(process.env),
 export async function POST(request: Request) {
   if (!agentAvailability(process.env).enabled) return NextResponse.json({ error: 'Live investigation is not enabled in this environment.', code: 'disabled' }, { status: 403, headers });
   if (request.headers.get('origin') !== new URL(request.url).origin || !request.headers.get('content-type')?.startsWith('application/json')) return NextResponse.json({ error: 'Use this workspace to start an investigation.', code: 'invalid_origin' }, { status: 403, headers });
+  if (request.headers.get('x-lighthouse-agent-protocol') !== AGENT_PROTOCOL_VERSION) return NextResponse.json({ error: AGENT_REFRESH_MESSAGE, code: 'outdated_page' }, { status: 409, headers });
   if (busy) return NextResponse.json({ error: 'An investigation is already running on this worker. Try again after it finishes.', code: 'busy' }, { status: 429, headers });
   let raw = '';
   try {

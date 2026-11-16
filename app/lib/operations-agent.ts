@@ -1,6 +1,9 @@
 import { assessCase, evidenceFor, inputSignature, operationCases, validCase, type Decision, type Drafts, type OperationCase } from './operations';
 
 export const AGENT_VERSION = 'investigator-v4';
+// Bump when changing the browser/server contract incompatibly. Reject stale pages before spending.
+export const AGENT_PROTOCOL_VERSION = 'investigator-wire-v1';
+export const AGENT_REFRESH_MESSAGE = 'This page is out of date. Refresh it before starting an investigation. No model call was made.';
 export const REVIEW_NOTICE = 'Ticket release is not confirmed and requires human review.';
 export const AGENT_MODEL = 'claude-sonnet-4-6';
 export const AGENT_LIMITS = { modelCalls: 4, outputTokensPerCall: 2400, contextCharacters: 60000, timeoutMs: 90000, bodyBytes: 12000 } as const;
@@ -25,7 +28,7 @@ export type AgentRun = {
   validationAttempts: number; firstSubmissionPassed: boolean;
 };
 export type AgentFailure = { error: string; code: string; trace?: AgentTrace[]; usage?: AgentUsage };
-export type AgentAvailability = { enabled: boolean; reason: string; model: string; limits: typeof AGENT_LIMITS };
+export type AgentAvailability = { enabled: boolean; reason: string; model: string; protocolVersion: string; limits: typeof AGENT_LIMITS };
 
 const object = (v: unknown): v is Record<string, unknown> => Boolean(v && typeof v === 'object' && !Array.isArray(v));
 const text = (v: unknown, max: number) => typeof v === 'string' && v.trim().length > 0 && v.length <= max;
@@ -128,18 +131,30 @@ export function validateAgentReport(value: unknown, input: OperationCase, readId
 
 export function agentAvailability(env: Record<string, string | undefined>): AgentAvailability {
   const enabled = env.VERCEL_ENV !== 'production' && env.LIGHTHOUSE_AGENT_ENABLED === 'true' && Boolean(env.ANTHROPIC_API_KEY);
-  return { enabled, reason: enabled ? 'Live investigation is enabled in this review environment.' : env.VERCEL_ENV === 'production' ? 'Live investigation is available in the private review preview. Local policy checks remain available here.' : 'Live investigation is not enabled in this environment.', model: AGENT_MODEL, limits: AGENT_LIMITS };
+  return { enabled, reason: enabled ? 'Live investigation is enabled in this review environment.' : env.VERCEL_ENV === 'production' ? 'Live investigation is available in the private review preview. Local policy checks remain available here.' : 'Live investigation is not enabled in this environment.', model: AGENT_MODEL, protocolVersion: AGENT_PROTOCOL_VERSION, limits: AGENT_LIMITS };
 }
 export function estimateUsage(inputTokens: number, outputTokens: number, modelCalls: number): AgentUsage {
   // Standard uncached Sonnet 4.6 list prices, verified 2026-11-15. Not an invoice or account-wide cap.
   return { inputTokens, outputTokens, modelCalls, estimatedUsd: (inputTokens * 3 + outputTokens * 15) / 1_000_000 };
 }
-export function restoreAgentRun(value: unknown, input: OperationCase): AgentRun | null {
-  if (!object(value) || value.version !== AGENT_VERSION || value.caseId !== input.id || value.inputSignature !== inputSignature(input) || value.model !== AGENT_MODEL || !text(value.runId, 100) || !text(value.completedAt, 40) || !Number.isFinite(Date.parse(String(value.completedAt))) || typeof value.elapsedMs !== 'number' || value.elapsedMs < 0 || !object(value.usage)) return null;
+type AgentRunCheck = { run: AgentRun; failure?: never } | { run?: never; failure: AgentFailure };
+export function checkAgentRun(value: unknown, input: OperationCase): AgentRunCheck {
+  const fail = (code: string, error: string): AgentRunCheck => ({ failure: { code, error } });
+  if (!object(value)) return fail('invalid_response', 'The investigation response was incomplete. No drafts were applied.');
+  if (value.version !== AGENT_VERSION) return fail('outdated_page', 'This page and the investigation result use different versions. Refresh the page before trying again. The completed request may have incurred usage.');
+  if (value.caseId !== input.id || value.inputSignature !== inputSignature(input)) return fail('evidence_changed', 'The result belongs to different case evidence. No drafts were applied. Check the current records before investigating again.');
+  if (value.model !== AGENT_MODEL || !text(value.runId, 100) || !text(value.completedAt, 40) || !Number.isFinite(Date.parse(String(value.completedAt))) || typeof value.elapsedMs !== 'number' || value.elapsedMs < 0 || !object(value.usage)) return fail('invalid_response', 'The investigation response was incomplete. No drafts were applied.');
   const u = value.usage;
-  if (![u.inputTokens, u.outputTokens, u.modelCalls, value.validationAttempts].every(n => Number.isSafeInteger(n) && Number(n) >= 0) || Number(u.modelCalls) < 1 || Number(u.modelCalls) > AGENT_LIMITS.modelCalls || Number(u.outputTokens) > AGENT_LIMITS.modelCalls * AGENT_LIMITS.outputTokensPerCall || typeof value.firstSubmissionPassed !== 'boolean') return null;
-  if (!Array.isArray(value.trace) || value.trace.length > 40 || !value.trace.every(t => object(t) && Number.isInteger(t.step) && ['model','tool','validation'].includes(String(t.kind)) && text(t.name, 100) && text(t.detail, 2000) && typeof t.ok === 'boolean')) return null;
+  if (![u.inputTokens, u.outputTokens, u.modelCalls, value.validationAttempts].every(n => Number.isSafeInteger(n) && Number(n) >= 0) || Number(u.modelCalls) < 1 || Number(u.modelCalls) > AGENT_LIMITS.modelCalls || Number(u.outputTokens) > AGENT_LIMITS.modelCalls * AGENT_LIMITS.outputTokensPerCall || typeof value.firstSubmissionPassed !== 'boolean') return fail('invalid_response', 'The investigation usage record was invalid. No drafts were applied.');
+  if (!Array.isArray(value.trace) || value.trace.length > 40 || !value.trace.every(t => object(t) && Number.isInteger(t.step) && ['model','tool','validation'].includes(String(t.kind)) && text(t.name, 100) && text(t.detail, 2000) && typeof t.ok === 'boolean')) return fail('invalid_response', 'The investigation activity record was invalid. No drafts were applied.');
+  const usage = estimateUsage(Number(u.inputTokens), Number(u.outputTokens), Number(u.modelCalls));
   const checked = validateAgentReport(value.report, input, new Set(SOURCE_IDS));
-  if (!checked.report) return null;
-  return { ...(value as unknown as AgentRun), report: checked.report, usage: estimateUsage(Number(u.inputTokens), Number(u.outputTokens), Number(u.modelCalls)) };
+  if (!checked.report) {
+    const citations = checked.errors.some(error => /citation/i.test(error));
+    return { failure: { code: citations ? 'citation_mismatch' : 'report_rejected', error: citations ? 'Some quoted fields do not match this page’s records. No drafts were applied. Refresh the page before trying again.' : 'The result failed this page’s policy or wording checks. No drafts were applied.', usage, trace: value.trace as AgentTrace[] } };
+  }
+  return { run: { ...(value as unknown as AgentRun), report: checked.report, usage } };
+}
+export function restoreAgentRun(value: unknown, input: OperationCase): AgentRun | null {
+  return checkAgentRun(value, input).run ?? null;
 }

@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { ArrowRight, CheckCheck, CircleAlert, Download, FileText, LoaderCircle, Search, ShieldCheck, Square } from 'lucide-react';
 import { assessCase, decisionLabels, evidenceFor, type OperationCase } from '../lib/operations';
-import { AGENT_VERSION, restoreAgentRun, type AgentRun, type AgentFailure, type AgentAvailability } from '../lib/operations-agent';
+import { AGENT_VERSION, AGENT_PROTOCOL_VERSION, AGENT_REFRESH_MESSAGE, checkAgentRun, restoreAgentRun, type AgentRun, type AgentFailure, type AgentAvailability } from '../lib/operations-agent';
 import styles from './operations.module.css';
 
 export default function AgentInvestigation({ input, onSource, onApply }: { input: OperationCase; onSource: (id: string) => void; onApply: (run: AgentRun) => void }) {
@@ -21,10 +21,11 @@ export default function AgentInvestigation({ input, onSource, onApply }: { input
   const assessment = assessCase(input);
   const blockerCount = assessment.findings.filter(f => f.severity === 'blocker').length;
   const attentionCount = assessment.findings.length - blockerCount;
+  const outdated = availability !== null && availability.protocolVersion !== AGENT_PROTOCOL_VERSION;
   useEffect(() => {
     mounted.current = true;
     const configAbort = new AbortController();
-    fetch('/api/operations/investigate', { signal: configAbort.signal }).then(r => r.ok ? r.json() : Promise.reject()).then(setAvailability).catch(() => { if (!configAbort.signal.aborted) setFailure({ code: 'configuration', error: 'Could not check live investigation availability. Local policy checks still work.' }); });
+    fetch('/api/operations/investigate', { signal: configAbort.signal, cache: 'no-store' }).then(r => r.ok ? r.json() : Promise.reject()).then(setAvailability).catch(() => { if (!configAbort.signal.aborted) setFailure({ code: 'configuration', error: 'Could not check live investigation availability. Local policy checks still work.' }); });
     try { const stored = localStorage.getItem(key); if (stored) setRun(restoreAgentRun(JSON.parse(stored), input)); } catch { setStorageError(true); }
     return () => { mounted.current = false; configAbort.abort(); abortRef.current?.abort(); };
   // This component is keyed by the exact evidence signature in its parent.
@@ -32,18 +33,18 @@ export default function AgentInvestigation({ input, onSource, onApply }: { input
   }, []);
   useEffect(() => { if (!running) return; const start = Date.now(); const timer = window.setInterval(() => setElapsed(Math.floor((Date.now() - start) / 1000)), 1000); return () => clearInterval(timer); }, [running]);
   async function investigate() {
-    if (running || !availability?.enabled) return;
+    if (running || !availability?.enabled || outdated) return;
     const abort = new AbortController(); abortRef.current = abort;
     setRunning(true); setFailure(null); setElapsed(0); setConfirmReplace(false);
     try {
-      const response = await fetch('/api/operations/investigate', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ case: input }), signal: abort.signal });
+      const response = await fetch('/api/operations/investigate', { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Lighthouse-Agent-Protocol': AGENT_PROTOCOL_VERSION }, body: JSON.stringify({ case: input }), signal: abort.signal });
       const data = await response.json();
       if (!mounted.current) return;
       if (!response.ok) { setFailure({ error: data.error || 'The investigation failed. No drafts were applied.', code: data.code || 'request_failed', trace: data.trace, usage: data.usage }); return; }
-      const checked = restoreAgentRun(data.run, input);
-      if (!checked) { setFailure({ code: 'invalid_response', error: 'The response did not match the current evidence and was rejected.' }); return; }
-      setRun(checked);
-      try { localStorage.setItem(key, JSON.stringify(checked)); setStorageError(false); } catch { setStorageError(true); }
+      const checked = checkAgentRun(data.run, input);
+      if (checked.failure) { setFailure(checked.failure); return; }
+      setRun(checked.run);
+      try { localStorage.setItem(key, JSON.stringify(checked.run)); setStorageError(false); } catch { setStorageError(true); }
     } catch {
       if (mounted.current) setFailure({ code: abort.signal.aborted ? 'cancelled' : 'connection', error: abort.signal.aborted ? 'Stopped waiting for this investigation. An in-flight provider request may still incur usage. No drafts were applied.' : 'The connection was interrupted. No automatic retry was made; any completed provider calls may still incur usage.' });
     } finally { if (mounted.current) setRunning(false); abortRef.current = null; }
@@ -59,10 +60,11 @@ export default function AgentInvestigation({ input, onSource, onApply }: { input
     <div className={styles.sectionTitle}><h3>Case investigator</h3><span>Claude · read-only tools</span></div>
     <p className={styles.muted}>Find what needs attention and prepare two messages for review.</p>
     <div className={styles.agentControls}>
-      <button className={styles.primary} onClick={investigate} disabled={!availability?.enabled || running}>{running ? <LoaderCircle size={16} className={styles.spinner} /> : <Search size={16} />}{running ? `Investigating · ${elapsed}s` : run ? 'Run a new investigation' : 'Investigate with Claude'}</button>
+      <button className={styles.primary} onClick={investigate} disabled={!availability?.enabled || outdated || failure?.code === 'outdated_page' || running}>{running ? <LoaderCircle size={16} className={styles.spinner} /> : <Search size={16} />}{running ? `Investigating · ${elapsed}s` : run ? 'Run a new investigation' : 'Investigate with Claude'}</button>
       {running && <button className={styles.secondary} onClick={() => abortRef.current?.abort()}><Square size={13} /> Stop</button>}
+      {(outdated || failure?.code === 'outdated_page') && <button className={styles.secondary} onClick={() => window.location.reload()}>Refresh page</button>}
     </div>
-    <p role="status" aria-live="polite" className={styles.small}>{running ? 'Reading six records and checking findings…' : availability ? availability.enabled ? 'Uses your Anthropic credits. Nothing is sent or changed.' : availability.reason : 'Checking live availability…'}</p>
+    <p role="status" aria-live="polite" className={styles.small}>{running ? 'Reading six records and checking findings…' : outdated ? AGENT_REFRESH_MESSAGE : availability ? availability.enabled ? 'Uses your Anthropic credits. Nothing is sent or changed.' : availability.reason : 'Checking live availability…'}</p>
     {storageError && <p className={styles.small}>This result is available for this session. Download it before leaving.</p>}
     {failure && <div role="alert" className={styles.agentError}><CircleAlert size={18} /><div><strong>Investigation not completed</strong><p>{failure.error}</p>{run && <p>The previous successful result is retained below for this same evidence.</p>}</div></div>}
     {run && <>
