@@ -1,0 +1,192 @@
+{
+  "version": "lighthouse-agent-eval-v1",
+  "startedAt": "2026-11-16T02:25:35.954Z",
+  "model": "claude-sonnet-4-6",
+  "scope": "Synthetic fixtures only; category/citation validation is automatic, narrative needs human review.",
+  "cases": [
+    {
+      "caseId": "OPS-103",
+      "passed": true,
+      "expected": {
+        "decision": "needs_information",
+        "findingIds": [
+          "payment_conflict",
+          "payment_pending"
+        ]
+      },
+      "status": 200,
+      "run": {
+        "version": "investigator-v4",
+        "runId": "ee87cd20-283d-4339-8ef2-a681814f7771",
+        "caseId": "OPS-103",
+        "inputSignature": "[\"operations-v1\",\"OPS-103\",\"2026-11-15T14:00:00.000Z\",\"Mariner Hospitality US, Inc.\",\"ORD-2403\",4800000,\"USD\",160,\"2026-11-18T14:00:00.000Z\",\"INV-7603\",\"Mariner Hospitality US, Inc.\",4800000,\"USD\",\"\",\"pending\",4800000,\"USD\",\"PAY-5303\",\"cleared\",\"Partner Operations\"]",
+        "model": "claude-sonnet-4-6",
+        "completedAt": "2026-11-16T02:26:00.750Z",
+        "elapsedMs": 24735,
+        "report": {
+          "decision": "needs_information",
+          "summary": "Payment status conflicts between the CRM (cleared) and the ledger (pending); Finance must reconcile before release.",
+          "recommendation": "Finance must reconcile the CRM/ledger status conflict and confirm cleared funds for PAY-5303 before Ticketing Operations can conduct human release review.",
+          "owner": "Finance",
+          "findings": [
+            {
+              "id": "payment_conflict",
+              "explanation": "CRM shows cleared but the payment ledger shows pending for ORD-2403. Finance must reconcile the discrepancy.",
+              "sourceIds": [
+                "crm",
+                "payment",
+                "policy"
+              ]
+            },
+            {
+              "id": "payment_pending",
+              "explanation": "Ledger status is pending for PAY-5303; Finance must confirm cleared funds before release.",
+              "sourceIds": [
+                "payment",
+                "policy"
+              ]
+            }
+          ],
+          "citations": [
+            {
+              "sourceId": "account",
+              "field": "Approved billing entity",
+              "value": "Mariner Hospitality US, Inc."
+            },
+            {
+              "sourceId": "order",
+              "field": "Order total",
+              "value": "USD 48,000.00"
+            },
+            {
+              "sourceId": "order",
+              "field": "Allocation deadline",
+              "value": "Nov 18, 9:00 AM EST"
+            },
+            {
+              "sourceId": "order",
+              "field": "Scenario clock",
+              "value": "Nov 15, 9:00 AM EST"
+            },
+            {
+              "sourceId": "invoice",
+              "field": "Billed entity",
+              "value": "Mariner Hospitality US, Inc."
+            },
+            {
+              "sourceId": "invoice",
+              "field": "Invoice total",
+              "value": "USD 48,000.00"
+            },
+            {
+              "sourceId": "invoice",
+              "field": "Other active invoice",
+              "value": "None in this sample"
+            },
+            {
+              "sourceId": "payment",
+              "field": "Ledger status",
+              "value": "pending"
+            },
+            {
+              "sourceId": "payment",
+              "field": "Payment reference",
+              "value": "PAY-5303"
+            },
+            {
+              "sourceId": "payment",
+              "field": "Recorded amount",
+              "value": "USD 48,000.00"
+            },
+            {
+              "sourceId": "crm",
+              "field": "Payment status",
+              "value": "cleared"
+            },
+            {
+              "sourceId": "policy",
+              "field": "Payment",
+              "value": "A referenced, cleared payment for the exact order amount and currency is required. Conflicting records need Finance review."
+            }
+          ],
+          "questions": [
+            {
+              "findingId": "payment_conflict",
+              "question": "CRM shows cleared but ledger PAY-5303 is pending — can Finance reconcile and confirm the correct status?",
+              "owner": "Finance"
+            },
+            {
+              "findingId": "payment_pending",
+              "question": "Can Finance confirm whether PAY-5303 funds have cleared in the ledger for ORD-2403?",
+              "owner": "Finance"
+            }
+          ],
+          "drafts": {
+            "internal": "Subject: ORD-2403 — Payment Status Conflict\n- Finance: reconcile CRM (cleared) vs. ledger PAY-5303 (pending) and confirm cleared funds.\n- Deadline: Nov 18, 9:00 AM EST (72 hrs away — no escalation yet).\nTicket release is not confirmed and requires human review.",
+            "client": "Subject: ORD-2403 — Payment Verification Needed\nHi Mariner Hospitality team,\nThe supplied records show a discrepancy in your payment status that our Finance team must resolve before we can proceed. If you have a remittance receipt for PAY-5303, please share it so Finance can reconcile. Ticket release is not confirmed and requires human review."
+          }
+        },
+        "trace": [
+          {
+            "step": 1,
+            "kind": "model",
+            "name": "Claude response",
+            "detail": "Call 1: 2928 input tokens, 57 output tokens; stop: tool_use.",
+            "ok": true
+          },
+          {
+            "step": 2,
+            "kind": "tool",
+            "name": "read_records",
+            "detail": "Read Account record, Ticket order, Invoice register, Payment ledger, CRM payment note, Release policy.",
+            "ok": true
+          },
+          {
+            "step": 3,
+            "kind": "model",
+            "name": "Claude response",
+            "detail": "Call 2: 3567 input tokens, 895 output tokens; stop: tool_use.",
+            "ok": true
+          },
+          {
+            "step": 4,
+            "kind": "validation",
+            "name": "Policy and citation checks",
+            "detail": "Reconcile finding categories with the records: missing []; unsupported [deadline_near]. Re-read relevant records and revise the explanation, questions, action, and drafts; do not only change category labels.",
+            "ok": false
+          },
+          {
+            "step": 5,
+            "kind": "model",
+            "name": "Claude response",
+            "detail": "Call 3: 4670 input tokens, 932 output tokens; stop: tool_use.",
+            "ok": true
+          },
+          {
+            "step": 6,
+            "kind": "validation",
+            "name": "Policy and citation checks",
+            "detail": "Finding categories and decision match the policy engine; quoted fields match the records. Narrative and drafts still need human review.",
+            "ok": true
+          }
+        ],
+        "usage": {
+          "inputTokens": 11165,
+          "outputTokens": 1884,
+          "modelCalls": 3,
+          "estimatedUsd": 0.061755
+        },
+        "validationAttempts": 2,
+        "firstSubmissionPassed": false
+      }
+    }
+  ],
+  "totals": {
+    "passed": 1,
+    "failed": 0,
+    "inputTokens": 11165,
+    "outputTokens": 1884,
+    "estimatedUsd": 0.061755
+  },
+  "updatedAt": "2026-11-16T02:26:00.780Z"
+}

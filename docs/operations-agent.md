@@ -14,7 +14,7 @@ The validator checks **category agreement and quote provenance**. It does not pr
 
 Live testing exposed approval/release promises in otherwise correctly classified reports. Both drafts must now contain an explicit human-review boundary, and focused text checks reject observed forms of approval claims, release promises, and malformed markup. These checks are deliberately not advertised as comprehensive semantic validation. The run version changed to invalidate earlier cached investigations. Review remains necessary.
 
-The v4 contract adds enforced word budgets: summary 35, recommendation 45, each explanation 45, each clarification question 35, internal draft 160, and client draft 130. The required review sentence appears exactly once in each draft. The prompt pairs each issue with its action rather than repeating separate findings and required-action lists. It assigns invoice correction and cleared-funds verification to the issuing Finance team; customers may supply missing remittance evidence. Focused regression checks reject the reported customer-correction requests and “or provide written justification” alternative. These pattern checks do not establish complete semantic correctness. Older cached investigations are ignored; previously applied or edited drafts are preserved until explicitly replaced.
+The v4 contract adds enforced word budgets: summary 35, recommendation 45, each explanation 45, each clarification question 35, internal draft 160, and client draft 130. The required review sentence appears exactly once in each draft. The prompt pairs each issue with its action rather than repeating separate findings and required-action lists. It assigns invoice correction and cleared-funds verification to the issuing Finance team; customers may supply missing remittance evidence. Focused regression checks reject the reported customer-correction requests, “or provide written justification” alternative, internal category labels in prose, contradictory explicit blocker counts, and unsupported summary warnings. These pattern checks do not establish complete semantic correctness. Older cached investigations are ignored; previously applied or edited drafts are preserved until explicitly replaced.
 
 ## Access and spending boundaries
 
@@ -35,7 +35,7 @@ Successful runs are stored locally under a versioned case key, with exact eviden
 
 The report records acceptance, exact category matches, first-submission success, repair attempts, provider-reported tokens, estimated cost, elapsed time, generated text, and tool traces. A passing category benchmark does not by itself establish accuracy on real customer documents. Real uploads, persistent case memory, shared authenticated review, and external write actions are outside this increment.
 
-The [November 15 validation report](operations-agent-validation.md) records the live results, failed attempts, manual narrative findings, and browser QA scope.
+The [concise-output validation report](operations-agent-concise-validation.md) records current live checks and browser QA. The [original validation report](operations-agent-validation.md) preserves the earlier v3 evaluation history.
 
 ## Public contracts used
 

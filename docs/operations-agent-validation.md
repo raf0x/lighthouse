@@ -1,5 +1,7 @@
 # Lighthouse investigator validation — November 15, 2026
 
+Historical v3 report. The [concise-output v4 follow-up](operations-agent-concise-validation.md) supersedes the current implementation and QA status below; earlier results remain preserved as evaluation history.
+
 Ready for supervised review in the protected preview. The live agent uses the existing Anthropic account with `claude-sonnet-4-6`; provider credentials stay on the server. The public production investigator remains disabled.
 
 ## Verified implementation
