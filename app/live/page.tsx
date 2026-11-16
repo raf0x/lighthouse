@@ -315,7 +315,7 @@ export default function LiveDashboard() {
         <header className={styles.topbar}>
           <Link href="/" className={styles.brand} aria-label="Lighthouse home"><LighthouseBrandMark size={35} /><span>LIGHTHOUSE<small>ACCOUNT INTELLIGENCE</small></span></Link>
           <nav className={styles.nav} aria-label="Dashboard navigation">
-            <Link href="/live" aria-current="page" className={styles.navDashboard}>Dashboard</Link><Link href="/operations" className={styles.navDashboard}>Operations</Link><Link href="/" className={styles.navAccounts}>Accounts</Link><Link href="/portfolio" className={styles.navPortfolio}>Portfolio</Link>
+            <Link href="/live" aria-current="page" className={styles.navDashboard}>Dashboard</Link><Link href="/today" className={styles.navDashboard}>Today</Link><Link href="/operations" className={styles.navDashboard}>Operations</Link><Link href="/accounts" className={styles.navAccounts}>Accounts</Link><Link href="/portfolio" className={styles.navPortfolio}>Portfolio</Link>
           </nav>
           <div className={styles.topRight}>
             <div className={styles.topStatus}><span className={styles.liveDot} /> SCRIPTED DEMO <span className={styles.dividerText}>/</span> 7 AGENTS + HUMAN</div>
@@ -452,7 +452,7 @@ export default function LiveDashboard() {
                 {pinnedAccount && <button type="button" className={styles.railResume} onClick={() => chooseAccount(null)}>Resume portfolio tour</button>}
               </div>
               <section className={styles.railSignals} aria-label="Current sample account signals">
-                <div className={styles.railHeading}><strong>{account.name}</strong><Link href={`/?account=${account.id}`}>Account details</Link></div>
+                <div className={styles.railHeading}><strong>{account.name}</strong><Link href={`/insights?account=${account.id}`}>Account details</Link></div>
                 <dl>
                   <div><dt>Seats in use</dt><dd>{scene.utilization}%</dd></div>
                   <div><dt>NPS</dt><dd>{account.nps}</dd></div>
