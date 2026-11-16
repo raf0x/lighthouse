@@ -311,6 +311,15 @@
 .agentUsage { display: flex; flex-wrap: wrap; gap: 20px; margin-top: 25px; padding-top: 18px; border-top: 1px solid var(--border-subtle); }
 .agentUsage dt { font-size: 10px; color: var(--fg-3); margin-bottom: 7px; }
 .agentUsage dd { font-size: 12px; font-weight: 600; font-variant-numeric: tabular-nums; }
+.agentOutcome { margin-top: 22px; margin-bottom: 0; }
+.agentOutcome h3 { font-size: 19px; }
+.agentOutcome h3 span { font-size: 14px; font-weight: 400; }
+.agentAction { margin-top: 14px; padding: 14px 16px; }
+.agentDrafts .checks { margin-top: 10px; }
+.agentTraceTitle { font-size: 12px; margin-top: 22px; }
+.agentSection summary { min-height: 24px; flex-wrap: wrap; }
+.agentSection summary:focus-visible { outline: 2px solid var(--beam-300); outline-offset: 6px; border-radius: 2px; }
+.agentSection summary svg { flex-shrink: 0; }
 .spinner { animation: spin 1s linear infinite; }
 @keyframes spin { to { transform: rotate(360deg); } }
 @media(prefers-reduced-motion: reduce) { .spinner { animation: none; } }

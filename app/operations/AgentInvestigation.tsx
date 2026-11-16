@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { ArrowRight, CheckCheck, CircleAlert, Download, FileText, LoaderCircle, Search, ShieldCheck, Square } from 'lucide-react';
-import { decisionLabels, evidenceFor, type OperationCase } from '../lib/operations';
+import { assessCase, decisionLabels, evidenceFor, type OperationCase } from '../lib/operations';
 import { AGENT_VERSION, restoreAgentRun, type AgentRun, type AgentFailure, type AgentAvailability } from '../lib/operations-agent';
 import styles from './operations.module.css';
 
@@ -18,6 +18,9 @@ export default function AgentInvestigation({ input, onSource, onApply }: { input
   const mounted = useRef(true);
   const key = `lighthouse-${AGENT_VERSION}-${input.id}`;
   const documents = evidenceFor(input);
+  const assessment = assessCase(input);
+  const blockerCount = assessment.findings.filter(f => f.severity === 'blocker').length;
+  const attentionCount = assessment.findings.length - blockerCount;
   useEffect(() => {
     mounted.current = true;
     const configAbort = new AbortController();
@@ -54,28 +57,32 @@ export default function AgentInvestigation({ input, onSource, onApply }: { input
   const usage = failure?.usage ?? run?.usage;
   return <section aria-label="AI case investigation" className={styles.agentSection}>
     <div className={styles.sectionTitle}><h3>Case investigator</h3><span>Claude · read-only tools</span></div>
-    <p className={styles.muted}>Ask the agent to inspect the six records, explain the blockers, and draft a response. Local policy checks remain the release reference.</p>
+    <p className={styles.muted}>Find what needs attention and prepare two messages for review.</p>
     <div className={styles.agentControls}>
       <button className={styles.primary} onClick={investigate} disabled={!availability?.enabled || running}>{running ? <LoaderCircle size={16} className={styles.spinner} /> : <Search size={16} />}{running ? `Investigating · ${elapsed}s` : run ? 'Run a new investigation' : 'Investigate with Claude'}</button>
       {running && <button className={styles.secondary} onClick={() => abortRef.current?.abort()}><Square size={13} /> Stop</button>}
     </div>
-    <p role="status" aria-live="polite" className={styles.small}>{running ? 'Claude is reading records and submitting its findings for validation. Drafts change only when you apply them.' : availability ? availability.enabled ? 'Uses your Anthropic account. Up to four model calls per run; no automatic network retries. No emails, invoice changes, or ticket release.' : availability.reason : 'Checking live availability…'}</p>
+    <p role="status" aria-live="polite" className={styles.small}>{running ? 'Reading six records and checking findings…' : availability ? availability.enabled ? 'Uses your Anthropic credits. Nothing is sent or changed.' : availability.reason : 'Checking live availability…'}</p>
     {storageError && <p className={styles.small}>This result is available for this session. Download it before leaving.</p>}
     {failure && <div role="alert" className={styles.agentError}><CircleAlert size={18} /><div><strong>Investigation not completed</strong><p>{failure.error}</p>{run && <p>The previous successful result is retained below for this same evidence.</p>}</div></div>}
     {run && <>
-      <div className={styles.agentVerified}><CheckCheck size={18} /><div><strong>Policy and citation checks passed</strong><p>Decision and finding categories match the rules. Quoted fields match the records. Read the explanation and drafts before using them.</p></div></div>
-      <div className={styles.result} data-decision={run.report.decision}><span className={styles.resultTag}><ShieldCheck size={15} />{decisionLabels[run.report.decision]}</span><h3>Investigation summary</h3><p>{run.report.summary}</p></div>
-      {run.report.findings.map(f => <article className={styles.agentFinding} key={f.id}><h4>{f.id.replaceAll('_', ' ')}</h4><p>{f.explanation}</p><div className={styles.citations}>{f.sourceIds.map(id => <button key={id} onClick={() => onSource(id)}><FileText size={12} />{documents.find(d => d.id === id)?.title}</button>)}</div></article>)}
-      <div className={styles.agentAction}><span className={styles.eyebrow}>SUGGESTED NEXT ACTION · {run.report.owner}</span><p>{run.report.recommendation}</p></div>
-      {run.report.questions.length > 0 && <div className={styles.agentQuestions}><h4>Information to request</h4><ul>{run.report.questions.map((q, i) => <li key={i}><strong>{q.owner}</strong><p>{q.question}</p></li>)}</ul></div>}
-      <details className={styles.checks}><summary><FileText size={16} /> Inspect {run.report.citations.length} field citations <ArrowRight size={13} /></summary><div className={styles.agentCitations}>{run.report.citations.map((c, i) => <div key={i}><button onClick={() => onSource(c.sourceId)}>{documents.find(d => d.id === c.sourceId)?.title} · {c.field}</button><p>{c.value}</p></div>)}</div></details>
-      <div className={styles.agentDrafts}><h4>Proposed message drafts</h4><p className={styles.small}>Review these before replacing the current drafts. Applying them clears any previous Harbor approval.</p>{(['internal','client'] as const).map(kind => <details className={styles.checks} key={kind}><summary><FileText size={15} />{kind === 'internal' ? 'Internal escalation' : 'Client update'} <ArrowRight size={13} /></summary><p className={styles.agentDraftText}>{run.report.drafts[kind]}</p></details>)}
+      <div className={`${styles.result} ${styles.agentOutcome}`} data-decision={run.report.decision} aria-live="polite"><span className={styles.resultTag}><ShieldCheck size={15} />{decisionLabels[run.report.decision]}</span><h3>{blockerCount ? `${blockerCount} ${blockerCount === 1 ? 'blocker' : 'blockers'}` : 'No blockers'}{attentionCount > 0 && <span> · {attentionCount} deadline warning</span>}</h3><p>{run.report.summary}</p></div>
+      <div className={styles.agentAction}><span className={styles.eyebrow}>NEXT STEP · {run.report.owner}</span><p>{run.report.recommendation}</p></div>
+      <div className={styles.agentDrafts}><h4>Proposed messages</h4><p className={styles.small}>Review before applying. Replacing drafts clears their approval.</p>{(['internal','client'] as const).map(kind => <details className={styles.checks} key={kind}><summary><FileText size={15} />{kind === 'internal' ? 'Internal escalation' : 'Client update'} <ArrowRight size={13} /></summary><p className={styles.agentDraftText}>{run.report.drafts[kind]}</p></details>)}
         {!confirmReplace ? <button className={styles.secondary} disabled={running} onClick={() => setConfirmReplace(true)}>Use these message drafts <ArrowRight size={14} /></button> : <div className={styles.agentReplace}><p>Replace both current drafts and clear their approval?</p><button className={styles.primary} onClick={() => { onApply(run); setConfirmReplace(false); }}>Replace drafts</button><button className={styles.textButton} onClick={() => setConfirmReplace(false)}>Keep current drafts</button></div>}
       </div>
-      <button className={styles.download} onClick={download}><Download size={15} /> Download agent run</button>
+      <details className={styles.checks}><summary><CheckCheck size={16} /> Evidence & checks · {run.report.citations.length} citations <ArrowRight size={13} /></summary>
+        <p className={styles.small}>Decision and finding categories match the local policy. Quoted fields match the records. These checks do not verify every sentence; review the wording before use.</p>
+        {run.report.findings.map(f => <article className={styles.agentFinding} key={f.id}><h4>{assessment.findings.find(expected => expected.id === f.id)?.title}</h4><p>{f.explanation}</p><div className={styles.citations}>{f.sourceIds.map(id => <button key={id} onClick={() => onSource(id)}><FileText size={12} />{documents.find(d => d.id === id)?.title}</button>)}</div></article>)}
+        {run.report.questions.length > 0 && <div className={styles.agentQuestions}><h4>Information to request</h4><ul>{run.report.questions.map((q, i) => <li key={i}><strong>{q.owner}</strong><p>{q.question}</p></li>)}</ul></div>}
+        <details className={styles.checks}><summary><FileText size={16} /> Exact field quotations <ArrowRight size={13} /></summary><div className={styles.agentCitations}>{run.report.citations.map((c, i) => <div key={i}><button onClick={() => onSource(c.sourceId)}>{documents.find(d => d.id === c.sourceId)?.title} · {c.field}</button><p>{c.value}</p></div>)}</div></details>
+      </details>
     </>}
-    {usage && <dl className={styles.agentUsage}><div><dt>Model calls</dt><dd>{usage.modelCalls}</dd></div><div><dt>Tokens in / out</dt><dd>{usage.inputTokens.toLocaleString()} / {usage.outputTokens.toLocaleString()}</dd></div><div><dt>Estimated usage</dt><dd>${usage.estimatedUsd.toFixed(4)}</dd></div>{run && !failure && <div><dt>Run time</dt><dd>{(run.elapsedMs / 1000).toFixed(1)}s</dd></div>}</dl>}
-    {usage && <p className={styles.small}>Estimate uses standard Sonnet 4.6 token rates; excludes taxes and account-specific pricing. Not an account balance or a global spending cap.{failure ? ' Usage includes reported completed responses only; failed or cancelled requests may add charges.' : ''}</p>}
-    {trace && <details className={styles.checks}><summary><Search size={16} /> Actual tool activity <ArrowRight size={13} /></summary><ol>{trace.map(t => <li key={t.step}><span>{t.ok ? '✓' : '!'}</span><div><strong>{t.name}</strong><p>{t.detail}</p></div></li>)}</ol><p className={styles.small}>Recorded API responses, tool reads, and validation outcomes. No hidden reasoning transcript.</p></details>}
+    <details className={styles.checks}><summary><Search size={16} /> Run details{usage && ` · $${usage.estimatedUsd.toFixed(4)} estimated`} <ArrowRight size={13} /></summary>
+      <p className={styles.small}>Up to four model calls per run; no automatic network retries. No email, invoice, payment, or ticket-release tools.</p>
+      {usage && <><dl className={styles.agentUsage}><div><dt>Model calls</dt><dd>{usage.modelCalls}</dd></div><div><dt>Tokens in / out</dt><dd>{usage.inputTokens.toLocaleString()} / {usage.outputTokens.toLocaleString()}</dd></div>{run && !failure && <div><dt>Run time</dt><dd>{(run.elapsedMs / 1000).toFixed(1)}s</dd></div>}</dl><p className={styles.small}>Estimate uses standard Sonnet 4.6 token rates; excludes taxes and account-specific pricing. Not an account balance or a global spending cap.{failure ? ' Usage includes reported completed responses only; failed or cancelled requests may add charges.' : ''}</p></>}
+      {trace && <><h4 className={styles.agentTraceTitle}>Actual tool activity</h4><ol>{trace.map(t => <li key={t.step}><span>{t.ok ? '✓' : '!'}</span><div><strong>{t.name}</strong><p>{t.detail}</p></div></li>)}</ol><p className={styles.small}>Recorded responses, tool reads, and validation outcomes.</p></>}
+      {run && <button className={styles.download} onClick={download}><Download size={15} /> Download agent run</button>}
+    </details>
   </section>;
 }

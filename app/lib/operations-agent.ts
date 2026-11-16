@@ -1,9 +1,11 @@
 import { assessCase, evidenceFor, inputSignature, operationCases, validCase, type Decision, type Drafts, type OperationCase } from './operations';
 
-export const AGENT_VERSION = 'investigator-v3';
+export const AGENT_VERSION = 'investigator-v4';
 export const REVIEW_NOTICE = 'Ticket release is not confirmed and requires human review.';
 export const AGENT_MODEL = 'claude-sonnet-4-6';
 export const AGENT_LIMITS = { modelCalls: 4, outputTokensPerCall: 2400, contextCharacters: 60000, timeoutMs: 90000, bodyBytes: 12000 } as const;
+export const AGENT_TEXT_LIMITS = { summary: 35, recommendation: 45, explanation: 45, question: 35, internal: 160, client: 130 } as const;
+export const wordCount = (value: string) => value.trim().split(/\s+/u).filter(Boolean).length;
 export const SOURCE_IDS = ['account', 'order', 'invoice', 'payment', 'crm', 'policy'] as const;
 export const FINDING_IDS = ['entity_missing', 'entity_mismatch', 'duplicate_invoice', 'invoice_currency', 'invoice_amount', 'payment_conflict', 'payment_missing', 'payment_pending', 'reference_missing', 'payment_currency', 'payment_amount', 'deadline_elapsed', 'deadline_near'] as const;
 export const OWNERS = ['Finance', 'Partner Operations', 'Ticketing Operations'] as const;
@@ -47,9 +49,16 @@ export function validateAgentReport(value: unknown, input: OperationCase, readId
   if (SOURCE_IDS.some(id => !readIds.has(id))) errors.push('Read all six source records in an earlier tool turn before submitting.');
   if (value.decision !== expected.decision) errors.push(`Decision must be ${expected.decision} under the supplied policy. Recheck the underlying findings and revise all affected prose.`);
   if (!text(value.summary, 1200) || !text(value.recommendation, 1000)) errors.push('Provide a concise summary and action within the text limits.');
+  for (const field of ['summary', 'recommendation'] as const) if (typeof value[field] === 'string' && wordCount(value[field]) > AGENT_TEXT_LIMITS[field]) errors.push(`Keep ${field} to at most ${AGENT_TEXT_LIMITS[field]} words. Do not repeat case metadata or list checks that passed.`);
   if (value.owner !== expected.owner) errors.push(`The first blocking category assigns the primary owner to ${expected.owner}; do not copy the account owner.`);
   if (!object(value.drafts) || !text(value.drafts.internal, 4000) || !text(value.drafts.client, 3000)) errors.push('Provide both bounded, nonempty message drafts.');
-  else if (![value.drafts.internal, value.drafts.client].every(d => typeof d === 'string' && d.includes(REVIEW_NOTICE))) errors.push(`Both drafts must include this exact boundary: "${REVIEW_NOTICE}" Do not contradict it elsewhere.`);
+  else {
+    for (const kind of ['internal', 'client'] as const) {
+      const draft = value.drafts[kind] as string;
+      if (draft.split(REVIEW_NOTICE).length !== 2) errors.push(`Both drafts must include this exact boundary once: "${REVIEW_NOTICE}" Do not repeat or contradict it elsewhere.`);
+      if (wordCount(draft) > AGENT_TEXT_LIMITS[kind]) errors.push(`Keep the ${kind} draft to at most ${AGENT_TEXT_LIMITS[kind]} words, including subject and sign-off. State each issue and its action together, once.`);
+    }
+  }
   const findings = value.findings;
   if (!Array.isArray(findings) || findings.length > FINDING_IDS.length) errors.push('Findings must be a bounded array.');
   else {
@@ -61,6 +70,7 @@ export function validateAgentReport(value: unknown, input: OperationCase, readId
     if (missing.length || unsupported.length) errors.push(`Reconcile finding categories with the records: missing [${missing.join(', ')}]; unsupported [${unsupported.join(', ')}]. Re-read relevant records and revise the explanation, questions, action, and drafts; do not only change category labels.`);
     for (const f of findings) {
       if (!object(f) || !text(f.explanation, 800) || !Array.isArray(f.sourceIds) || !f.sourceIds.length || f.sourceIds.length > 6 || f.sourceIds.some(id => typeof id !== 'string' || !readIds.has(id))) { errors.push('Each finding needs a concise explanation and source IDs that were read.'); continue; }
+      if (wordCount(f.explanation as string) > AGENT_TEXT_LIMITS.explanation) errors.push(`Keep each finding explanation to at most ${AGENT_TEXT_LIMITS.explanation} words; put actions in the recommendation.`);
       const matching = expected.findings.find(e => e.id === f.id);
       if (matching && matching.sources.some(id => !(f.sourceIds as unknown[]).includes(id))) errors.push(`Finding ${f.id} must cite its relevant records and release policy.`);
     }
@@ -83,9 +93,16 @@ export function validateAgentReport(value: unknown, input: OperationCase, readId
   if (!Array.isArray(questions) || questions.length > 8) errors.push('Questions must be a bounded array.');
   else {
     for (const q of questions) if (!object(q) || !expected.findings.some(f => f.id === q.findingId) || !text(q.question, 500) || !OWNERS.includes(q.owner as typeof OWNERS[number])) errors.push('Questions must identify an actual finding and a responsible team.');
+    for (const q of questions) if (object(q) && typeof q.question === 'string' && wordCount(q.question) > AGENT_TEXT_LIMITS.question) errors.push(`Keep each clarification question to at most ${AGENT_TEXT_LIMITS.question} words.`);
     for (const f of expected.findings.filter(f => ['entity_missing', 'payment_missing', 'payment_conflict', 'reference_missing'].includes(f.id))) if (!questions.some(q => object(q) && q.findingId === f.id)) errors.push(`Ask a specific clarification question for ${f.id}.`);
   }
   const narrative = [value.summary, value.recommendation, ...(Array.isArray(findings) ? findings.map(f => f?.explanation) : []), ...(Array.isArray(questions) ? questions.map(q => q?.question) : []), object(value.drafts) && value.drafts.internal, object(value.drafts) && value.drafts.client].filter(v => typeof v === 'string').join('\n');
+  if (/\bor\s+(?:provide|supply|submit|obtain|accept)\s+(?:a\s+)?(?:written\s+)?justification\b/i.test(narrative)) errors.push('Written justification is not an alternative to resolving an invoice mismatch under this policy. Require Finance to correct the invoice against the approved entity.');
+  const client = object(value.drafts) && typeof value.drafts.client === 'string' ? value.drafts.client : '';
+  const customer = '(?:your (?:finance(?: team| department)?|accounting(?: team| department)?|billing(?: team| department)?|team)|you)';
+  const correction = '(?:correct(?:ed|ion)?|reissu(?:e|ed|ing)|revis(?:e|ed|ion)|amend(?:ed|ment)?)';
+  if (new RegExp(`\\b${customer}\\b[^.!?\\n]{0,180}\\b${correction}\\b[^.!?\\n]{0,50}\\binvoice\\b|\\b${customer}\\b[^.!?\\n]{0,120}\\binvoice\\b[^.!?\\n]{0,50}\\b${correction}\\b|\\b(?:please|could you|can you|kindly)\\b[^.!?\\n]{0,70}\\b${correction}\\b[^.!?\\n]{0,40}\\binvoice\\b`, 'i').test(client)) errors.push('The issuing Finance team owns invoice correction. Do not ask the customer or their Finance team to correct, reissue, or arrange correction of our invoice.');
+  if (new RegExp(`\\b${customer}\\b[^.!?\\n]{0,100}\\bconfirm\\b[^.!?\\n]{0,70}\\bclear(?:ed|ance)\\b`, 'i').test(client)) errors.push('Our Finance team must verify cleared funds. A customer may supply remittance details, but their confirmation does not establish clearance.');
   if (/https?:\/\/|\b(?:I|we) (?:have |already )?(?:sent|released|issued|updated|reissued|refunded)\b/i.test(narrative)) errors.push('Do not invent external links or claim that actions have been executed.');
   if (/\b(?:tickets?|allocation|order)\b[^.!?\n]{0,45}\b(?:are|is|have been|has been) (?:already )?approved\b|\b(?:we|I) (?:will|can|shall) (?:(?:proceed with|be) )?(?:releas\w*|approv\w*)\b|\b(?:we|I) (?:will|can|shall) confirm (?:the )?ticket release\b|\bproceed with (?:the )?ticket release\b|\b(?:approve|authorize) (?:the )?ticket allocation\b|\b(?:release|allocation) (?:is|has been) (?:confirmed|approved|guaranteed)\b/i.test(narrative)) errors.push('The proposed text implies approval or promises ticket release. Only propose a human release review; never approve allocation, promise release, or say approval already exists.');
   if (/[<>]/.test(narrative)) errors.push('Use plain prose without markup fragments or angle brackets.');
