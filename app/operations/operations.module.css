@@ -351,3 +351,28 @@
 .workspaceActions .primary, .importDialog button { min-height: 44px; }
 .importDialog summary:focus-visible { outline: 2px solid var(--focus-ring); outline-offset: 3px; }
 .document footer { overflow-wrap: anywhere; }
+.caseActions { display: flex; flex-wrap: wrap; justify-content: flex-end; align-items: flex-start; gap: 10px; flex-shrink: 0; }
+.caseActions button { min-height: 44px; }
+.evidenceChanges { margin: 18px 0; }
+.evidenceChanges > div { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 10px 18px; padding: 16px 0; border-bottom: 1px solid var(--border-subtle); }
+.evidenceChanges dt { grid-column: 1 / -1; font-size: 13px; font-weight: 600; color: var(--fg-1); }
+.evidenceChanges dd { margin: 0; padding: 12px; background: var(--surface-inset); border-radius: 6px; font-size: 13px; line-height: 1.6; overflow-wrap: anywhere; color: var(--fg-1); }
+.evidenceChanges dd:last-child { border-left: 2px solid var(--beam-300); }
+.evidenceChanges dd > span { display: block; font-size: 10px; text-transform: uppercase; letter-spacing: .1em; color: var(--fg-3); margin-bottom: 5px; }
+.evidenceOutcome { padding: 16px; margin-top: 16px; border: 1px solid var(--border-default); background: var(--surface-inset); border-radius: 8px; }
+.evidenceOutcome > span { display: block; font-size: 11px; color: var(--fg-3); margin-bottom: 7px; }
+.evidenceOutcome strong { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; font-size: 14px; }
+.evidenceOutcome p { margin-top: 8px; font-size: 12px; }
+.findingComparison { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 14px; margin-top: 16px; }
+.findingComparison strong { font-size: 12px; }
+.findingComparison p { font-size: 12px; line-height: 1.7; }
+.checks .updateFindings { margin: 10px 0 0; padding: 0; list-style: none; }
+.checks .updateFindings li { display: list-item; padding: 5px 0; }
+.history > li > div { min-width: 0; flex: 1; }
+@media (max-width: 700px) {
+  .caseActions { width: 100%; justify-content: flex-start; }
+  .evidenceChanges > div, .findingComparison { grid-template-columns: minmax(0, 1fr); }
+  .evidenceChanges dt { grid-column: auto; }
+  .importDialog .dialogActions { flex-wrap: wrap; }
+  .importDialog .dialogActions button { flex: 1 1 auto; }
+}
