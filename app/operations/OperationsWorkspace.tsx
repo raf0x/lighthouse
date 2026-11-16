@@ -131,7 +131,7 @@ export default function OperationsWorkspace() {
   }
   function analyze() {
     const result = assessCase(input);
-    update({ analyzed: true, drafts: result.drafts, draftOrigin: undefined, review: undefined }, activity('Case analyzed', `${result.findings.length} findings. ${decisionLabels[result.decision]}. Checked with ${ENGINE_VERSION}.`));
+    update({ analyzed: true, drafts: result.drafts, draftOrigin: undefined, review: undefined }, activity('Case analyzed', `${result.findings.length} ${result.findings.length === 1 ? 'finding' : 'findings'}. ${decisionLabels[result.decision]}. Checked with ${ENGINE_VERSION}.`));
     setTab('Assessment'); setReviewMode(null); setReviewError(''); setNotice('Checks complete. Review the evidence and proposed next step.');
   }
   function applyAgentDrafts(run: AgentRun) {

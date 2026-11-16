@@ -56,5 +56,5 @@ export function changeSummary(event: AuditEntry) {
   if (!evidence) return event.detail;
   const removed = evidence.before.findings.filter(f => !evidence.after.findings.includes(f));
   const added = evidence.after.findings.filter(f => !evidence.before.findings.includes(f));
-  return [removed.length ? `Cleared: ${removed.join('; ')}.` : '', added.length ? `New: ${added.join('; ')}.` : '', !removed.length && !added.length ? `${evidence.changes.length} field${evidence.changes.length === 1 ? '' : 's'} changed; the findings stayed the same.` : '', evidence.previousReview ? 'Previous approval or review cleared.' : ''].filter(Boolean).join(' ');
+  return [removed.length ? `No longer flagged: ${removed.join('; ')}.` : '', added.length ? `New: ${added.join('; ')}.` : '', !removed.length && !added.length ? `${evidence.changes.length} field${evidence.changes.length === 1 ? '' : 's'} changed; the findings stayed the same.` : '', evidence.previousReview ? 'Previous approval or review cleared.' : ''].filter(Boolean).join(' ');
 }
