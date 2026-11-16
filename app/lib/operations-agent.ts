@@ -1,8 +1,8 @@
-import { assessCase, evidenceFor, inputSignature, operationCases, validCase, type Decision, type Drafts, type OperationCase } from './operations';
+import { assessCase, canonicalImportedCase, evidenceFor, inputSignature, operationCases, validCase, type Decision, type Drafts, type OperationCase } from './operations';
 
 export const AGENT_VERSION = 'investigator-v4';
 // Bump when changing the browser/server contract incompatibly. Reject stale pages before spending.
-export const AGENT_PROTOCOL_VERSION = 'investigator-wire-v1';
+export const AGENT_PROTOCOL_VERSION = 'investigator-wire-v2';
 export const AGENT_REFRESH_MESSAGE = 'This page is out of date. Refresh it before starting an investigation. No model call was made.';
 export const REVIEW_NOTICE = 'Ticket release is not confirmed and requires human review.';
 export const AGENT_MODEL = 'claude-sonnet-4-6';
@@ -35,6 +35,7 @@ const text = (v: unknown, max: number) => typeof v === 'string' && v.trim().leng
 const normalizeQuote = (s: string) => s.trim().replace(/\s+/g, ' ');
 export function canonicalAgentCase(value: unknown): OperationCase | null {
   if (!validCase(value)) return null;
+  if (value.imported) return canonicalImportedCase(value);
   const original = operationCases.find(c => c.id === value.id)!;
   const hours = (Date.parse(value.deadline) - Date.parse(original.asOf)) / 3_600_000;
   if (hours < -168 || hours > 720) return null;

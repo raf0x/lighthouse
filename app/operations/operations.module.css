@@ -323,3 +323,31 @@
 .spinner { animation: spin 1s linear infinite; }
 @keyframes spin { to { transform: rotate(360deg); } }
 @media(prefers-reduced-motion: reduce) { .spinner { animation: none; } }
+.workspaceActions { display: flex; flex-wrap: wrap; align-items: center; gap: 12px 22px; margin-top: 18px; }
+.importDialog { width: min(760px, calc(100% - 28px)); }
+.importSteps { display: flex; flex-wrap: wrap; gap: 12px 22px; margin: 22px 0; color: var(--fg-2); font-size: 12px; }
+.importSteps span { display: inline-flex; gap: 8px; align-items: center; }
+.importSteps b { display: grid; place-items: center; width: 23px; height: 23px; border: 1px solid var(--border-default); border-radius: 50%; color: var(--beam-300); font-size: 11px; }
+.importTools { display: flex; align-items: center; flex-wrap: wrap; gap: 14px; margin-bottom: 18px; }
+.importFile { display: block; padding: 18px; border: 1px dashed var(--agent-line); border-radius: 8px; background: var(--surface-inset); }
+.importFile > span { display: flex; gap: 8px; align-items: center; font-size: 14px; font-weight: 600; margin-bottom: 12px; }
+.importFile input { width: 100%; max-width: 100%; font-size: 13px; color: var(--fg-2); }
+.importFile input::file-selector-button { min-height: 44px; border: 1px solid var(--border-default); background: var(--surface-1); color: var(--fg-1); border-radius: 6px; padding: 8px 12px; margin-right: 10px; cursor: pointer; }
+.importPreview { border-top: 1px solid var(--border-subtle); margin-top: 24px; padding-top: 22px; }
+.importPreview .sectionTitle { flex-wrap: wrap; gap: 8px; }
+.importPreview .sectionTitle span { overflow-wrap: anywhere; }
+.importFields { margin: 10px 0; }
+.importFields > div { display: grid; grid-template-columns: minmax(110px, 1fr) minmax(0, 2fr); gap: 12px; padding: 9px 0; border-bottom: 1px solid var(--border-subtle); }
+.importFields dt { font-size: 12px; color: var(--fg-3); }
+.importFields dd { font-size: 13px; line-height: 1.7; overflow-wrap: anywhere; }
+.importDialog .error ul { padding-left: 20px; margin: 10px 0; }
+.importDialog .error li + li { margin-top: 8px; }
+@media (max-width: 560px) {
+  .importFields > div { grid-template-columns: 1fr; gap: 5px; }
+  .importTools { align-items: stretch; flex-direction: column; }
+  .importSteps { gap: 10px; font-size: 11px; }
+}
+
+.workspaceActions .primary, .importDialog button { min-height: 44px; }
+.importDialog summary:focus-visible { outline: 2px solid var(--focus-ring); outline-offset: 3px; }
+.document footer { overflow-wrap: anywhere; }
