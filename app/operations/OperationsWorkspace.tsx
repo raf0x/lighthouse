@@ -4,16 +4,18 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
 import { ArrowRight, ArrowUpRight, Check, CheckCheck, ChevronRight, CircleAlert, Clock3, Download, FileText, FolderOpen, ListChecks, PencilLine, Play, RotateCcw, Search, ShieldCheck, X } from 'lucide-react';
 import Header from '../components/Header';
+import AgentInvestigation from './AgentInvestigation';
+import type { AgentRun } from '../lib/operations-agent';
 import { accounts } from '../lib/lighthouse';
 import {
   ENGINE_VERSION, SCENARIO_TIME, operationCases, assessCase, currentReview, decisionLabels,
-  evidenceFor, exportCase, money, recordReview, restoreWorkspaces, scenarioDate, validCase,
+  evidenceFor, exportCase, inputSignature, money, recordReview, restoreWorkspaces, scenarioDate, validCase,
   type AuditEntry, type CaseWorkspace, type Currency, type Drafts, type OperationCase, type PaymentState, type ReviewStatus,
 } from '../lib/operations';
 import styles from './operations.module.css';
 
 const STORAGE_KEY = 'lighthouse-operations-v1';
-const tabs = ['Assessment', 'Source records', 'Message drafts', 'Activity'] as const;
+const tabs = ['Assessment', 'Investigator', 'Source records', 'Message drafts', 'Activity'] as const;
 type Tab = typeof tabs[number];
 const dateTime = (at: string) => new Intl.DateTimeFormat('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit', timeZone: 'America/New_York' }).format(new Date(at));
 function activity(event: string, detail: string): AuditEntry {
@@ -129,12 +131,17 @@ export default function OperationsWorkspace() {
   }
   function analyze() {
     const result = assessCase(input);
-    update({ analyzed: true, drafts: result.drafts, review: undefined }, activity('Case analyzed', `${result.findings.length} findings. ${decisionLabels[result.decision]}. Checked with ${ENGINE_VERSION}.`));
+    update({ analyzed: true, drafts: result.drafts, draftOrigin: undefined, review: undefined }, activity('Case analyzed', `${result.findings.length} findings. ${decisionLabels[result.decision]}. Checked with ${ENGINE_VERSION}.`));
     setTab('Assessment'); setReviewMode(null); setReviewError(''); setNotice('Checks complete. Review the evidence and proposed next step.');
+  }
+  function applyAgentDrafts(run: AgentRun) {
+    if (run.inputSignature !== inputSignature(input)) { setNotice('The evidence changed. Run a new investigation before using its drafts.'); return; }
+    update({ analyzed: true, drafts: run.report.drafts, draftOrigin: { model: run.model, runId: run.runId, completedAt: run.completedAt }, review: undefined }, activity('AI drafts applied', `Drafts from ${run.model}, run ${run.runId}. Policy checks remain authoritative; human review required.`));
+    setTab('Message drafts'); setReviewMode(null); setReviewError(''); setNotice('AI drafts applied. Review and edit them, then complete Harbor review. Previous approval cleared.');
   }
   function openSource(id: string) { setSourceId(id); setTab('Source records'); }
   function saveEvidence(next: OperationCase) {
-    update({ input: next, analyzed: false, drafts: undefined, review: undefined }, activity('Evidence updated', 'Previous assessment and review cleared. New analysis required.'));
+    update({ input: next, analyzed: false, drafts: undefined, draftOrigin: undefined, review: undefined }, activity('Evidence updated', 'Previous assessment and review cleared. New analysis required.'));
     setEditing(false); setReviewMode(null); setReviewError(''); setTab('Assessment'); setNotice('Evidence saved. Run the checks to assess the updated case.');
   }
   function editDraft(kind: keyof Drafts, text: string) {
@@ -154,14 +161,14 @@ export default function OperationsWorkspace() {
   }
   function download() {
     if (!assessment || !drafts) return;
-    const blob = new Blob([exportCase(input, assessment, drafts, review, saved?.history ?? [])], { type: 'text/markdown;charset=utf-8' });
+    const blob = new Blob([exportCase(input, assessment, drafts, review, saved?.history ?? [], saved?.draftOrigin)], { type: 'text/markdown;charset=utf-8' });
     const url = URL.createObjectURL(blob); const a = window.document.createElement('a');
     a.href = url; a.download = `Lighthouse-${input.id}-review.md`; window.document.body.appendChild(a); a.click(); a.remove();
     window.setTimeout(() => URL.revokeObjectURL(url), 1000);
     setNotice('Review packet downloaded with the source records and current review status.');
   }
   function reset() {
-    update({ input: base, analyzed: false, drafts: undefined, review: undefined }, activity('Sample restored', 'Original evidence restored. Previous review cleared.'));
+    update({ input: base, analyzed: false, drafts: undefined, draftOrigin: undefined, review: undefined }, activity('Sample restored', 'Original evidence restored. Previous review cleared.'));
     setResetting(false); setReviewMode(null); setTab('Assessment'); setNotice('Original sample restored.');
   }
   return <div className={`app-canvas ${styles.canvas}`}>
@@ -169,8 +176,8 @@ export default function OperationsWorkspace() {
       <Header accounts={accounts} operations />
       <main>
         <section className={styles.intro}>
-          <div><span className={styles.eyebrow}>PARTNER OPERATIONS</span><h1>From a blocked order<br className={styles.mobileBreak} /> to <em>a clear next step.</em></h1><p>Inspect the evidence. Resolve the exception. Keep the decision human.</p></div>
-          <div className={styles.mode}><span><span className={styles.modeDot} /> Interactive prototype</span><small>Synthetic cases · rules-based checks<br />No model calls · no external actions</small></div>
+          <div><span className={styles.eyebrow}>PARTNER OPERATIONS</span><h1>From a blocked order<br className={styles.mobileBreak} /> to <em>a clear next step.</em></h1><p>Inspect the evidence. Resolve the exception. Keep the decision human.</p><Link href="/demo" className={styles.textButton}>Start with the saved investigation <ArrowRight size={14} /></Link></div>
+          <div className={styles.mode}><span><span className={styles.modeDot} /> Interactive prototype</span><small>Synthetic cases · policy checks + AI review<br />Human approval · no external actions</small></div>
         </section>
         <div className={styles.overview} aria-label="Workspace summary"><div><FolderOpen size={17} /><strong>10</strong><span>sample cases</span></div><div><ListChecks size={17} /><strong>{countAnalyzed}</strong><span>analyzed</span></div><div><ShieldCheck size={17} /><strong>{countReviewed}</strong><span>plans approved locally</span></div><div className={styles.saveStatus}><span className={styles.statusDot} data-error={storageError} />{!loaded ? 'Loading workspace…' : storageError ? 'Session only · storage unavailable' : 'Saved on this device'}</div></div>
         {storageError && <p role="alert" className={styles.error}>Browser storage is unavailable. Your work remains in this session; download a review packet before leaving.</p>}
@@ -212,14 +219,15 @@ export default function OperationsWorkspace() {
                   {assessment.findings.length ? assessment.findings.map((f, index) => <article className={styles.finding} key={f.id} data-severity={f.severity}><span className={styles.findingNumber}>{String(index + 1).padStart(2, '0')}</span><div><div className={styles.findingTitle}><h4>{f.title}</h4><span>{f.severity === 'blocker' ? 'Blocker' : 'Time-sensitive'}</span></div><p>{f.detail}</p><div className={styles.citations}>{f.sources.map(id => <button key={id} onClick={() => openSource(id)} aria-label={`View ${documents.find(d => d.id === id)?.title} source`}><FileText size={12} />{documents.find(d => d.id === id)?.title}<ArrowUpRight size={11} /></button>)}</div><div className={styles.nextStep}><strong>{f.owner}</strong><span>{f.action}</span></div></div></article>) : <div className={styles.passed}><CheckCheck size={22} /><div><strong>No blockers found in the supplied evidence.</strong><p>Human review is required. This result does not release tickets.</p></div></div>}
                   <details className={styles.checks}><summary><ListChecks size={16} /> View the {assessment.checks.length} completed checks <ChevronRight size={15} /></summary><ol>{assessment.checks.map(check => <li key={check.id}><Check size={14} /><div><strong>{check.name}</strong><p>{check.outcome}</p></div></li>)}</ol><p className={styles.small}>These are executed rules and source comparisons, not an AI reasoning transcript.</p></details>
                 </>)}
+                {tab === 'Investigator' && loaded && <AgentInvestigation key={inputSignature(input)} input={input} onSource={openSource} onApply={applyAgentDrafts} />}
                 {tab === 'Source records' && <div><div className={styles.sectionTitle}><h3>Inspect the source</h3><span>All records are synthetic</span></div><div className={styles.sourceTabs} role="group" aria-label="Source document">{documents.map(doc => <button key={doc.id} aria-pressed={document.id === doc.id} onClick={() => setSourceId(doc.id)}><FileText size={14} />{doc.title}</button>)}</div><article className={styles.document}><div className={styles.documentHeading}><FileText size={23} /><div><span className={styles.eyebrow}>{document.source}</span><h3>{document.title}</h3></div></div><dl>{document.fields.map(field => <div key={field.label}><dt>{field.label}</dt><dd>{field.value}</dd></div>)}</dl><footer>Source reference: [{document.id}] · {input.id}</footer></article><p className={styles.small}>Editing sample evidence changes the next assessment. The policy and order totals remain fixed so results can be compared.</p></div>}
-                {tab === 'Message drafts' && (drafts ? <div><div className={styles.sectionTitle}><h3>Prepare the conversation</h3><span>Editable templates · nothing sent</span></div><p className={styles.muted}>Review and edit both drafts. Changing either clears any previous approval.</p>{([['internal', 'Internal escalation'], ['client', 'Client update']] as const).map(([key, label]) => <label className={styles.draft} key={key}><span><FileText size={16} />{label}</span><textarea aria-label={label} value={drafts[key]} onChange={e => editDraft(key, e.target.value)} maxLength={20000} spellCheck /></label>)}</div> : <div className={styles.emptyPanel}><FileText size={28} /><h3>Drafts follow the evidence.</h3><p>Analyze the case to prepare the internal and client message templates.</p><button className={styles.primary} onClick={analyze} disabled={!loaded}>Analyze this case <ArrowRight size={15} /></button></div>)}
+                {tab === 'Message drafts' && (drafts ? <div><div className={styles.sectionTitle}><h3>Prepare the conversation</h3><span>{saved?.draftOrigin ? 'AI-assisted drafts · review required' : 'Editable templates · nothing sent'}</span></div><p className={styles.muted}>Review and edit both drafts. Changing either clears any previous approval.{saved?.draftOrigin && ` Origin: ${saved.draftOrigin.model}. AI wording has not been fact-checked sentence by sentence.`}</p>{([['internal', 'Internal escalation'], ['client', 'Client update']] as const).map(([key, label]) => <label className={styles.draft} key={key}><span><FileText size={16} />{label}</span><textarea aria-label={label} value={drafts[key]} onChange={e => editDraft(key, e.target.value)} maxLength={20000} spellCheck /></label>)}</div> : <div className={styles.emptyPanel}><FileText size={28} /><h3>Drafts follow the evidence.</h3><p>Analyze the case to prepare the internal and client message templates.</p><button className={styles.primary} onClick={analyze} disabled={!loaded}>Analyze this case <ArrowRight size={15} /></button></div>)}
                 {tab === 'Activity' && <div><div className={styles.sectionTitle}><h3>Local activity</h3><span>{saved?.history.length ?? 0} events</span></div><p className={styles.muted}>Actual actions in this browser, separate from the fixed scenario clock. This is a local demo record, not a shared or tamper-proof audit log.</p>{saved?.history.length ? <ol className={styles.history}>{[...saved.history].reverse().map(event => <li key={event.id}><span /><div><strong>{event.event}</strong><p>{event.detail}</p><time dateTime={event.at}>{dateTime(event.at)} ET</time></div></li>)}</ol> : <div className={styles.emptyPanel}><Clock3 size={26} /><h3>No actions recorded yet.</h3><p>Run an assessment to start this case’s activity history.</p></div>}</div>}
               </div>
               <aside className={styles.reviewRail} aria-label="Harbor human review">
                 <div className={styles.reviewHeading}><div className={styles.harborIcon}><ShieldCheck size={22} /></div><div><span className={styles.eyebrow}>HARBOR</span><h3>Human review</h3></div><span className={styles.humanTag}>You</span></div>
                 {!assessment ? <><h4>A clear handoff, ready for you.</h4><p>Run the assessment to see the recommended next step, its owner, and the messages to review.</p><div className={styles.railPlaceholder}><FileText size={18} /><span>Proposed action<br /><small>Available after analysis</small></span></div></> : <>
-                  <span className={styles.eyebrow}>PROPOSED NEXT STEP</span><h4>{assessment.recommendation}</h4><div className={styles.owner}><span>Owner</span><strong>{assessment.owner}</strong></div>
+                  {tab === 'Investigator' ? <><span className={styles.eyebrow}>YOUR REVIEW</span><h4>Review and apply the proposed messages.</h4><p>Plan approval covers the current drafts, not ticket release.</p></> : <><span className={styles.eyebrow}>PROPOSED NEXT STEP</span><h4>{assessment.recommendation}</h4><div className={styles.owner}><span>Owner</span><strong>{assessment.owner}</strong></div><button className={styles.textButton} onClick={() => setTab('Investigator')}>Ask the case investigator <ArrowRight size={14} /></button></>}
                   <button className={styles.textButton} onClick={() => setTab('Message drafts')}>Review message drafts <ArrowRight size={14} /></button>
                   {review && <div className={styles.reviewRecorded} data-approved={review.status === 'approved'}><ShieldCheck size={18} /><div><strong>{review.status === 'approved' ? 'Plan approved locally' : 'Changes requested'}</strong><p>{review.reviewer} · {dateTime(review.at)} ET</p>{review.note && <p>{review.note}</p>}</div></div>}
                   {!reviewMode && <div className={styles.reviewActions}><button className={styles.primary} onClick={() => { setReviewMode('approved'); setReviewError(''); }} disabled={review?.status === 'approved'}><Check size={15} />{review?.status === 'approved' ? 'Approval recorded' : 'Approve plan'}</button><button className={styles.secondary} onClick={() => { setReviewMode('changes_requested'); setReviewError(''); }}>Request changes</button></div>}

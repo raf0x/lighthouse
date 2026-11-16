@@ -1,0 +1,102 @@
+{
+  "date": "2026-11-15",
+  "implementationCommit": "bb976dfd2ac3af7d2f6bda23e6fc03057b50af7d",
+  "model": "claude-sonnet-4-6",
+  "version": "investigator-v3",
+  "scope": "Latest accepted outcome for each of ten synthetic cases, including a browser-run retry after a timeout. Agreement and citation checks only; narrative has documented review issues.",
+  "passed": 10,
+  "firstSubmissionPassed": 5,
+  "cases": [
+    {
+      "caseId": "OPS-101",
+      "sourceReport": "operations-agent-ui-run.json",
+      "runId": "bd810113-2475-42bf-9d52-269ee613d857",
+      "modelCalls": 3,
+      "firstSubmissionPassed": false,
+      "elapsedSeconds": 66.297,
+      "estimatedUsd": 0.096204
+    },
+    {
+      "caseId": "OPS-102",
+      "sourceReport": "operations-agent-sonnet-final.json",
+      "runId": "c147a1e7-feb8-4af4-a60e-91c52d49b4dc",
+      "modelCalls": 3,
+      "firstSubmissionPassed": false,
+      "elapsedSeconds": 51.951,
+      "estimatedUsd": 0.082254
+    },
+    {
+      "caseId": "OPS-103",
+      "sourceReport": "operations-agent-sonnet-final.json",
+      "runId": "64e86a80-18d1-478f-9c39-efd6827cc72a",
+      "modelCalls": 2,
+      "firstSubmissionPassed": true,
+      "elapsedSeconds": 31.914,
+      "estimatedUsd": 0.043221
+    },
+    {
+      "caseId": "OPS-104",
+      "sourceReport": "operations-agent-sonnet-final.json",
+      "runId": "371662b7-6120-4180-9989-61cc0355b102",
+      "modelCalls": 3,
+      "firstSubmissionPassed": false,
+      "elapsedSeconds": 47.245,
+      "estimatedUsd": 0.079908
+    },
+    {
+      "caseId": "OPS-105",
+      "sourceReport": "operations-agent-sonnet-smoke.json",
+      "runId": "b2434c97-310b-4b7e-b0ca-87508ef90644",
+      "modelCalls": 3,
+      "firstSubmissionPassed": false,
+      "elapsedSeconds": 33.876,
+      "estimatedUsd": 0.067338
+    },
+    {
+      "caseId": "OPS-106",
+      "sourceReport": "operations-agent-sonnet-final.json",
+      "runId": "71192d88-8c2c-4d4f-92fc-c24b5eac8cb1",
+      "modelCalls": 2,
+      "firstSubmissionPassed": true,
+      "elapsedSeconds": 24.993,
+      "estimatedUsd": 0.038358
+    },
+    {
+      "caseId": "OPS-107",
+      "sourceReport": "operations-agent-sonnet-final.json",
+      "runId": "64fede62-92c1-4d12-91c9-998b2b3e791e",
+      "modelCalls": 3,
+      "firstSubmissionPassed": false,
+      "elapsedSeconds": 53.837,
+      "estimatedUsd": 0.087744
+    },
+    {
+      "caseId": "OPS-108",
+      "sourceReport": "operations-agent-sonnet-final.json",
+      "runId": "f7673f5c-85f9-499b-af5f-1fc245ebb8b9",
+      "modelCalls": 2,
+      "firstSubmissionPassed": true,
+      "elapsedSeconds": 22.723,
+      "estimatedUsd": 0.036432
+    },
+    {
+      "caseId": "OPS-109",
+      "sourceReport": "operations-agent-sonnet-final.json",
+      "runId": "e97ff1b2-e3f5-4562-92f8-8ab78844fc6a",
+      "modelCalls": 2,
+      "firstSubmissionPassed": true,
+      "elapsedSeconds": 24.669,
+      "estimatedUsd": 0.037926
+    },
+    {
+      "caseId": "OPS-110",
+      "sourceReport": "operations-agent-sonnet-smoke.json",
+      "runId": "6b8e8c53-edd6-470c-80cf-fcd209b6d49f",
+      "modelCalls": 2,
+      "firstSubmissionPassed": true,
+      "elapsedSeconds": 23.349,
+      "estimatedUsd": 0.035754
+    }
+  ],
+  "acceptedRunEstimateUsd": 0.605139
+}

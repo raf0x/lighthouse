@@ -1,0 +1,74 @@
+{
+  "scope": "Four focused synthetic cases; retained runs revalidated against final checks. Not an independent-accuracy or comprehensive narrative-safety claim.",
+  "cases": [
+    {
+      "caseId": "OPS-101",
+      "source": "operations-agent-concise-v4-ui.json",
+      "sourceCommit": "cd169b1",
+      "validatorCommit": "b9823d1",
+      "passedFinalValidator": true,
+      "firstSubmissionPassed": false,
+      "modelCalls": 3,
+      "elapsedSeconds": 29.616,
+      "estimatedUsd": 0.065538,
+      "words": {
+        "summary": 14,
+        "nextStep": 17,
+        "internal": 63,
+        "client": 84
+      }
+    },
+    {
+      "caseId": "OPS-103",
+      "source": "operations-agent-concise-v4-final.json",
+      "sourceCommit": "b9823d1",
+      "validatorCommit": "b9823d1",
+      "passedFinalValidator": true,
+      "firstSubmissionPassed": false,
+      "modelCalls": 3,
+      "elapsedSeconds": 24.735,
+      "estimatedUsd": 0.061755,
+      "words": {
+        "summary": 16,
+        "nextStep": 21,
+        "internal": 42,
+        "client": 54
+      }
+    },
+    {
+      "caseId": "OPS-105",
+      "source": "operations-agent-concise-v4.json",
+      "sourceCommit": "cd169b1",
+      "validatorCommit": "b9823d1",
+      "passedFinalValidator": true,
+      "firstSubmissionPassed": false,
+      "modelCalls": 3,
+      "elapsedSeconds": 21.802,
+      "estimatedUsd": 0.056058,
+      "words": {
+        "summary": 15,
+        "nextStep": 16,
+        "internal": 64,
+        "client": 48
+      }
+    },
+    {
+      "caseId": "OPS-110",
+      "source": "operations-agent-concise-v4-plain.json",
+      "sourceCommit": "2383ed2",
+      "validatorCommit": "b9823d1",
+      "passedFinalValidator": true,
+      "firstSubmissionPassed": true,
+      "modelCalls": 2,
+      "elapsedSeconds": 14.423,
+      "estimatedUsd": 0.031314,
+      "words": {
+        "summary": 21,
+        "nextStep": 13,
+        "internal": 44,
+        "client": 50
+      }
+    }
+  ],
+  "acceptedEstimatedUsd": 0.214665
+}

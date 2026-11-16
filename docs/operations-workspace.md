@@ -2,7 +2,7 @@
 
 ## Scope
 
-The `/operations` route turns Lighthouse's existing visual system into an interactive ticket-order exception workspace. It is a **rules-based baseline**, not a live language-model agent. Ten fictional cases run locally with no model requests, external writes, or new infrastructure. The existing `/live` walkthrough, account pages, and optional Anthropic analysis endpoint retain their behavior.
+The `/operations` route turns Lighthouse's existing visual system into an interactive ticket-order exception workspace. Its assessment is a **rules-based baseline**: ten fictional cases run locally with no model requests. The optional Investigator tab adds a bounded Anthropic investigation in the private preview; see [the agent implementation](operations-agent.md). The existing `/live` walkthrough, account pages, and older Anthropic analysis endpoint retain their behavior.
 
 The current workflow is: inspect records, run policy checks, examine cited findings, edit message templates, and record a local human review. Reviewing a remediation plan never marks an order released or a blocker resolved.
 
@@ -50,4 +50,4 @@ Run `npm test`, `npm run typecheck`, and `npm run build`. The operations tests c
 
 ## Next increment
 
-After the baseline is reviewed, a model can help interpret unstructured documents or draft natural language. Keep deterministic financial comparisons and approval state authoritative. Before connecting paid inference, choose a provider and budget. Real write actions additionally need authenticated reviewers, server-owned state, role checks, idempotency, and server-side verification that the approved evidence version is current. Do not treat the local review button as authorization for a future connector.
+The Investigator now reads structured source records and proposes natural-language drafts; deterministic financial comparisons and approval state remain authoritative. Public paid inference still needs authenticated access and durable spending controls. Unstructured uploads and real write actions additionally need server-owned state, role checks, idempotency, and verification that the approved evidence version is current. Do not treat the local review button as authorization for a future connector.

@@ -1,0 +1,468 @@
+{
+  "version": "lighthouse-agent-eval-v1",
+  "startedAt": "2026-11-16T02:19:20.952Z",
+  "model": "claude-sonnet-4-6",
+  "scope": "Synthetic fixtures only; category/citation validation is automatic, narrative needs human review.",
+  "cases": [
+    {
+      "caseId": "OPS-103",
+      "passed": true,
+      "expected": {
+        "decision": "needs_information",
+        "findingIds": [
+          "payment_conflict",
+          "payment_pending"
+        ]
+      },
+      "status": 200,
+      "run": {
+        "version": "investigator-v4",
+        "runId": "01498094-3f47-4864-aa94-ec69acc162c4",
+        "caseId": "OPS-103",
+        "inputSignature": "[\"operations-v1\",\"OPS-103\",\"2026-11-15T14:00:00.000Z\",\"Mariner Hospitality US, Inc.\",\"ORD-2403\",4800000,\"USD\",160,\"2026-11-18T14:00:00.000Z\",\"INV-7603\",\"Mariner Hospitality US, Inc.\",4800000,\"USD\",\"\",\"pending\",4800000,\"USD\",\"PAY-5303\",\"cleared\",\"Partner Operations\"]",
+        "model": "claude-sonnet-4-6",
+        "completedAt": "2026-11-16T02:19:52.278Z",
+        "elapsedMs": 27536,
+        "report": {
+          "decision": "needs_information",
+          "summary": "Case is blocked by a payment conflict (CRM cleared vs. ledger pending) and a pending ledger status; deadline is 72 hours away, no escalation required yet.",
+          "recommendation": "Finance must reconcile the CRM/ledger conflict and confirm cleared funds for PAY-5303; then Ticketing Operations should perform human release review.",
+          "owner": "Finance",
+          "findings": [
+            {
+              "id": "payment_conflict",
+              "explanation": "CRM status is 'cleared' but the payment ledger status is 'pending'. These conflict and require Finance review.",
+              "sourceIds": [
+                "crm",
+                "payment",
+                "policy"
+              ]
+            },
+            {
+              "id": "payment_pending",
+              "explanation": "Payment ledger status is 'pending'; Finance must confirm cleared funds before release.",
+              "sourceIds": [
+                "payment",
+                "policy"
+              ]
+            }
+          ],
+          "citations": [
+            {
+              "sourceId": "account",
+              "field": "Approved billing entity",
+              "value": "Mariner Hospitality US, Inc."
+            },
+            {
+              "sourceId": "order",
+              "field": "Order total",
+              "value": "USD 48,000.00"
+            },
+            {
+              "sourceId": "order",
+              "field": "Allocation deadline",
+              "value": "Nov 18, 9:00 AM EST"
+            },
+            {
+              "sourceId": "order",
+              "field": "Scenario clock",
+              "value": "Nov 15, 9:00 AM EST"
+            },
+            {
+              "sourceId": "invoice",
+              "field": "Billed entity",
+              "value": "Mariner Hospitality US, Inc."
+            },
+            {
+              "sourceId": "invoice",
+              "field": "Other active invoice",
+              "value": "None in this sample"
+            },
+            {
+              "sourceId": "payment",
+              "field": "Ledger status",
+              "value": "pending"
+            },
+            {
+              "sourceId": "payment",
+              "field": "Payment reference",
+              "value": "PAY-5303"
+            },
+            {
+              "sourceId": "payment",
+              "field": "Recorded amount",
+              "value": "USD 48,000.00"
+            },
+            {
+              "sourceId": "crm",
+              "field": "Payment status",
+              "value": "cleared"
+            },
+            {
+              "sourceId": "policy",
+              "field": "Payment",
+              "value": "A referenced, cleared payment for the exact order amount and currency is required. Conflicting records need Finance review."
+            }
+          ],
+          "questions": [
+            {
+              "findingId": "payment_conflict",
+              "question": "CRM shows payment cleared but ledger PAY-5303 is still pending — can Finance reconcile and confirm the correct status?",
+              "owner": "Finance"
+            },
+            {
+              "findingId": "payment_pending",
+              "question": "Can Finance confirm that PAY-5303 has cleared in the ledger for ORD-2403?",
+              "owner": "Finance"
+            }
+          ],
+          "drafts": {
+            "internal": "Subject: ORD-2403 — Blocked: payment conflict\n- payment_conflict: CRM shows cleared, ledger PAY-5303 shows pending — Finance to reconcile and update ledger status.\n- payment_pending: Finance to confirm cleared funds before any release action.\n- Deadline: Nov 18, 9:00 AM EST (72 hours away, no escalation required yet).\nTicket release is not confirmed and requires human review.",
+            "client": "Subject: ORD-2403 — Payment Verification Needed\nDear Mariner Hospitality team, the supplied records show your payment reference PAY-5303 is recorded as pending in our ledger while our CRM note shows cleared. Please share any remittance details so our Finance team can reconcile the records. Deadline: Nov 18, 9:00 AM EST. Ticket release is not confirmed and requires human review."
+          }
+        },
+        "trace": [
+          {
+            "step": 1,
+            "kind": "model",
+            "name": "Claude response",
+            "detail": "Call 1: 2819 input tokens, 57 output tokens; stop: tool_use.",
+            "ok": true
+          },
+          {
+            "step": 2,
+            "kind": "tool",
+            "name": "read_records",
+            "detail": "Read Account record, Ticket order, Invoice register, Payment ledger, CRM payment note, Release policy.",
+            "ok": true
+          },
+          {
+            "step": 3,
+            "kind": "model",
+            "name": "Claude response",
+            "detail": "Call 2: 3458 input tokens, 921 output tokens; stop: tool_use.",
+            "ok": true
+          },
+          {
+            "step": 4,
+            "kind": "validation",
+            "name": "Policy and citation checks",
+            "detail": "Reconcile finding categories with the records: missing []; unsupported [deadline_near]. Re-read relevant records and revise the explanation, questions, action, and drafts; do not only change category labels.",
+            "ok": false
+          },
+          {
+            "step": 5,
+            "kind": "model",
+            "name": "Claude response",
+            "detail": "Call 3: 4581 input tokens, 946 output tokens; stop: tool_use.",
+            "ok": true
+          },
+          {
+            "step": 6,
+            "kind": "validation",
+            "name": "Policy and citation checks",
+            "detail": "Finding categories and decision match the policy engine; quoted fields match the records. Narrative and drafts still need human review.",
+            "ok": true
+          }
+        ],
+        "usage": {
+          "inputTokens": 10858,
+          "outputTokens": 1924,
+          "modelCalls": 3,
+          "estimatedUsd": 0.061434
+        },
+        "validationAttempts": 2,
+        "firstSubmissionPassed": false
+      }
+    },
+    {
+      "caseId": "OPS-105",
+      "passed": true,
+      "expected": {
+        "decision": "ready_for_review",
+        "findingIds": []
+      },
+      "status": 200,
+      "run": {
+        "version": "investigator-v4",
+        "runId": "10e69519-5362-422a-bfe4-0057c60efbb3",
+        "caseId": "OPS-105",
+        "inputSignature": "[\"operations-v1\",\"OPS-105\",\"2026-11-15T14:00:00.000Z\",\"Northstar Media US, Inc.\",\"ORD-2405\",4800000,\"USD\",160,\"2026-11-18T14:00:00.000Z\",\"INV-7605\",\"Northstar Media US, Inc.\",4800000,\"USD\",\"\",\"cleared\",4800000,\"USD\",\"PAY-5305\",\"cleared\",\"Partner Operations\"]",
+        "model": "claude-sonnet-4-6",
+        "completedAt": "2026-11-16T02:20:14.173Z",
+        "elapsedMs": 21802,
+        "report": {
+          "decision": "ready_for_review",
+          "summary": "All entity, invoice, and payment checks pass; deadline is 72 hours away, no blockers found.",
+          "recommendation": "No blockers found; ask Ticketing Operations to perform human release review before the Nov 18 deadline.",
+          "owner": "Ticketing Operations",
+          "findings": [],
+          "citations": [
+            {
+              "sourceId": "account",
+              "field": "Approved billing entity",
+              "value": "Northstar Media US, Inc."
+            },
+            {
+              "sourceId": "invoice",
+              "field": "Billed entity",
+              "value": "Northstar Media US, Inc."
+            },
+            {
+              "sourceId": "invoice",
+              "field": "Invoice total",
+              "value": "USD 48,000.00"
+            },
+            {
+              "sourceId": "invoice",
+              "field": "Other active invoice",
+              "value": "None in this sample"
+            },
+            {
+              "sourceId": "order",
+              "field": "Order total",
+              "value": "USD 48,000.00"
+            },
+            {
+              "sourceId": "order",
+              "field": "Allocation deadline",
+              "value": "Nov 18, 9:00 AM EST"
+            },
+            {
+              "sourceId": "order",
+              "field": "Scenario clock",
+              "value": "Nov 15, 9:00 AM EST"
+            },
+            {
+              "sourceId": "payment",
+              "field": "Ledger status",
+              "value": "cleared"
+            },
+            {
+              "sourceId": "payment",
+              "field": "Recorded amount",
+              "value": "USD 48,000.00"
+            },
+            {
+              "sourceId": "payment",
+              "field": "Payment reference",
+              "value": "PAY-5305"
+            },
+            {
+              "sourceId": "crm",
+              "field": "Payment status",
+              "value": "cleared"
+            },
+            {
+              "sourceId": "policy",
+              "field": "Human review",
+              "value": "A reviewer approves the proposed plan. This demo cannot send messages, change invoices, or release tickets."
+            }
+          ],
+          "questions": [],
+          "drafts": {
+            "internal": "Subject: ORD-2405 – Ready for Release Review\n- Entity match confirmed: Northstar Media US, Inc. on both account and invoice.\n- Invoice INV-7605 matches order amount (USD 48,000.00); no duplicate active invoice.\n- Payment PAY-5305 cleared in ledger and CRM; amount matches.\n- Deadline: Nov 18, 9:00 AM EST (72 hrs from scenario clock).\n- Ticket release is not confirmed and requires human review.",
+            "client": "Subject: ORD-2405 – Payment Confirmed, Pending Release Review\nHi Northstar Media team,\nThe supplied records show your payment is cleared and all checks have passed for order ORD-2405. Please note the allocation deadline is Nov 18, 9:00 AM EST.\nTicket release is not confirmed and requires human review."
+          }
+        },
+        "trace": [
+          {
+            "step": 1,
+            "kind": "model",
+            "name": "Claude response",
+            "detail": "Call 1: 2819 input tokens, 57 output tokens; stop: tool_use.",
+            "ok": true
+          },
+          {
+            "step": 2,
+            "kind": "tool",
+            "name": "read_records",
+            "detail": "Read Account record, Ticket order, Invoice register, Payment ledger, CRM payment note, Release policy.",
+            "ok": true
+          },
+          {
+            "step": 3,
+            "kind": "model",
+            "name": "Claude response",
+            "detail": "Call 2: 3452 input tokens, 779 output tokens; stop: tool_use.",
+            "ok": true
+          },
+          {
+            "step": 4,
+            "kind": "validation",
+            "name": "Policy and citation checks",
+            "detail": "Reconcile finding categories with the records: missing []; unsupported [deadline_near]. Re-read relevant records and revise the explanation, questions, action, and drafts; do not only change category labels.",
+            "ok": false
+          },
+          {
+            "step": 5,
+            "kind": "model",
+            "name": "Claude response",
+            "detail": "Call 3: 4415 input tokens, 764 output tokens; stop: tool_use.",
+            "ok": true
+          },
+          {
+            "step": 6,
+            "kind": "validation",
+            "name": "Policy and citation checks",
+            "detail": "Finding categories and decision match the policy engine; quoted fields match the records. Narrative and drafts still need human review.",
+            "ok": true
+          }
+        ],
+        "usage": {
+          "inputTokens": 10686,
+          "outputTokens": 1600,
+          "modelCalls": 3,
+          "estimatedUsd": 0.056058
+        },
+        "validationAttempts": 2,
+        "firstSubmissionPassed": false
+      }
+    },
+    {
+      "caseId": "OPS-110",
+      "passed": true,
+      "expected": {
+        "decision": "blocked",
+        "findingIds": [
+          "deadline_elapsed"
+        ]
+      },
+      "status": 200,
+      "run": {
+        "version": "investigator-v4",
+        "runId": "ebce0d05-6b2f-4a01-b50c-e8e82d2f8d3b",
+        "caseId": "OPS-110",
+        "inputSignature": "[\"operations-v1\",\"OPS-110\",\"2026-11-15T14:00:00.000Z\",\"Harbor City Events US, Inc.\",\"ORD-2410\",4800000,\"USD\",160,\"2026-11-15T11:00:00.000Z\",\"INV-7610\",\"Harbor City Events US, Inc.\",4800000,\"USD\",\"\",\"cleared\",4800000,\"USD\",\"PAY-5310\",\"cleared\",\"Partner Operations\"]",
+        "model": "claude-sonnet-4-6",
+        "completedAt": "2026-11-16T02:20:26.507Z",
+        "elapsedMs": 12253,
+        "report": {
+          "decision": "blocked",
+          "summary": "The allocation deadline elapsed 3 hours ago; all other checks pass.",
+          "recommendation": "Ticketing Operations must issue a new allocation decision for ORD-2410 before release can proceed.",
+          "owner": "Ticketing Operations",
+          "findings": [
+            {
+              "id": "deadline_elapsed",
+              "explanation": "Scenario clock is Nov 15, 9:00 AM EST; deadline was Nov 15, 6:00 AM EST — expired 3 hours ago. A new allocation decision is required.",
+              "sourceIds": [
+                "order",
+                "policy"
+              ]
+            }
+          ],
+          "citations": [
+            {
+              "sourceId": "account",
+              "field": "Approved billing entity",
+              "value": "Harbor City Events US, Inc."
+            },
+            {
+              "sourceId": "order",
+              "field": "Allocation deadline",
+              "value": "Nov 15, 6:00 AM EST"
+            },
+            {
+              "sourceId": "order",
+              "field": "Scenario clock",
+              "value": "Nov 15, 9:00 AM EST"
+            },
+            {
+              "sourceId": "invoice",
+              "field": "Billed entity",
+              "value": "Harbor City Events US, Inc."
+            },
+            {
+              "sourceId": "invoice",
+              "field": "Other active invoice",
+              "value": "None in this sample"
+            },
+            {
+              "sourceId": "payment",
+              "field": "Ledger status",
+              "value": "cleared"
+            },
+            {
+              "sourceId": "payment",
+              "field": "Recorded amount",
+              "value": "USD 48,000.00"
+            },
+            {
+              "sourceId": "payment",
+              "field": "Payment reference",
+              "value": "PAY-5310"
+            },
+            {
+              "sourceId": "crm",
+              "field": "Payment status",
+              "value": "cleared"
+            },
+            {
+              "sourceId": "policy",
+              "field": "Deadline",
+              "value": "Escalate deadlines within 24 hours. After expiry, obtain a new allocation decision; never assume an extension."
+            }
+          ],
+          "questions": [
+            {
+              "findingId": "deadline_elapsed",
+              "question": "The allocation deadline for ORD-2410 expired at 6:00 AM EST on Nov 15. Can you issue a new allocation decision?",
+              "owner": "Ticketing Operations"
+            }
+          ],
+          "drafts": {
+            "internal": "Subject: ORD-2410 — Expired Deadline\n- deadline_elapsed: Allocation deadline passed at 6:00 AM EST; scenario clock is 9:00 AM EST — Ticketing Operations must issue a new allocation decision.\nTicket release is not confirmed and requires human review.",
+            "client": "Subject: ORD-2410 — Allocation Deadline Expired\nHi Harbor City Events team,\nThe supplied records show the allocation deadline for ORD-2410 passed at 6:00 AM EST on Nov 15. A new allocation decision is needed before we can proceed. Ticket release is not confirmed and requires human review."
+          }
+        },
+        "trace": [
+          {
+            "step": 1,
+            "kind": "model",
+            "name": "Claude response",
+            "detail": "Call 1: 2819 input tokens, 57 output tokens; stop: tool_use.",
+            "ok": true
+          },
+          {
+            "step": 2,
+            "kind": "tool",
+            "name": "read_records",
+            "detail": "Read Account record, Ticket order, Invoice register, Payment ledger, CRM payment note, Release policy.",
+            "ok": true
+          },
+          {
+            "step": 3,
+            "kind": "model",
+            "name": "Claude response",
+            "detail": "Call 2: 3449 input tokens, 695 output tokens; stop: tool_use.",
+            "ok": true
+          },
+          {
+            "step": 4,
+            "kind": "validation",
+            "name": "Policy and citation checks",
+            "detail": "Finding categories and decision match the policy engine; quoted fields match the records. Narrative and drafts still need human review.",
+            "ok": true
+          }
+        ],
+        "usage": {
+          "inputTokens": 6268,
+          "outputTokens": 752,
+          "modelCalls": 2,
+          "estimatedUsd": 0.030084
+        },
+        "validationAttempts": 1,
+        "firstSubmissionPassed": true
+      }
+    }
+  ],
+  "totals": {
+    "passed": 3,
+    "failed": 0,
+    "inputTokens": 27812,
+    "outputTokens": 4276,
+    "estimatedUsd": 0.14757599999999998
+  },
+  "updatedAt": "2026-11-16T02:20:26.535Z"
+}
