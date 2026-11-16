@@ -13,6 +13,7 @@ export type OperationCase = {
   duplicateInvoiceId: string;
   payment: { status: PaymentState; amountCents: number; currency: Currency; reference: string };
   crmPaymentStatus: PaymentState;
+  imported?: { format: 'case-csv-v1'; fileName: string; at: string; row: 2 };
 };
 export type EvidenceDocument = { id: string; title: string; source: string; fields: { label: string; value: string }[] };
 export type Finding = { id: string; title: string; detail: string; severity: 'blocker' | 'attention'; sources: string[]; action: string; owner: string };
@@ -26,7 +27,8 @@ export type Assessment = {
 export type AuditEntry = { id: string; at: string; event: string; detail: string };
 export type CaseReview = { status: ReviewStatus; reviewer: string; note: string; at: string; inputSignature: string; draftSignature: string };
 export type DraftOrigin = { model: string; runId: string; completedAt: string };
-export type CaseWorkspace = { input: OperationCase; analyzed: boolean; drafts?: Drafts; draftOrigin?: DraftOrigin; review?: CaseReview; history: AuditEntry[] };
+export type CaseWorkspace = { input: OperationCase; importedOriginal?: OperationCase; analyzed: boolean; drafts?: Drafts; draftOrigin?: DraftOrigin; review?: CaseReview; history: AuditEntry[] };
+export const MAX_IMPORTED_CASES = 20;
 export const decisionLabels: Record<Decision, string> = { blocked: 'Action needed', needs_information: 'Evidence needed', ready_for_review: 'Ready for review' };
 
 export function money(cents: number, currency: Currency) {
@@ -84,9 +86,44 @@ const currencies: string[] = ['USD', 'CAD', 'MXN'];
 const states: string[] = ['missing', 'pending', 'cleared'];
 const shortText = (v: unknown) => typeof v === 'string' && v.length <= 500;
 const cents = (v: unknown) => typeof v === 'number' && Number.isSafeInteger(v) && v >= 0 && v <= 1_000_000_000;
+/** Explicitly zoned timestamps only; reject rolled dates such as February 30. */
+export function normalizedTimestamp(value: unknown): string | null {
+  if (typeof value !== 'string') return null;
+  const m = /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})(?::(\d{2})(?:\.(\d{1,3}))?)?(Z|[+-]\d{2}:\d{2})$/.exec(value);
+  if (!m) return null;
+  const [year, month, day, hour, minute, second] = m.slice(1, 7).map(v => Number(v || 0));
+  if (year < 2000 || year > 2100 || month < 1 || month > 12 || day < 1 || day > new Date(Date.UTC(year, month, 0)).getUTCDate() || hour > 23 || minute > 59 || second > 59) return null;
+  if (m[8] !== 'Z') { const [h, min] = m[8].slice(1).split(':').map(Number); if (h > 14 || min > 59 || (h === 14 && min !== 0)) return null; }
+  const time = Date.parse(value);
+  return Number.isFinite(time) ? new Date(time).toISOString() : null;
+}
+const importText = (value: unknown, max = 200, required = false): value is string => typeof value === 'string' && value.length <= max && !/[\u0000-\u001f\u007f]/.test(value) && (!required || value.trim().length > 0);
+/** Imported records are user-supplied data, never policy or authenticated Finance evidence. */
+export function canonicalImportedCase(value: unknown): OperationCase | null {
+  const c = value as OperationCase;
+  if (!c || typeof c !== 'object' || !c.invoice || !c.payment || !c.imported || !/^IMP-[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(c.id)) return null;
+  if (c.imported.format !== 'case-csv-v1' || c.imported.row !== 2 || !importText(c.imported.fileName, 200, true) || !c.imported.fileName.toLowerCase().endsWith('.csv') || !normalizedTimestamp(c.imported.at)) return null;
+  if (!importText(c.account, 200, true) || ![c.orderId, c.invoice.id].every(v => typeof v === 'string' && /^[A-Za-z0-9][A-Za-z0-9._/-]{0,79}$/.test(v)) || ![c.approvedEntity, c.invoice.entity, c.duplicateInvoiceId, c.payment.reference].every(v => importText(v))) return null;
+  if (!cents(c.orderAmountCents) || c.orderAmountCents === 0 || !cents(c.invoice.amountCents) || c.invoice.amountCents === 0 || !cents(c.payment.amountCents) || !Number.isSafeInteger(c.tickets) || c.tickets < 1 || c.tickets > 1_000_000) return null;
+  if (![c.orderCurrency, c.invoice.currency, c.payment.currency].every(v => currencies.includes(v)) || ![c.payment.status, c.crmPaymentStatus].every(v => states.includes(v))) return null;
+  const asOf = normalizedTimestamp(c.asOf), deadline = normalizedTimestamp(c.deadline);
+  if (!asOf || !deadline) return null;
+  const hours = (Date.parse(deadline) - Date.parse(asOf)) / 3_600_000;
+  if (hours < -168 || hours > 720) return null;
+  return { id: c.id, account: c.account, initials: c.account.trim().split(/\s+/).slice(0, 2).map(w => Array.from(w)[0]).join('').toUpperCase(), color: '#177a70', scenario: 'Imported case', description: 'User-supplied CSV records assessed against the Lighthouse demo policy.', owner: 'Partner Operations', asOf, deadline,
+    approvedEntity: c.approvedEntity, orderId: c.orderId, orderAmountCents: c.orderAmountCents, orderCurrency: c.orderCurrency, tickets: c.tickets,
+    invoice: { id: c.invoice.id, entity: c.invoice.entity, amountCents: c.invoice.amountCents, currency: c.invoice.currency }, duplicateInvoiceId: c.duplicateInvoiceId,
+    payment: { status: c.payment.status, amountCents: c.payment.amountCents, currency: c.payment.currency, reference: c.payment.reference }, crmPaymentStatus: c.crmPaymentStatus,
+    imported: { format: 'case-csv-v1', fileName: c.imported.fileName, at: normalizedTimestamp(c.imported.at)!, row: 2 } };
+}
+export function sameCaseIdentity(a: OperationCase, b: OperationCase) {
+  const identity = (c: OperationCase) => JSON.stringify([c.id, c.account, c.asOf, c.orderId, c.orderAmountCents, c.orderCurrency, c.tickets, c.invoice.id, c.imported]);
+  return identity(a) === identity(b);
+}
 export function validCase(value: unknown): value is OperationCase {
   const c = value as OperationCase;
   if (!c || typeof c !== 'object' || !c.invoice || !c.payment) return false;
+  if (c.imported || (typeof c.id === 'string' && c.id.startsWith('IMP-'))) return canonicalImportedCase(c) !== null;
   const original = operationCases.find(item => item.id === c.id);
   if (!original) return false;
   return c.account === original.account && c.asOf === original.asOf && c.orderId === original.orderId
@@ -99,10 +136,10 @@ export function validCase(value: unknown): value is OperationCase {
 }
 export function inputSignature(c: OperationCase) {
   // Keep exact evidence, rather than a collision-prone short hash, for local review provenance.
-  return JSON.stringify([ENGINE_VERSION, c.id, c.asOf, c.approvedEntity, c.orderId, c.orderAmountCents, c.orderCurrency, c.tickets, c.deadline, c.invoice.id, c.invoice.entity, c.invoice.amountCents, c.invoice.currency, c.duplicateInvoiceId, c.payment.status, c.payment.amountCents, c.payment.currency, c.payment.reference, c.crmPaymentStatus, c.owner]);
+  return JSON.stringify([ENGINE_VERSION, c.id, c.asOf, c.approvedEntity, c.orderId, c.orderAmountCents, c.orderCurrency, c.tickets, c.deadline, c.invoice.id, c.invoice.entity, c.invoice.amountCents, c.invoice.currency, c.duplicateInvoiceId, c.payment.status, c.payment.amountCents, c.payment.currency, c.payment.reference, c.crmPaymentStatus, c.owner, ...(c.imported ? [c.account, c.imported] : [])]);
 }
 export function evidenceFor(c: OperationCase): EvidenceDocument[] {
-  return [
+  const docs: EvidenceDocument[] = [
     { id: 'account', title: 'Account record', source: 'Synthetic partner account', fields: [
       { label: 'Partner', value: c.account }, { label: 'Approved billing entity', value: c.approvedEntity || 'Not supplied' }, { label: 'Account owner', value: c.owner },
     ] },
@@ -127,6 +164,12 @@ export function evidenceFor(c: OperationCase): EvidenceDocument[] {
       { label: 'Human review', value: 'A reviewer approves the proposed plan. This demo cannot send messages, change invoices, or release tickets.' },
     ] },
   ];
+  if (c.imported) {
+    for (const doc of docs.filter(d => d.id !== 'policy')) doc.source = `Imported CSV · ${c.imported.fileName} · row 2 · ${doc.title}`;
+    docs.find(d => d.id === 'order')!.fields.push({ label: 'Order ID', value: c.orderId }, { label: 'Scenario clock (ISO)', value: c.asOf }, { label: 'Allocation deadline (ISO)', value: c.deadline });
+    docs.find(d => d.id === 'invoice')!.fields.push({ label: 'Invoice ID', value: c.invoice.id });
+  }
+  return docs;
 }
 
 export function assessCase(c: OperationCase): Assessment {
@@ -162,7 +205,7 @@ export function assessCase(c: OperationCase): Assessment {
   const recommendation = blockers.length ? blockers[0].action : 'Ask Ticketing Operations to review release against the verified order and payment evidence.';
   const owner = blockers.length ? blockers[0].owner : 'Ticketing Operations';
   const checks: Check[] = [
-    { id: 'read', name: 'Read source records', outcome: '6 synthetic source records loaded for this case.', sources: ['account', 'order', 'invoice', 'payment', 'crm', 'policy'] },
+    { id: 'read', name: 'Read source records', outcome: c.imported ? '5 record views mapped from one user-supplied CSV row, plus the fixed demo policy. No external system was queried.' : '6 synthetic source records loaded for this case.', sources: ['account', 'order', 'invoice', 'payment', 'crm', 'policy'] },
     { id: 'invoice', name: 'Compare entity and invoice', outcome: `${findings.filter(f => ['entity_missing', 'entity_mismatch', 'duplicate_invoice', 'invoice_currency', 'invoice_amount'].includes(f.id)).length} findings from account, invoice, and order comparisons.`, sources: ['account', 'invoice', 'order', 'policy'] },
     { id: 'payment', name: 'Reconcile payment evidence', outcome: `${findings.filter(f => f.id.startsWith('payment_') || f.id === 'reference_missing').length} findings from payment and CRM comparisons.`, sources: ['payment', 'crm', 'order', 'policy'] },
     { id: 'deadline', name: 'Check allocation window', outcome: deadlineHours <= 0 ? 'Deadline elapsed at the scenario clock.' : `${deadlineHours.toFixed(1).replace(/\.0$/, '')} hours remain at the scenario clock.`, sources: ['order', 'policy'] },
@@ -188,15 +231,19 @@ export function currentReview(c: OperationCase, drafts: Drafts, review?: CaseRev
 }
 
 export function restoreWorkspaces(raw: string | null): Record<string, CaseWorkspace> {
-  if (!raw) return {};
+  if (!raw || raw.length > 2_000_000) return {};
   try {
     const parsed = JSON.parse(raw);
     if (parsed.version !== ENGINE_VERSION || !parsed.cases || typeof parsed.cases !== 'object') return {};
     const result: Record<string, CaseWorkspace> = {};
-    for (const base of operationCases) {
+    const importedBases = Object.values(parsed.cases).map((w: any) => canonicalImportedCase(w?.importedOriginal)).filter((c): c is OperationCase => Boolean(c)).slice(0, MAX_IMPORTED_CASES);
+    const orderIds = new Set(operationCases.map(c => c.orderId.toLowerCase()));
+    for (const base of [...operationCases, ...importedBases]) {
       const saved = parsed.cases[base.id];
       if (!saved || !validCase(saved.input) || saved.input.id !== base.id) continue;
-      const input = { ...base, approvedEntity: saved.input.approvedEntity, owner: saved.input.owner, deadline: saved.input.deadline, invoice: { ...saved.input.invoice }, duplicateInvoiceId: saved.input.duplicateInvoiceId, payment: { ...saved.input.payment }, crmPaymentStatus: saved.input.crmPaymentStatus };
+      if (base.imported && (orderIds.has(base.orderId.toLowerCase()) || !sameCaseIdentity(base, saved.input))) continue;
+      if (base.imported) orderIds.add(base.orderId.toLowerCase());
+      const input = base.imported ? canonicalImportedCase(saved.input)! : { ...base, approvedEntity: saved.input.approvedEntity, owner: saved.input.owner, deadline: saved.input.deadline, invoice: { ...saved.input.invoice }, duplicateInvoiceId: saved.input.duplicateInvoiceId, payment: { ...saved.input.payment }, crmPaymentStatus: saved.input.crmPaymentStatus };
       const analyzed = saved.analyzed === true;
       const drafts = analyzed && saved.drafts && ['internal', 'client'].every(key => typeof saved.drafts[key] === 'string' && saved.drafts[key].length <= 20000) ? { internal: saved.drafts.internal, client: saved.drafts.client } : undefined;
       const review = saved.review;
@@ -204,7 +251,7 @@ export function restoreWorkspaces(raw: string | null): Record<string, CaseWorksp
       const history = Array.isArray(saved.history) ? saved.history.filter((e: AuditEntry) => e && typeof e.id === 'string' && typeof e.at === 'string' && Number.isFinite(Date.parse(e.at)) && typeof e.event === 'string' && e.event.length <= 100 && typeof e.detail === 'string' && e.detail.length <= 3000).slice(-100) : [];
       const origin = saved.draftOrigin;
       const draftOrigin = drafts && origin && typeof origin.model === 'string' && origin.model.length <= 100 && typeof origin.runId === 'string' && origin.runId.length <= 100 && typeof origin.completedAt === 'string' && Number.isFinite(Date.parse(origin.completedAt)) ? { model: origin.model, runId: origin.runId, completedAt: origin.completedAt } : undefined;
-      result[base.id] = { input, analyzed, drafts, draftOrigin, review: validReview ? { ...review } : undefined, history };
+      result[base.id] = { input, ...(base.imported ? { importedOriginal: base } : {}), analyzed, drafts, draftOrigin, review: validReview ? { ...review } : undefined, history };
     }
     return result;
   } catch { return {}; }
@@ -212,5 +259,5 @@ export function restoreWorkspaces(raw: string | null): Record<string, CaseWorksp
 
 export function exportCase(c: OperationCase, assessment: Assessment, drafts: Drafts, review: CaseReview | undefined, history: AuditEntry[], draftOrigin?: DraftOrigin) {
   const reviewed = currentReview(c, drafts, review) ? review : undefined;
-  return `# Lighthouse · ${c.id}\n\nSynthetic scenario · rules-based assessment · nothing sent or released\n${draftOrigin ? `AI-assisted drafts (possibly edited): ${draftOrigin.model}\nRun: ${draftOrigin.runId} · ${draftOrigin.completedAt}\nHuman review of narrative remains required.` : 'Current drafts originate from local templates; no AI model calls were needed to generate them.'}\n\n## Case\n${c.account} · ${c.orderId}\nScenario time: ${scenarioDate(c.asOf)}\nEngine: ${ENGINE_VERSION}\n\n## Assessment\n${assessment.headline}\n${assessment.summary}\n\n${assessment.findings.map(f => `- ${f.title}: ${f.detail}\n  Sources: ${f.sources.join(', ')}\n  Next step (${f.owner}): ${f.action}`).join('\n')}\n\n## Source records\n${evidenceFor(c).map(doc => `### ${doc.title} [${doc.id}]\nSource: ${doc.source}\n${doc.fields.map(f => `- ${f.label}: ${f.value}`).join('\n')}`).join('\n\n')}\n\n## Internal draft\n${drafts.internal}\n\n## Client draft\n${drafts.client}\n\n## Local review\n${reviewed ? `${reviewed.status} by ${reviewed.reviewer} at ${reviewed.at}\n${reviewed.note}\nThis records review of a plan only. No external action was executed.` : 'Pending human review.'}\n\n## Local activity\n${history.map(e => `- ${e.at} · ${e.event}: ${e.detail}`).join('\n')}\n`;
+  return `# Lighthouse · ${c.id}\n\n${c.imported ? `Imported CSV: ${c.imported.fileName} · row 2 · imported ${c.imported.at}\nUser-supplied records; not verified against external systems. Fixed Lighthouse demo policy.` : 'Synthetic scenario'} · rules-based assessment · nothing sent or released\n${draftOrigin ? `AI-assisted drafts (possibly edited): ${draftOrigin.model}\nRun: ${draftOrigin.runId} · ${draftOrigin.completedAt}\nHuman review of narrative remains required.` : 'Current drafts originate from local templates; no AI model calls were needed to generate them.'}\n\n## Case\n${c.account} · ${c.orderId}\nScenario time: ${scenarioDate(c.asOf)}\nEngine: ${ENGINE_VERSION}\n\n## Assessment\n${assessment.headline}\n${assessment.summary}\n\n${assessment.findings.map(f => `- ${f.title}: ${f.detail}\n  Sources: ${f.sources.join(', ')}\n  Next step (${f.owner}): ${f.action}`).join('\n')}\n\n## Source records\n${evidenceFor(c).map(doc => `### ${doc.title} [${doc.id}]\nSource: ${doc.source}\n${doc.fields.map(f => `- ${f.label}: ${f.value}`).join('\n')}`).join('\n\n')}\n\n## Internal draft\n${drafts.internal}\n\n## Client draft\n${drafts.client}\n\n## Local review\n${reviewed ? `${reviewed.status} by ${reviewed.reviewer} at ${reviewed.at}\n${reviewed.note}\nThis records review of a plan only. No external action was executed.` : 'Pending human review.'}\n\n## Local activity\n${history.map(e => `- ${e.at} · ${e.event}: ${e.detail}`).join('\n')}\n`;
 }

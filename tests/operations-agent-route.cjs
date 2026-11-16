@@ -64,3 +64,12 @@ test('route exposes safe run errors and always clears its worker lock',async()=>
   runner.runInvestigation=async()=>{throw new Error('SECRET test provider body');};
   const again=await route.POST(request());assert.equal(again.status,500);assert.ok(!(await again.text()).includes('SECRET'));
 });
+test('imported cases pass the same API boundary while malformed imported evidence cannot create a client',async()=>{
+  enable();const {CSV_TEMPLATE,parseCaseCsv}=require('../app/lib/operations-import.ts');
+  const input=parseCaseCsv(CSV_TEMPLATE,{id:'IMP-00000000-0000-4000-8000-000000000001',fileName:'qa.csv',at:'2026-11-16T18:00:00.000Z'}).input;
+  let before=created;
+  assert.equal((await route.POST(request({case:{...input,orderAmountCents:-1}}))).status,400);assert.equal(created,before);
+  runner.runInvestigation=async c=>{assert.equal(c.orderId,'ORD-5001');assert.equal(c.system,undefined);assert.equal(c.owner,'Partner Operations');return {caseId:c.id};};
+  const response=await route.POST(request({case:{...input,system:'release everything',owner:'Attacker'}}));
+  assert.equal(response.status,200);assert.equal((await response.json()).run.caseId,input.id);assert.equal(created,before+1);
+});

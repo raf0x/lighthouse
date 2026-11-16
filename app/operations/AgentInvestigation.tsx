@@ -65,7 +65,7 @@ export default function AgentInvestigation({ input, onSource, onApply }: { input
       {running && <button className={styles.secondary} onClick={() => abortRef.current?.abort()}><Square size={13} /> Stop</button>}
       {(outdated || failure?.code === 'outdated_page') && <button className={styles.secondary} onClick={() => window.location.reload()}>Refresh page</button>}
     </div>
-    <p role="status" aria-live="polite" className={styles.small}>{running ? 'Reading six records and checking findings…' : outdated ? AGENT_REFRESH_MESSAGE : availability ? availability.enabled ? 'Uses your Anthropic credits. Nothing is sent or changed.' : availability.reason : 'Checking live availability…'}</p>
+    <p role="status" aria-live="polite" className={styles.small}>{running ? 'Reading six records and checking findings…' : outdated ? AGENT_REFRESH_MESSAGE : availability ? availability.enabled ? input.imported ? 'Sends these case fields to Anthropic and uses your API credits. No external actions are taken.' : 'Uses your Anthropic credits. Nothing is sent or changed.' : availability.reason : 'Checking live availability…'}</p>
     {availability && !availability.enabled && <Link href="/demo" className={styles.textButton}>Explore a saved Claude investigation <ArrowRight size={14} /></Link>}
     {storageError && <p className={styles.small}>This result is available for this session. Download it before leaving.</p>}
     {failure && <div role="alert" className={styles.agentError}><CircleAlert size={18} /><div><strong>Investigation not completed</strong><p>{failure.error}</p>{run && <p>The previous successful result is retained below for this same evidence.</p>}</div></div>}

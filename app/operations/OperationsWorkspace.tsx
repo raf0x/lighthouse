@@ -5,10 +5,13 @@ import Link from 'next/link';
 import { ArrowRight, ArrowUpRight, Check, CheckCheck, ChevronRight, CircleAlert, Clock3, Download, FileText, FolderOpen, ListChecks, PencilLine, Play, RotateCcw, Search, ShieldCheck, X } from 'lucide-react';
 import Header from '../components/Header';
 import AgentInvestigation from './AgentInvestigation';
+import CaseImport from './CaseImport';
+import { addImportedCase } from '../lib/operations-import';
+import { AGENT_VERSION } from '../lib/operations-agent';
 import type { AgentRun } from '../lib/operations-agent';
 import { accounts } from '../lib/lighthouse';
 import {
-  ENGINE_VERSION, SCENARIO_TIME, operationCases, assessCase, currentReview, decisionLabels,
+  ENGINE_VERSION, operationCases, assessCase, currentReview, decisionLabels,
   evidenceFor, exportCase, inputSignature, money, recordReview, restoreWorkspaces, scenarioDate, validCase,
   type AuditEntry, type CaseWorkspace, type Currency, type Drafts, type OperationCase, type PaymentState, type ReviewStatus,
 } from '../lib/operations';
@@ -47,8 +50,8 @@ function EvidenceEditor({ input, onClose, onSave }: { input: OperationCase; onCl
   const currencySelect = (name: string, value: Currency, label: string) => <label>{label}<select name={name} defaultValue={value}>{['USD', 'CAD', 'MXN'].map(c => <option key={c}>{c}</option>)}</select></label>;
   return <dialog ref={ref} className={styles.dialog} onCancel={onClose} aria-labelledby="evidence-editor-title">
     <form onSubmit={submit}>
-      <div className={styles.dialogHeading}><div><span className={styles.eyebrow}>TRY A DIFFERENT OUTCOME</span><h2 id="evidence-editor-title">Edit the sample evidence</h2></div><button type="button" className={styles.iconButton} onClick={onClose} aria-label="Close evidence editor"><X size={20} /></button></div>
-      <p className={styles.muted}>Change the facts and run the checks again. Saving clears the current assessment and review. The original scenario stays available to restore.</p>
+      <div className={styles.dialogHeading}><div><span className={styles.eyebrow}>TRY A DIFFERENT OUTCOME</span><h2 id="evidence-editor-title">Edit {input.imported ? 'imported' : 'sample'} evidence</h2></div><button type="button" className={styles.iconButton} onClick={onClose} aria-label="Close evidence editor"><X size={20} /></button></div>
+      <p className={styles.muted}>Change the facts and run the checks again. Saving clears the current assessment and review. The original records stay available to restore.</p>
       <fieldset><legend>Account & invoice</legend><div className={styles.formGrid}>
         <label className={styles.wide}>Approved billing entity<input name="approvedEntity" defaultValue={input.approvedEntity} maxLength={200} placeholder="Leave blank to test missing evidence" /></label>
         <label className={styles.wide}>Entity on invoice<input name="invoiceEntity" defaultValue={input.invoice.entity} maxLength={200} /></label>
@@ -85,7 +88,11 @@ export default function OperationsWorkspace() {
   const [notice, setNotice] = useState('');
   const [reviewError, setReviewError] = useState('');
   const [resetting, setResetting] = useState(false);
-  const base = operationCases.find(c => c.id === selectedId) ?? operationCases[0];
+  const [importing, setImporting] = useState(false);
+  const [removing, setRemoving] = useState(false);
+  const importedCases = Object.values(workspaces).filter(w => w.importedOriginal).map(w => w.importedOriginal!);
+  const allCases = [...importedCases, ...operationCases];
+  const base = allCases.find(c => c.id === selectedId) ?? operationCases[0];
   const saved = workspaces[base.id];
   const input = saved?.input ?? base;
   const assessment = useMemo(() => saved?.analyzed ? assessCase(input) : null, [saved?.analyzed, input]);
@@ -95,21 +102,21 @@ export default function OperationsWorkspace() {
   const document = documents.find(d => d.id === sourceId) ?? documents[0];
   const countReviewed = Object.values(workspaces).filter(w => w.analyzed && w.drafts && w.review?.status === 'approved' && currentReview(w.input, w.drafts, w.review)).length;
   const countAnalyzed = Object.values(workspaces).filter(w => w.analyzed).length;
-  const filtered = operationCases.filter(c => {
+  const filtered = allCases.filter(c => {
     const w = workspaces[c.id];
     const approved = w?.review?.status === 'approved' && w.drafts && currentReview(w.input, w.drafts, w.review);
-    return `${c.account} ${c.scenario} ${c.id}`.toLowerCase().includes(query.toLowerCase()) && (filter === 'all' || (filter === 'reviewed' ? approved : !approved));
+    return `${c.account} ${c.scenario} ${c.id} ${c.orderId}`.toLowerCase().includes(query.toLowerCase()) && (filter === 'all' || (filter === 'reviewed' ? approved : !approved));
   });
 
   useEffect(() => {
     try { setWorkspaces(restoreWorkspaces(localStorage.getItem(STORAGE_KEY))); } catch { setStorageError(true); }
     const id = new URLSearchParams(window.location.search).get('case');
-    if (operationCases.some(c => c.id === id)) setSelectedId(id!);
+    if (id) setSelectedId(id);
     setLoaded(true);
     const navigate = () => {
       const next = new URLSearchParams(window.location.search).get('case');
-      setSelectedId(operationCases.some(c => c.id === next) ? next! : operationCases[0].id);
-      setTab('Assessment'); setReviewMode(null); setEditing(false); setResetting(false); setNotice(''); setReviewError('');
+      setSelectedId(next || operationCases[0].id);
+      setTab('Assessment'); setReviewMode(null); setEditing(false); setResetting(false); setRemoving(false); setImporting(false); setNotice(''); setReviewError('');
     };
     window.addEventListener('popstate', navigate);
     return () => window.removeEventListener('popstate', navigate);
@@ -120,7 +127,7 @@ export default function OperationsWorkspace() {
   }, [workspaces, loaded]);
 
   function selectCase(id: string) {
-    setSelectedId(id); setTab('Assessment'); setReviewMode(null); setReviewNote(''); setReviewError(''); setNotice(''); setResetting(false);
+    setSelectedId(id); setTab('Assessment'); setReviewMode(null); setReviewNote(''); setReviewError(''); setNotice(''); setResetting(false); setRemoving(false); setEditing(false);
     const url = new URL(window.location.href); url.searchParams.set('case', id); window.history.pushState({}, '', url);
   }
   function update(next: Partial<CaseWorkspace>, entry?: AuditEntry) {
@@ -168,18 +175,33 @@ export default function OperationsWorkspace() {
     setNotice('Review packet downloaded with the source records and current review status.');
   }
   function reset() {
-    update({ input: base, analyzed: false, drafts: undefined, draftOrigin: undefined, review: undefined }, activity('Sample restored', 'Original evidence restored. Previous review cleared.'));
-    setResetting(false); setReviewMode(null); setTab('Assessment'); setNotice('Original sample restored.');
+    update({ input: base, analyzed: false, drafts: undefined, draftOrigin: undefined, review: undefined }, activity(base.imported ? 'Imported records restored' : 'Sample restored', 'Original evidence restored. Previous review cleared.'));
+    setResetting(false); setReviewMode(null); setTab('Assessment'); setNotice(base.imported ? 'Original imported records restored.' : 'Original sample restored.');
+  }
+  function acceptImport(next: OperationCase) {
+    try {
+      setWorkspaces(addImportedCase(workspaces, next, activity('Case imported', `Reviewed CSV fields from ${next.imported!.fileName}, row 2. No analysis or approval imported.`)));
+      setImporting(false); setQuery(''); setFilter('all'); selectCase(next.id); setTab('Source records'); setSourceId('account');
+      setNotice('Case added. Inspect the records, then analyze this case. No AI call was made.');
+    } catch (err) { setNotice(err instanceof Error ? err.message : 'The case could not be added.'); }
+  }
+  function removeImported() {
+    if (!base.imported) return;
+    const next = { ...workspaces }; delete next[base.id]; setWorkspaces(next);
+    try { localStorage.removeItem(`lighthouse-${AGENT_VERSION}-${base.id}`); } catch { /* storage warning is handled by workspace persistence */ }
+    setSelectedId(operationCases[0].id); setTab('Assessment'); setRemoving(false); setReviewMode(null); setResetting(false);
+    const url = new URL(window.location.href); url.searchParams.delete('case'); window.history.replaceState({}, '', url);
+    setNotice('Imported case removed from this browser. You can import the original CSV again.');
   }
   return <div className={`app-canvas ${styles.canvas}`}>
     <div className={styles.frame}>
       <Header accounts={accounts} operations />
       <main>
         <section className={styles.intro}>
-          <div><span className={styles.eyebrow}>PARTNER OPERATIONS</span><h1>From a blocked order<br className={styles.mobileBreak} /> to <em>a clear next step.</em></h1><p>Inspect the evidence. Resolve the exception. Keep the decision human.</p><Link href="/demo" className={styles.textButton}>Start with the saved investigation <ArrowRight size={14} /></Link></div>
-          <div className={styles.mode}><span><span className={styles.modeDot} /> Interactive prototype</span><small>Synthetic cases · policy checks + AI review<br />Human approval · no external actions</small></div>
+          <div><span className={styles.eyebrow}>PARTNER OPERATIONS</span><h1>From a blocked order<br className={styles.mobileBreak} /> to <em>a clear next step.</em></h1><p>Inspect the evidence. Resolve the exception. Keep the decision human.</p><div className={styles.workspaceActions}><button className={styles.primary} disabled={!loaded} onClick={() => setImporting(true)}><FolderOpen size={16} /> Import case</button><Link href="/demo" className={styles.textButton}>Start with the saved investigation <ArrowRight size={14} /></Link></div></div>
+          <div className={styles.mode}><span><span className={styles.modeDot} /> Interactive prototype</span><small>Sample & imported cases · policy checks + AI review<br />Human approval · no external actions</small></div>
         </section>
-        <div className={styles.overview} aria-label="Workspace summary"><div><FolderOpen size={17} /><strong>10</strong><span>sample cases</span></div><div><ListChecks size={17} /><strong>{countAnalyzed}</strong><span>analyzed</span></div><div><ShieldCheck size={17} /><strong>{countReviewed}</strong><span>plans approved locally</span></div><div className={styles.saveStatus}><span className={styles.statusDot} data-error={storageError} />{!loaded ? 'Loading workspace…' : storageError ? 'Session only · storage unavailable' : 'Saved on this device'}</div></div>
+        <div className={styles.overview} aria-label="Workspace summary"><div><FolderOpen size={17} /><strong>{allCases.length}</strong><span>{importedCases.length ? `cases · ${importedCases.length} imported` : 'sample cases'}</span></div><div><ListChecks size={17} /><strong>{countAnalyzed}</strong><span>analyzed</span></div><div><ShieldCheck size={17} /><strong>{countReviewed}</strong><span>plans approved locally</span></div><div className={styles.saveStatus}><span className={styles.statusDot} data-error={storageError} />{!loaded ? 'Loading workspace…' : storageError ? 'Session only · storage unavailable' : 'Saved on this device'}</div></div>
         {storageError && <p role="alert" className={styles.error}>Browser storage is unavailable. Your work remains in this session; download a review packet before leaving.</p>}
         <div className={styles.workspace}>
           <aside className={styles.queue} aria-label="Case queue">
@@ -189,14 +211,14 @@ export default function OperationsWorkspace() {
             <div className={styles.caseList}>{filtered.map(c => {
               const w = workspaces[c.id]; const done = w?.review?.status === 'approved' && w.drafts && currentReview(w.input, w.drafts, w.review);
               return <button key={c.id} className={`${styles.caseItem} ${selectedId === c.id ? styles.selected : ''}`} onClick={() => selectCase(c.id)} aria-pressed={selectedId === c.id}>
-                <span className={styles.avatar} style={{ '--case-color': c.color } as React.CSSProperties}>{c.initials}</span><span className={styles.caseText}><strong>{c.account}</strong><span>{c.scenario}</span><small>{c.id} <i /> {done ? 'Plan approved' : w?.review?.status === 'changes_requested' ? 'Changes requested' : w?.analyzed ? 'Awaiting review' : 'Not analyzed'}</small></span>{done ? <Check size={15} className={styles.success} /> : <ChevronRight size={15} />}
+                <span className={styles.avatar} style={{ '--case-color': c.color } as React.CSSProperties}>{c.initials}</span><span className={styles.caseText}><strong>{c.account}</strong><span>{c.scenario}</span><small>{c.imported ? 'Imported CSV' : c.id} <i /> {done ? 'Plan approved' : w?.review?.status === 'changes_requested' ? 'Changes requested' : w?.analyzed ? 'Awaiting review' : 'Not analyzed'}</small></span>{done ? <Check size={15} className={styles.success} /> : <ChevronRight size={15} />}
               </button>;
             })}{!filtered.length && <div className={styles.emptyQueue}><Search size={22} /><p>No cases match this view.</p><button className={styles.textButton} onClick={() => { setQuery(''); setFilter('all'); }}>Show all cases</button></div>}</div>
-            <div className={styles.queueFooter}><Clock3 size={14} /><span>Fixed scenario clock<br /><strong>{scenarioDate(SCENARIO_TIME)}</strong></span></div>
+            <div className={styles.queueFooter}><Clock3 size={14} /><span>{input.imported ? 'Imported scenario clock' : 'Fixed scenario clock'}<br /><strong>{scenarioDate(input.asOf)}</strong></span></div>
           </aside>
           <section className={styles.caseWorkspace} aria-label={`${input.account} case workspace`}>
             <div className={styles.caseHeading}>
-              <div><div className={styles.breadcrumb}>{input.id} <span>/</span> {input.orderId}</div><h2>{input.account}</h2><p>{input.description}</p></div>
+              <div><div className={styles.breadcrumb}>{input.imported ? 'Imported case' : input.id} <span>/</span> {input.orderId}</div><h2>{input.account}</h2><p>{input.description}</p></div>
               <button className={styles.secondary} onClick={() => setEditing(true)} disabled={!loaded}><PencilLine size={15} /> Edit evidence</button>
             </div>
             <dl className={styles.facts}><div><dt>Order value</dt><dd>{money(input.orderAmountCents, input.orderCurrency)}</dd></div><div><dt>Tickets</dt><dd>{input.tickets}</dd></div><div><dt>Allocation deadline</dt><dd>{scenarioDate(input.deadline)}</dd></div><div><dt>Owner</dt><dd>{input.owner}</dd></div></dl>
@@ -220,7 +242,7 @@ export default function OperationsWorkspace() {
                   <details className={styles.checks}><summary><ListChecks size={16} /> View the {assessment.checks.length} completed checks <ChevronRight size={15} /></summary><ol>{assessment.checks.map(check => <li key={check.id}><Check size={14} /><div><strong>{check.name}</strong><p>{check.outcome}</p></div></li>)}</ol><p className={styles.small}>These are executed rules and source comparisons, not an AI reasoning transcript.</p></details>
                 </>)}
                 {tab === 'Investigator' && loaded && <AgentInvestigation key={inputSignature(input)} input={input} onSource={openSource} onApply={applyAgentDrafts} />}
-                {tab === 'Source records' && <div><div className={styles.sectionTitle}><h3>Inspect the source</h3><span>All records are synthetic</span></div><div className={styles.sourceTabs} role="group" aria-label="Source document">{documents.map(doc => <button key={doc.id} aria-pressed={document.id === doc.id} onClick={() => setSourceId(doc.id)}><FileText size={14} />{doc.title}</button>)}</div><article className={styles.document}><div className={styles.documentHeading}><FileText size={23} /><div><span className={styles.eyebrow}>{document.source}</span><h3>{document.title}</h3></div></div><dl>{document.fields.map(field => <div key={field.label}><dt>{field.label}</dt><dd>{field.value}</dd></div>)}</dl><footer>Source reference: [{document.id}] · {input.id}</footer></article><p className={styles.small}>Editing sample evidence changes the next assessment. The policy and order totals remain fixed so results can be compared.</p></div>}
+                {tab === 'Source records' && <div><div className={styles.sectionTitle}><h3>Inspect the source</h3><span>{input.imported ? 'CSV fields + fixed demo policy' : 'All records are synthetic'}</span></div><div className={styles.sourceTabs} role="group" aria-label="Source document">{documents.map(doc => <button key={doc.id} aria-pressed={document.id === doc.id} onClick={() => setSourceId(doc.id)}><FileText size={14} />{doc.title}</button>)}</div><article className={styles.document}><div className={styles.documentHeading}><FileText size={23} /><div><span className={styles.eyebrow}>{document.source}</span><h3>{document.title}</h3></div></div><dl>{document.fields.map(field => <div key={field.label}><dt>{field.label}</dt><dd>{field.value}</dd></div>)}</dl><footer>Source reference: [{document.id}] · {input.id}</footer></article><p className={styles.small}>Editing evidence changes the next assessment and clears its approval. The policy and original order totals remain fixed.</p></div>}
                 {tab === 'Message drafts' && (drafts ? <div><div className={styles.sectionTitle}><h3>Prepare the conversation</h3><span>{saved?.draftOrigin ? 'AI-assisted drafts · review required' : 'Editable templates · nothing sent'}</span></div><p className={styles.muted}>Review and edit both drafts. Changing either clears any previous approval.{saved?.draftOrigin && ` Origin: ${saved.draftOrigin.model}. AI wording has not been fact-checked sentence by sentence.`}</p>{([['internal', 'Internal escalation'], ['client', 'Client update']] as const).map(([key, label]) => <label className={styles.draft} key={key}><span><FileText size={16} />{label}</span><textarea aria-label={label} value={drafts[key]} onChange={e => editDraft(key, e.target.value)} maxLength={20000} spellCheck /></label>)}</div> : <div className={styles.emptyPanel}><FileText size={28} /><h3>Drafts follow the evidence.</h3><p>Analyze the case to prepare the internal and client message templates.</p><button className={styles.primary} onClick={analyze} disabled={!loaded}>Analyze this case <ArrowRight size={15} /></button></div>)}
                 {tab === 'Activity' && <div><div className={styles.sectionTitle}><h3>Local activity</h3><span>{saved?.history.length ?? 0} events</span></div><p className={styles.muted}>Actual actions in this browser, separate from the fixed scenario clock. This is a local demo record, not a shared or tamper-proof audit log.</p>{saved?.history.length ? <ol className={styles.history}>{[...saved.history].reverse().map(event => <li key={event.id}><span /><div><strong>{event.event}</strong><p>{event.detail}</p><time dateTime={event.at}>{dateTime(event.at)} ET</time></div></li>)}</ol> : <div className={styles.emptyPanel}><Clock3 size={26} /><h3>No actions recorded yet.</h3><p>Run an assessment to start this case’s activity history.</p></div>}</div>}
               </div>
@@ -237,12 +259,13 @@ export default function OperationsWorkspace() {
                 {assessment && <button className={styles.download} onClick={download}><Download size={15} /> Download review packet</button>}
               </aside>
             </div>
-            <footer className={styles.caseFooter}><span>{assessment ? 'Assessment follows the current source records.' : 'Six sources. One decision you can inspect.'}</span>{!resetting ? <button className={styles.textButton} onClick={() => setResetting(true)} disabled={!loaded}><RotateCcw size={13} /> Restore sample</button> : <span className={styles.resetConfirm}>Clear this case’s edits and review?<button className={styles.textButton} onClick={reset}>Restore</button><button className={styles.textButton} onClick={() => setResetting(false)}>Cancel</button></span>}</footer>
+            <footer className={styles.caseFooter}><span>{assessment ? 'Assessment follows the current source records.' : 'Six sources. One decision you can inspect.'}</span>{!resetting ? <button className={styles.textButton} onClick={() => setResetting(true)} disabled={!loaded}><RotateCcw size={13} /> {base.imported ? 'Restore imported records' : 'Restore sample'}</button> : <span className={styles.resetConfirm}>Clear this case’s edits and review?<button className={styles.textButton} onClick={reset}>Restore</button><button className={styles.textButton} onClick={() => setResetting(false)}>Cancel</button></span>}{base.imported && (!removing ? <button className={styles.textButton} onClick={() => setRemoving(true)}>Remove imported case</button> : <span className={styles.resetConfirm}>Remove this case, its drafts and local review?<button className={styles.textButton} onClick={removeImported}>Remove case</button><button className={styles.textButton} onClick={() => setRemoving(false)}>Keep case</button></span>)}</footer>
           </section>
         </div>
-        <footer className={styles.pageFooter}><span>An independent Lighthouse prototype. Fictional partners, invoices, and policies.</span><Link href="/live">Explore the original walkthrough <ArrowUpRight size={13} /></Link></footer>
+        <footer className={styles.pageFooter}><span>An independent prototype. Built-in cases are fictional; imported records are user supplied. All cases use a demo policy.</span><Link href="/live">Explore the original walkthrough <ArrowUpRight size={13} /></Link></footer>
       </main>
     </div>
+    {importing && <CaseImport workspaces={workspaces} onAdd={acceptImport} onClose={() => setImporting(false)} />}
     {editing && <EvidenceEditor key={input.id} input={input} onClose={() => setEditing(false)} onSave={saveEvidence} />}
   </div>;
 }
