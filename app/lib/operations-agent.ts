@@ -50,6 +50,15 @@ export function validateAgentReport(value: unknown, input: OperationCase, readId
   if (value.decision !== expected.decision) errors.push(`Decision must be ${expected.decision} under the supplied policy. Recheck the underlying findings and revise all affected prose.`);
   if (!text(value.summary, 1200) || !text(value.recommendation, 1000)) errors.push('Provide a concise summary and action within the text limits.');
   for (const field of ['summary', 'recommendation'] as const) if (typeof value[field] === 'string' && wordCount(value[field]) > AGENT_TEXT_LIMITS[field]) errors.push(`Keep ${field} to at most ${AGENT_TEXT_LIMITS[field]} words. Do not repeat case metadata or list checks that passed.`);
+  if (typeof value.summary === 'string') {
+    const blockerCount = expected.findings.filter(f => f.severity === 'blocker').length;
+    const counts: Record<string, number> = { no: 0, zero: 0, one: 1, two: 2, three: 3, four: 4, five: 5, six: 6, seven: 7, eight: 8, nine: 9, ten: 10, eleven: 11, twelve: 12, thirteen: 13 };
+    for (const match of value.summary.matchAll(/\b(no|zero|one|two|three|four|five|six|seven|eight|nine|ten|eleven|twelve|thirteen|\d+)\s+(?:blockers?|blocking findings?)\b/gi)) {
+      const count = counts[match[1].toLowerCase()] ?? Number(match[1]);
+      if (count !== blockerCount) errors.push(`The summary must not contradict the findings: there are ${blockerCount} blocking findings. Group related actions without changing the blocker count.`);
+    }
+    if (!expected.findings.some(f => f.id === 'deadline_near') && /\bwarning\b/i.test(value.summary.replace(/\bno (?:deadline )?warnings?\b/gi, ''))) errors.push('Do not describe a deadline warning in the summary when deadline_near is absent. More than 24 hours remaining is outside the warning window; an expired deadline is a blocker.');
+  }
   if (value.owner !== expected.owner) errors.push(`The first blocking category assigns the primary owner to ${expected.owner}; do not copy the account owner.`);
   if (!object(value.drafts) || !text(value.drafts.internal, 4000) || !text(value.drafts.client, 3000)) errors.push('Provide both bounded, nonempty message drafts.');
   else {
