@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
-import { ArrowRight, Download, FileText, Upload, X } from 'lucide-react';
+import { ArrowRight, ChevronRight, Download, FileText, Upload, X } from 'lucide-react';
 import { evidenceFor, type CaseWorkspace, type OperationCase } from '../lib/operations';
 import { CSV_TEMPLATE, IMPORT_MAX_BYTES, importProblem, parseCaseCsv } from '../lib/operations-import';
 import styles from './operations.module.css';
@@ -47,7 +47,7 @@ export default function CaseImport({ workspaces, onAdd, onClose }: { workspaces:
     {reading && <p role="status" className={styles.muted}>Reading the file…</p>}
     {errors.length > 0 && <div className={styles.error} role="alert"><strong>The file needs a correction</strong><ul>{errors.map((error, index) => <li key={index}>{error}</li>)}</ul><p>Nothing was added. Update the file and choose it again.</p></div>}
     {input && <section className={styles.importPreview} aria-labelledby="import-review-title"><div className={styles.sectionTitle}><h3 id="import-review-title">Review imported records</h3><span>{input.imported!.fileName} · row 2</span></div><p className={styles.muted}>{input.account} · {input.orderId}. Review the mapped fields below before adding this case. No assessment or approval has been created.</p>
-      {evidenceFor(input).map(doc => <details key={doc.id} className={styles.checks} open={doc.id === 'account' || doc.id === 'order'}><summary><FileText size={15} />{doc.title}</summary><dl className={styles.importFields}>{doc.fields.map(field => <div key={field.label}><dt>{field.label}</dt><dd>{field.value}</dd></div>)}</dl></details>)}
+      {evidenceFor(input).map(doc => <details key={doc.id} className={styles.checks} open={doc.id === 'account' || doc.id === 'order'}><summary><FileText size={15} /><span>{doc.title}</span><ChevronRight size={14} /></summary><dl className={styles.importFields}>{doc.fields.map(field => <div key={field.label}><dt>{field.label}</dt><dd>{field.value}</dd></div>)}</dl></details>)}
     </section>}
     {problem && <p role="alert" className={styles.error}>{problem}</p>}
     <p className={styles.small}>Added cases and edits are saved on this browser. A live investigation, when available, separately sends the case fields to Anthropic.</p>
