@@ -8,6 +8,7 @@ let created=0;
 require.cache[sdkPath].exports=class TestClient { constructor(options){created++;assert.equal(options.maxRetries,0);this.messages={create:async()=>{throw new Error('Unexpected live call');}};} };
 const runner=require('../app/lib/operations-agent-runner.ts');
 const route=require('../app/api/operations/investigate/route.ts');
+const legacyRoute=require('../app/api/analyze/route.ts');
 const { operationCases }=require('../app/lib/operations.ts');
 const { AGENT_PROTOCOL_VERSION }=require('../app/lib/operations-agent.ts');
 const originalEnv={VERCEL_ENV:process.env.VERCEL_ENV,LIGHTHOUSE_AGENT_ENABLED:process.env.LIGHTHOUSE_AGENT_ENABLED,ANTHROPIC_API_KEY:process.env.ANTHROPIC_API_KEY};
@@ -18,6 +19,17 @@ test('route disables production before reading a body or creating a provider cli
   enable();process.env.VERCEL_ENV='production';const before=created;
   assert.equal((await route.POST(request())).status,403);assert.equal(created,before);
   const config=await route.GET().json();assert.equal(config.enabled,false);assert.ok(!JSON.stringify(config).includes('not-a-real-key'));
+});
+test('legacy analysis also disables public production and unenabled previews before any provider call',async()=>{
+  const before=created;
+  for(const environment of ['production','preview']) {
+    enable();process.env.VERCEL_ENV=environment;
+    if(environment==='preview')delete process.env.LIGHTHOUSE_AGENT_ENABLED;
+    const response=await legacyRoute.POST(request('{invalid'));
+    assert.equal(response.status,403);assert.equal(response.headers.get('Cache-Control'),'no-store');
+    assert.equal((await response.json()).code,'disabled');
+  }
+  assert.equal(created,before);
 });
 test('route rejects foreign origins, non-json, malformed, invalid, and oversize bodies without spending',async()=>{
   enable();const before=created;

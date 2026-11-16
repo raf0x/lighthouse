@@ -328,7 +328,7 @@ export default function LiveDashboard() {
         <section className={styles.instrumentHeader} aria-label="Dashboard introduction">
           <div>
             <h1>See the signals. <em>Before they become surprises.</em></h1>
-            <p>Seven simulated specialists. One human decision. Fictional accounts, scripted handoffs. <Link href="/operations" style={{ color: 'var(--beam-300)', textDecoration: 'underline', textUnderlineOffset: 3 }}>Try the interactive operations workspace →</Link></p>
+            <p>Seven simulated specialists. One human decision. Fictional accounts, scripted handoffs. <Link href="/demo" style={{ color: 'var(--beam-300)', textDecoration: 'underline', textUnderlineOffset: 3 }}>Explore a saved real AI investigation →</Link></p>
           </div>
           <span className={styles.instrumentDisclosure}>SAMPLE DATA · SCRIPTED DEMO</span>
         </section>

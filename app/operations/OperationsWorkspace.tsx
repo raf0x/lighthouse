@@ -176,7 +176,7 @@ export default function OperationsWorkspace() {
       <Header accounts={accounts} operations />
       <main>
         <section className={styles.intro}>
-          <div><span className={styles.eyebrow}>PARTNER OPERATIONS</span><h1>From a blocked order<br className={styles.mobileBreak} /> to <em>a clear next step.</em></h1><p>Inspect the evidence. Resolve the exception. Keep the decision human.</p></div>
+          <div><span className={styles.eyebrow}>PARTNER OPERATIONS</span><h1>From a blocked order<br className={styles.mobileBreak} /> to <em>a clear next step.</em></h1><p>Inspect the evidence. Resolve the exception. Keep the decision human.</p><Link href="/demo" className={styles.textButton}>Start with the saved investigation <ArrowRight size={14} /></Link></div>
           <div className={styles.mode}><span><span className={styles.modeDot} /> Interactive prototype</span><small>Synthetic cases · policy checks + AI review<br />Human approval · no external actions</small></div>
         </section>
         <div className={styles.overview} aria-label="Workspace summary"><div><FolderOpen size={17} /><strong>10</strong><span>sample cases</span></div><div><ListChecks size={17} /><strong>{countAnalyzed}</strong><span>analyzed</span></div><div><ShieldCheck size={17} /><strong>{countReviewed}</strong><span>plans approved locally</span></div><div className={styles.saveStatus}><span className={styles.statusDot} data-error={storageError} />{!loaded ? 'Loading workspace…' : storageError ? 'Session only · storage unavailable' : 'Saved on this device'}</div></div>

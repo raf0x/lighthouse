@@ -1,11 +1,12 @@
 import Anthropic from '@anthropic-ai/sdk';
 import { NextResponse } from 'next/server';
-import { calculateHealthScore, accounts } from '@/app/lib/lighthouse';
-import type { Account, AnalysisType } from '@/app/components/types';
-
-const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY || '' });
+import { calculateHealthScore, accounts } from '../../lib/lighthouse';
+import { agentAvailability } from '../../lib/operations-agent';
+import type { Account, AnalysisType } from '../../components/types';
 
 export async function POST(request: Request) {
+  // The older account-analysis endpoint must not provide a public path to paid calls.
+  if (!agentAvailability(process.env).enabled) return NextResponse.json({ error: 'Live analysis is available only in the protected review environment.', code: 'disabled' }, { status: 403, headers: { 'Cache-Control': 'no-store' } });
   try {
     const { account, type }: { account: Account; type: AnalysisType } = await request.json();
     const health = calculateHealthScore(account);
@@ -118,6 +119,7 @@ Return ONLY this JSON:
 }`
     };
 
+    const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY!, maxRetries: 0 });
     const message = await client.messages.create({
       model: 'claude-haiku-4-5-20251001',
       max_tokens: 2000,
