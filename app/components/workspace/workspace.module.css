@@ -133,7 +133,7 @@
   .searchTrigger { padding: 8px; }
   .searchTrigger span { display: none; }
   .nav { gap: 2px; }
-  .nav a { font-size: 13px; padding: 12px 9px; }
+  .nav a { font-size: 12px; padding: 12px 4px; white-space: nowrap; }
   .pageHeading { display: block; padding: 14px 0 24px; }
   .pageHeading > a { margin-top: 7px; }
   .pageHeading h1 { font-size: 29px; }

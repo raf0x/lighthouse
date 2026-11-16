@@ -1,10 +1,10 @@
 # Connected workspace
 
-Lighthouse opens on Today: three case priorities, a compact summary and the latest evidence changes. Accounts, Operations and Portfolio share one validated browser-local store (`lighthouse-operations-v1`). Existing saved imports, drafts, reviews and original records remain compatible.
+Lighthouse opens on the original animated demo dashboard (`/`, also available at `/live`). Today (`/today`) provides three case priorities, a compact summary and the latest evidence changes. Accounts, Operations and Portfolio share one validated browser-local store (`lighthouse-operations-v1`). Existing saved imports, drafts, reviews and original records remain compatible.
 
 ## Navigation and identity
 
-- Today (`/`): deadline problems first, then unresolved blockers. A reviewed remediation plan stays in the queue while blockers remain.
+- Today (`/today`): deadline problems first, then unresolved blockers. A reviewed remediation plan stays in the queue while blockers remain.
 - Accounts (`/accounts`): a searchable directory and a short account summary with one next action. The mobile layout shows either the directory or the selected account.
 - Operations (`/operations`): check evidence, resolve blockers, review the plan. The primary action is visible at the bottom on small screens. `case` and `tab` query parameters support direct case/activity links.
 - Portfolio (`/portfolio`): current partner orders and their policy outcome. Totals use integer order cents; currencies remain separate. Plan approval never removes blocked order value.
