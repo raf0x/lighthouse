@@ -2,6 +2,9 @@
 
 import { useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
+import { useSearchParams } from 'next/navigation';
+import { useWorkspace } from '../components/WorkspaceProvider';
+import { accountHref, accountIdForCase } from '../lib/workspace';
 import { ArrowRight, ArrowUpRight, Check, CheckCheck, ChevronRight, CircleAlert, Clock3, Download, FileText, FolderOpen, ListChecks, PencilLine, Play, RotateCcw, Search, ShieldCheck, Upload, X } from 'lucide-react';
 import Header from '../components/Header';
 import AgentInvestigation from './AgentInvestigation';
@@ -12,13 +15,12 @@ import { AGENT_VERSION } from '../lib/operations-agent';
 import type { AgentRun } from '../lib/operations-agent';
 import { accounts } from '../lib/lighthouse';
 import {
-  ENGINE_VERSION, MAX_WORKSPACE_CHARACTERS, operationCases, assessCase, currentReview, decisionLabels, evidenceAudit,
-  evidenceFor, exportCase, inputSignature, money, recordReview, restoreWorkspaces, scenarioDate, validCase,
+  ENGINE_VERSION, operationCases, assessCase, currentReview, decisionLabels, evidenceAudit,
+  evidenceFor, exportCase, inputSignature, money, recordReview, scenarioDate, validCase,
   type AuditEntry, type CaseWorkspace, type Currency, type Drafts, type OperationCase, type PaymentState, type ReviewStatus,
 } from '../lib/operations';
 import styles from './operations.module.css';
 
-const STORAGE_KEY = 'lighthouse-operations-v1';
 const tabs = ['Assessment', 'Investigator', 'Source records', 'Message drafts', 'Activity'] as const;
 type Tab = typeof tabs[number];
 const dateTime = (at: string) => new Intl.DateTimeFormat('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit', timeZone: 'America/New_York' }).format(new Date(at));
@@ -75,9 +77,8 @@ function EvidenceEditor({ input, onClose, onSave }: { input: OperationCase; onCl
 
 export default function OperationsWorkspace() {
   const [selectedId, setSelectedId] = useState(operationCases[0].id);
-  const [workspaces, setWorkspaces] = useState<Record<string, CaseWorkspace>>({});
-  const [loaded, setLoaded] = useState(false);
-  const [storageError, setStorageError] = useState(false);
+  const { workspaces, setWorkspaces, loaded, storageError } = useWorkspace();
+  const searchParams = useSearchParams();
   const [query, setQuery] = useState('');
   const [filter, setFilter] = useState('all');
   const [tab, setTab] = useState<Tab>('Assessment');
@@ -111,26 +112,16 @@ export default function OperationsWorkspace() {
   });
 
   useEffect(() => {
-    try { setWorkspaces(restoreWorkspaces(localStorage.getItem(STORAGE_KEY))); } catch { setStorageError(true); }
-    const id = new URLSearchParams(window.location.search).get('case');
-    if (id) setSelectedId(id);
-    setLoaded(true);
-    const navigate = () => {
-      const next = new URLSearchParams(window.location.search).get('case');
-      setSelectedId(next || operationCases[0].id);
-      setTab('Assessment'); setReviewMode(null); setEditing(false); setUpdatingEvidence(false); setResetting(false); setRemoving(false); setImporting(false); setNotice(''); setReviewError('');
-    };
-    window.addEventListener('popstate', navigate);
-    return () => window.removeEventListener('popstate', navigate);
-  }, []);
-  useEffect(() => {
-    if (!loaded) return;
-    try { const data = JSON.stringify({ version: ENGINE_VERSION, cases: workspaces }); if (data.length > MAX_WORKSPACE_CHARACTERS) throw new Error('Workspace size limit'); localStorage.setItem(STORAGE_KEY, data); setStorageError(false); } catch { setStorageError(true); }
-  }, [workspaces, loaded]);
+    setSelectedId(searchParams.get('case') || operationCases[0].id);
+    const requestedTab = searchParams.get('tab');
+    setTab(tabs.includes(requestedTab as Tab) ? requestedTab as Tab : 'Assessment');
+    setReviewMode(null); setEditing(false); setUpdatingEvidence(false); setResetting(false); setRemoving(false); setNotice(''); setReviewError('');
+    setImporting(searchParams.get('import') === '1');
+  }, [searchParams]);
 
   function selectCase(id: string) {
     setSelectedId(id); setTab('Assessment'); setReviewMode(null); setReviewNote(''); setReviewError(''); setNotice(''); setResetting(false); setRemoving(false); setEditing(false); setUpdatingEvidence(false);
-    const url = new URL(window.location.href); url.searchParams.set('case', id); window.history.pushState({}, '', url);
+    const url = new URL(window.location.href); url.searchParams.set('case', id); url.searchParams.delete('tab'); url.searchParams.delete('import'); window.history.pushState({}, '', url);
   }
   function update(next: Partial<CaseWorkspace>, entry?: AuditEntry) {
     setWorkspaces(previous => {
@@ -151,7 +142,7 @@ export default function OperationsWorkspace() {
   function openSource(id: string) { setSourceId(id); setTab('Source records'); }
   function saveEvidence(next: OperationCase) {
     const entry = activity('Evidence updated', 'Previous assessment and review cleared. New analysis required.');
-    if (input.imported) entry.evidence = evidenceAudit(input, next, 'manual', review);
+    entry.evidence = evidenceAudit(input, next, 'manual', review);
     update({ input: next, analyzed: false, drafts: undefined, draftOrigin: undefined, review: undefined }, entry);
     setEditing(false); setReviewMode(null); setReviewError(''); setTab('Assessment'); setNotice('Evidence saved. Run the checks to assess the updated case.');
   }
@@ -180,7 +171,7 @@ export default function OperationsWorkspace() {
   }
   function reset() {
     const entry = activity(base.imported ? 'Imported records restored' : 'Sample restored', 'Original evidence restored. Previous review cleared.');
-    if (input.imported) entry.evidence = evidenceAudit(input, base, 'restore', review);
+    entry.evidence = evidenceAudit(input, base, 'restore', review);
     update({ input: base, analyzed: false, drafts: undefined, draftOrigin: undefined, review: undefined }, entry);
     setResetting(false); setReviewMode(null); setTab('Assessment'); setNotice(base.imported ? 'Original imported records restored.' : 'Original sample restored.');
   }
@@ -207,36 +198,45 @@ export default function OperationsWorkspace() {
     const url = new URL(window.location.href); url.searchParams.delete('case'); window.history.replaceState({}, '', url);
     setNotice('Imported case removed from this browser. You can import the original CSV again.');
   }
+  const nextActionLabel = !assessment ? 'Check evidence' : assessment.decision !== 'ready_for_review' ? 'Resolve blockers' : review?.status === 'approved' ? 'View reviewed plan' : 'Review plan';
+  function nextAction() {
+    if (!assessment) { analyze(); return; }
+    if (assessment.decision !== 'ready_for_review') { input.imported ? setUpdatingEvidence(true) : setEditing(true); return; }
+    setTab('Message drafts');
+    window.document.getElementById('case-panel')?.scrollIntoView({ block: 'start' });
+  }
+  if (loaded && searchParams.get('case') && !allCases.some(c => c.id === searchParams.get('case'))) return <div className={`app-canvas ${styles.canvas}`}><div className={styles.frame}><Header /><main className={styles.startState}><h1>Case not available</h1><p>This case may have been removed or saved on another device.</p><Link className={styles.primary} href="/operations">Choose a case <ArrowRight size={15} /></Link></main></div></div>;
   return <div className={`app-canvas ${styles.canvas}`}>
     <div className={styles.frame}>
       <Header accounts={accounts} operations />
       <main>
         <section className={styles.intro}>
-          <div><span className={styles.eyebrow}>PARTNER OPERATIONS</span><h1>From a blocked order<br className={styles.mobileBreak} /> to <em>a clear next step.</em></h1><p>Inspect the evidence. Resolve the exception. Keep the decision human.</p><div className={styles.workspaceActions}><button className={styles.primary} disabled={!loaded} onClick={() => setImporting(true)}><FolderOpen size={16} /> Import case</button><Link href="/demo" className={styles.textButton}>Start with the saved investigation <ArrowRight size={14} /></Link></div></div>
-          <div className={styles.mode}><span><span className={styles.modeDot} /> Interactive prototype</span><small>Sample & imported cases · policy checks + AI review<br />Human approval · no external actions</small></div>
+          <div><h1>Operations</h1><p>One case, its evidence, and a clear next step.</p></div>
+          <button className={styles.secondary} disabled={!loaded} onClick={() => setImporting(true)}><FolderOpen size={16} /> Import case</button>
         </section>
         <div className={styles.overview} aria-label="Workspace summary"><div><FolderOpen size={17} /><strong>{allCases.length}</strong><span>{importedCases.length ? `cases · ${importedCases.length} imported` : 'sample cases'}</span></div><div><ListChecks size={17} /><strong>{countAnalyzed}</strong><span>analyzed</span></div><div><ShieldCheck size={17} /><strong>{countReviewed}</strong><span>plans approved locally</span></div><div className={styles.saveStatus}><span className={styles.statusDot} data-error={storageError} />{!loaded ? 'Loading workspace…' : storageError ? 'Session only · storage unavailable' : 'Saved on this device'}</div></div>
         {storageError && <p role="alert" className={styles.error}>Browser storage is unavailable. Your work remains in this session; download a review packet before leaving.</p>}
+        <label className={styles.mobileCasePicker}>Choose a case<select value={input.id} onChange={e => selectCase(e.target.value)}>{allCases.map(c => <option key={c.id} value={c.id}>{c.account} · {c.orderId}</option>)}</select></label>
         <div className={styles.workspace}>
           <aside className={styles.queue} aria-label="Case queue">
             <div className={styles.queueTitle}><h2>Case queue</h2><span>{filtered.length}</span></div>
             <label className={styles.search}><Search size={15} /><span className={styles.srOnly}>Search cases</span><input value={query} onChange={e => setQuery(e.target.value)} placeholder="Find a partner or exception" /></label>
             <div className={styles.filters} role="group" aria-label="Filter cases">{[['all', 'All'], ['open', 'To review'], ['reviewed', 'Approved']].map(([value, label]) => <button key={value} aria-pressed={filter === value} onClick={() => setFilter(value)}>{label}</button>)}</div>
             <div className={styles.caseList}>{filtered.map(c => {
-              const w = workspaces[c.id]; const done = w?.review?.status === 'approved' && w.drafts && currentReview(w.input, w.drafts, w.review);
+              const w = workspaces[c.id]; const currentAssessment = assessCase(w?.input ?? c); const done = w?.review?.status === 'approved' && w.drafts && currentReview(w.input, w.drafts, w.review);
               return <button key={c.id} className={`${styles.caseItem} ${selectedId === c.id ? styles.selected : ''}`} onClick={() => selectCase(c.id)} aria-pressed={selectedId === c.id}>
-                <span className={styles.avatar} style={{ '--case-color': c.color } as React.CSSProperties}>{c.initials}</span><span className={styles.caseText}><strong>{c.account}</strong><span>{c.scenario}</span><small>{c.imported ? 'Imported CSV' : c.id} <i /> {done ? 'Plan approved' : w?.review?.status === 'changes_requested' ? 'Changes requested' : w?.analyzed ? 'Awaiting review' : 'Not analyzed'}</small></span>{done ? <Check size={15} className={styles.success} /> : <ChevronRight size={15} />}
+                <span className={styles.avatar} style={{ '--case-color': c.color } as React.CSSProperties}>{c.initials}</span><span className={styles.caseText}><strong>{c.account}</strong><span>{decisionLabels[currentAssessment.decision]}</span><small>{c.imported ? 'Imported CSV' : c.id} <i /> {done ? 'Plan approved' : w?.review?.status === 'changes_requested' ? 'Changes requested' : w?.analyzed ? 'Awaiting review' : 'Not analyzed'}</small></span>{done ? <Check size={15} className={styles.success} /> : <ChevronRight size={15} />}
               </button>;
             })}{!filtered.length && <div className={styles.emptyQueue}><Search size={22} /><p>No cases match this view.</p><button className={styles.textButton} onClick={() => { setQuery(''); setFilter('all'); }}>Show all cases</button></div>}</div>
             <div className={styles.queueFooter}><Clock3 size={14} /><span>{input.imported ? 'Imported scenario clock' : 'Fixed scenario clock'}<br /><strong>{scenarioDate(input.asOf)}</strong></span></div>
           </aside>
           <section className={styles.caseWorkspace} aria-label={`${input.account} case workspace`}>
             <div className={styles.caseHeading}>
-              <div><div className={styles.breadcrumb}>{input.imported ? 'Imported case' : input.id} <span>/</span> {input.orderId}</div><h2>{input.account}</h2><p>{input.description}</p></div>
-              <div className={styles.caseActions}>{input.imported && <button className={styles.primary} onClick={() => setUpdatingEvidence(true)} disabled={!loaded}><Upload size={15} /> Update evidence</button>}<button className={styles.secondary} onClick={() => setEditing(true)} disabled={!loaded}><PencilLine size={15} /> Edit evidence</button></div>
+              <div><Link className={styles.accountBack} href={accountHref(accountIdForCase(input.id))}>← Account overview</Link><div className={styles.breadcrumb}>{input.imported ? 'Imported case' : input.id} <span>/</span> {input.orderId}</div><h2>{input.account}</h2><p>{assessment ? assessment.headline : 'Check the invoice, payment and allocation window for this order.'}</p></div>
+              <div className={styles.caseActions}><button className={`${styles.primary} ${styles.mainAction}`} disabled={!loaded} onClick={nextAction}>{nextActionLabel} <ArrowRight size={15} /></button>{input.imported && <button className={styles.secondary} onClick={() => setUpdatingEvidence(true)} disabled={!loaded}><Upload size={15} /> Update evidence</button>}<button className={styles.secondary} onClick={() => setEditing(true)} disabled={!loaded}><PencilLine size={15} /> Edit evidence</button></div>
             </div>
             <dl className={styles.facts}><div><dt>Order value</dt><dd>{money(input.orderAmountCents, input.orderCurrency)}</dd></div><div><dt>Tickets</dt><dd>{input.tickets}</dd></div><div><dt>Allocation deadline</dt><dd>{scenarioDate(input.deadline)}</dd></div><div><dt>Owner</dt><dd>{input.owner}</dd></div></dl>
-            <div className={styles.flow} aria-label="Case workflow">{['Source records', 'Policy checks', 'Proposed action', 'Harbor · human review'].map((step, i) => <div key={step} data-complete={i === 0 || Boolean(assessment && (i < 3 || review))}><span>{(i === 0 || Boolean(assessment && (i < 3 || review))) ? <Check size={12} /> : i + 1}</span><strong>{step}</strong>{i < 3 && <ChevronRight size={13} className={styles.flowArrow} />}</div>)}</div>
+            <div className={styles.flow} aria-label="Case workflow">{['Source records', 'Policy checks', 'Proposed action', 'Review plan'].map((step, i) => <div key={step} data-complete={i === 0 || Boolean(assessment && (i < 3 || review))}><span>{(i === 0 || Boolean(assessment && (i < 3 || review))) ? <Check size={12} /> : i + 1}</span><strong>{step}</strong>{i < 3 && <ChevronRight size={13} className={styles.flowArrow} />}</div>)}</div>
             <div className={styles.tabBar} role="tablist" aria-label="Case information">{tabs.map(item => <button key={item} id={`tab-${item.replaceAll(' ', '-')}`} role="tab" aria-selected={tab === item} aria-controls="case-panel" tabIndex={tab === item ? 0 : -1} onClick={() => setTab(item)} onKeyDown={e => {
               let index = tabs.indexOf(item);
               if (e.key === 'ArrowRight') index = (index + 1) % tabs.length; else if (e.key === 'ArrowLeft') index = (index + tabs.length - 1) % tabs.length; else if (e.key === 'Home') index = 0; else if (e.key === 'End') index = tabs.length - 1; else return;
@@ -248,7 +248,7 @@ export default function OperationsWorkspace() {
                 {tab === 'Assessment' && (!assessment ? <div className={styles.startState}>
                   <div className={styles.startIcon}><Search size={28} /></div><span className={styles.eyebrow}>EVIDENCE BEFORE ACTION</span><h3>What is holding this order back?</h3><p>Compare six source records against the release policy. Lighthouse will surface blockers, identify missing information, and prepare a plan for your review.</p>
                   <div className={styles.sourcePills}>{documents.slice(0, 4).map(doc => <button key={doc.id} onClick={() => openSource(doc.id)}><FileText size={13} />{doc.title}</button>)}</div>
-                  <button className={styles.primary} onClick={analyze} disabled={!loaded}><Play size={15} /> Analyze this case</button><small>Runs locally against the supplied records. No AI API usage.</small>
+                  <p>Choose “Check evidence” to begin.</p><small>Runs locally against the supplied records. No AI API usage.</small>
                 </div> : <>
                   <div className={styles.result} data-decision={assessment.decision}><span className={styles.resultTag}>{assessment.decision === 'ready_for_review' ? <ShieldCheck size={15} /> : <CircleAlert size={15} />}{decisionLabels[assessment.decision]}</span><h3>{assessment.headline}</h3><p>{assessment.summary}</p></div>
                   <div className={styles.sectionTitle}><h3>Findings & evidence</h3><span>{assessment.findings.length} {assessment.findings.length === 1 ? 'finding' : 'findings'}</span></div>
@@ -260,8 +260,8 @@ export default function OperationsWorkspace() {
                 {tab === 'Message drafts' && (drafts ? <div><div className={styles.sectionTitle}><h3>Prepare the conversation</h3><span>{saved?.draftOrigin ? 'AI-assisted drafts · review required' : 'Editable templates · nothing sent'}</span></div><p className={styles.muted}>Review and edit both drafts. Changing either clears any previous approval.{saved?.draftOrigin && ` Origin: ${saved.draftOrigin.model}. AI wording has not been fact-checked sentence by sentence.`}</p>{([['internal', 'Internal escalation'], ['client', 'Client update']] as const).map(([key, label]) => <label className={styles.draft} key={key}><span><FileText size={16} />{label}</span><textarea aria-label={label} value={drafts[key]} onChange={e => editDraft(key, e.target.value)} maxLength={20000} spellCheck /></label>)}</div> : <div className={styles.emptyPanel}><FileText size={28} /><h3>Drafts follow the evidence.</h3><p>Analyze the case to prepare the internal and client message templates.</p><button className={styles.primary} onClick={analyze} disabled={!loaded}>Analyze this case <ArrowRight size={15} /></button></div>)}
                 {tab === 'Activity' && <div><div className={styles.sectionTitle}><h3>Local activity</h3><span>{saved?.history.length ?? 0} events</span></div><p className={styles.muted}>The latest 100 actions in this browser, separate from the scenario clock. Expand evidence updates to see what changed. This local record is not a shared or tamper-proof audit log.</p>{saved?.history.length ? <ol className={styles.history}>{[...saved.history].reverse().map(event => <li key={event.id}><span /><div><strong>{event.event}</strong><p>{event.detail}</p>{event.evidence && <EvidenceHistory audit={event.evidence} />}<time dateTime={event.at}>{dateTime(event.at)} ET</time></div></li>)}</ol> : <div className={styles.emptyPanel}><Clock3 size={26} /><h3>No actions recorded yet.</h3><p>Run an assessment to start this case’s activity history.</p></div>}</div>}
               </div>
-              <aside className={styles.reviewRail} aria-label="Harbor human review">
-                <div className={styles.reviewHeading}><div className={styles.harborIcon}><ShieldCheck size={22} /></div><div><span className={styles.eyebrow}>HARBOR</span><h3>Human review</h3></div><span className={styles.humanTag}>You</span></div>
+              <aside id="review-panel" className={styles.reviewRail} aria-label="Harbor human review">
+                <div className={styles.reviewHeading}><div className={styles.harborIcon}><ShieldCheck size={22} /></div><div><span className={styles.eyebrow}>HARBOR · HUMAN REVIEW</span><h3>Review the plan</h3></div><span className={styles.humanTag}>You</span></div>
                 {!assessment ? <><h4>A clear handoff, ready for you.</h4><p>Run the assessment to see the recommended next step, its owner, and the messages to review.</p><div className={styles.railPlaceholder}><FileText size={18} /><span>Proposed action<br /><small>Available after analysis</small></span></div></> : <>
                   {tab === 'Investigator' ? <><span className={styles.eyebrow}>YOUR REVIEW</span><h4>Review and apply the proposed messages.</h4><p>Plan approval covers the current drafts, not ticket release.</p></> : <><span className={styles.eyebrow}>PROPOSED NEXT STEP</span><h4>{assessment.recommendation}</h4><div className={styles.owner}><span>Owner</span><strong>{assessment.owner}</strong></div><button className={styles.textButton} onClick={() => setTab('Investigator')}>Ask the case investigator <ArrowRight size={14} /></button></>}
                   <button className={styles.textButton} onClick={() => setTab('Message drafts')}>Review message drafts <ArrowRight size={14} /></button>
@@ -279,7 +279,8 @@ export default function OperationsWorkspace() {
         <footer className={styles.pageFooter}><span>An independent prototype. Built-in cases are fictional; imported records are user supplied. All cases use a demo policy.</span><Link href="/live">Explore the original walkthrough <ArrowUpRight size={13} /></Link></footer>
       </main>
     </div>
-    {importing && <CaseImport workspaces={workspaces} onAdd={acceptImport} onClose={() => setImporting(false)} />}
+    <div className={styles.mobileNext}><button className={styles.primary} disabled={!loaded} onClick={nextAction}>{nextActionLabel} <ArrowRight size={15} /></button></div>
+    {importing && loaded && <CaseImport workspaces={workspaces} onAdd={acceptImport} onClose={() => setImporting(false)} />}
     {updatingEvidence && input.imported && <EvidenceUpdate key={input.id} input={input} original={base} onAccept={acceptFollowUp} onClose={() => setUpdatingEvidence(false)} />}
     {editing && <EvidenceEditor key={input.id} input={input} onClose={() => setEditing(false)} onSave={saveEvidence} />}
   </div>;

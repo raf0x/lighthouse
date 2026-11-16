@@ -1,52 +1,37 @@
 'use client';
 
-import * as React from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import Link from 'next/link';
+import { usePathname } from 'next/navigation';
+import { ArrowUpRight, Search, X } from 'lucide-react';
 import LighthouseBrandMark from './LighthouseBrandMark';
-import { usePathname, useRouter } from 'next/navigation';
-import type { Account } from './types';
 import ThemeToggle from './ThemeToggle';
+import type { Account } from './types';
+import { useWorkspace } from './WorkspaceProvider';
+import { accountHref, workspaceAccounts } from '../lib/workspace';
+import styles from './workspace/workspace.module.css';
 
-export default function Header({ accounts, operations = false }: { accounts: Account[]; operations?: boolean }) {
-  const totalArr = accounts.reduce((s, a) => s + a.arr, 0);
+export default function Header(_props: { accounts?: Account[]; operations?: boolean }) {
   const pathname = usePathname();
-  const router = useRouter();
-
-  return (
-    <header className="app-header">
-      <div className="brand">
-        <LighthouseBrandMark size={56} />
-        <div>
-          <div className="brand-name">Lighthouse</div>
-          <div className="brand-tagline">{operations ? 'Partner operations · evidence to action' : 'Account intelligence demo · fictional accounts · nothing sent'}</div>
-        </div>
-      </div>
-
-      <div className="header-controls">
-        {/* Navigation */}
-        <nav className="primary-nav" aria-label="Main navigation">
-          <button type="button" onClick={() => router.push('/live')} aria-current={pathname === '/live' ? 'page' : undefined} className="btn nav-color-btn nav-color-btn--dashboard">Dashboard</button>
-          <button type="button" onClick={() => router.push('/operations')} aria-current={pathname === '/operations' ? 'page' : undefined} className="btn nav-color-btn">Operations</button>
-          <button type="button" onClick={() => router.push('/')} aria-current={pathname === '/' ? 'page' : undefined} className="btn nav-color-btn nav-color-btn--accounts">Accounts</button>
-          <button type="button" onClick={() => router.push('/portfolio')} aria-current={pathname === '/portfolio' ? 'page' : undefined} className="btn nav-color-btn nav-color-btn--portfolio">Portfolio</button>
-        </nav>
-
-        {/* Stats */}
-        {!operations && <div className="live-strip">
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-
-            <span style={{ color: 'var(--healthy-fg)', fontSize: 12, fontWeight: 600, fontFamily: 'var(--font-mono)', textTransform: 'uppercase', letterSpacing: '0.08em' }}>Demo</span>
-          </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-            <span style={{ color: 'var(--fg-3)', fontSize: 12 }}>Portfolio</span>
-            <span style={{ color: 'var(--fg-1)', fontSize: 12, fontWeight: 600, fontFamily: 'var(--font-mono)' }}>{accounts.length} accounts</span>
-          </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-            <span style={{ color: 'var(--fg-3)', fontSize: 12 }}>Sample ARR</span>
-            <span style={{ color: 'var(--fg-1)', fontSize: 12, fontWeight: 600, fontFamily: 'var(--font-mono)' }}>${(totalArr / 1_000_000).toFixed(2)}M</span>
-          </div>
-        </div>}
-        <ThemeToggle />
-      </div>
+  const { workspaces, loaded } = useWorkspace();
+  const directory = useMemo(() => workspaceAccounts(workspaces), [workspaces]);
+  const [searching, setSearching] = useState(false), [query, setQuery] = useState('');
+  const dialog = useRef<HTMLDialogElement>(null);
+  const trigger = useRef<HTMLButtonElement>(null);
+  const results = directory.filter(a => `${a.name} ${a.id} ${a.cases.map(c => `${c.input.id} ${c.input.orderId} ${c.input.invoice.id} ${c.input.payment.reference}`).join(' ')}`.toLowerCase().includes(query.trim().toLowerCase())).slice(0, 8);
+  useEffect(() => { if (searching) dialog.current?.showModal(); }, [searching]);
+  useEffect(() => { setSearching(false); }, [pathname]);
+  useEffect(() => {
+    const shortcut = (event: KeyboardEvent) => { if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === 'k') { event.preventDefault(); setSearching(true); } };
+    window.addEventListener('keydown', shortcut); return () => window.removeEventListener('keydown', shortcut);
+  }, []);
+  const close = () => { setSearching(false); trigger.current?.focus(); };
+  return <>
+    <header className={`app-header ${styles.header}`}>
+      <Link href="/" className={styles.brand} aria-label="Lighthouse home"><LighthouseBrandMark size={40} /><span>Lighthouse</span></Link>
+      <nav className={styles.nav} aria-label="Main navigation">{[['/', 'Today'], ['/accounts', 'Accounts'], ['/operations', 'Operations'], ['/portfolio', 'Portfolio']].map(([href,label]) => <Link key={href} href={href} aria-current={pathname === href ? 'page' : undefined}>{label}</Link>)}</nav>
+      <div className={styles.headerTools}><button ref={trigger} className={styles.searchTrigger} onClick={() => { setQuery(''); setSearching(true); }} aria-label="Search accounts and orders"><Search size={18} /><span>Search</span></button><ThemeToggle /></div>
     </header>
-  );
+    {searching && <dialog ref={dialog} className={styles.searchDialog} onCancel={close} aria-labelledby="global-search-title"><div className={styles.sectionHeading}><h2 id="global-search-title">Find an account or order</h2><button className={styles.iconButton} onClick={close} aria-label="Close search"><X size={20} /></button></div><label className={styles.searchField}><Search size={18} /><input autoFocus aria-label="Search accounts and orders" placeholder="Account name, order or invoice…" value={query} onChange={e => setQuery(e.target.value)} /></label><div className={styles.searchResults}>{!loaded ? <p>Loading your workspace…</p> : results.length ? results.map(a => <Link key={a.id} href={accountHref(a.id)} onClick={close}><span><strong>{a.name}</strong><small>{a.cases.map(c => c.input.orderId).join(', ') || 'Sample account signals'}</small></span><ArrowUpRight size={16} /></Link>) : <p>No matches. Try a partner name or order ID.</p>}</div></dialog>}
+  </>;
 }
