@@ -97,6 +97,7 @@ export function validateAgentReport(value: unknown, input: OperationCase, readId
     for (const f of expected.findings.filter(f => ['entity_missing', 'payment_missing', 'payment_conflict', 'reference_missing'].includes(f.id))) if (!questions.some(q => object(q) && q.findingId === f.id)) errors.push(`Ask a specific clarification question for ${f.id}.`);
   }
   const narrative = [value.summary, value.recommendation, ...(Array.isArray(findings) ? findings.map(f => f?.explanation) : []), ...(Array.isArray(questions) ? questions.map(q => q?.question) : []), object(value.drafts) && value.drafts.internal, object(value.drafts) && value.drafts.client].filter(v => typeof v === 'string').join('\n');
+  if (FINDING_IDS.some(id => narrative.includes(id))) errors.push('Use plain-language issue names in prose and drafts, never internal finding IDs such as payment_conflict or payment_pending.');
   if (/\bor\s+(?:provide|supply|submit|obtain|accept)\s+(?:a\s+)?(?:written\s+)?justification\b/i.test(narrative)) errors.push('Written justification is not an alternative to resolving an invoice mismatch under this policy. Require Finance to correct the invoice against the approved entity.');
   const client = object(value.drafts) && typeof value.drafts.client === 'string' ? value.drafts.client : '';
   const customer = '(?:your (?:finance(?: team| department)?|accounting(?: team| department)?|billing(?: team| department)?|team)|you)';
