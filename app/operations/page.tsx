@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import { Suspense } from 'react';
 import OperationsWorkspace from './OperationsWorkspace';
 
 export const metadata: Metadata = {
@@ -7,5 +8,5 @@ export const metadata: Metadata = {
 };
 
 export default function OperationsPage() {
-  return <OperationsWorkspace />;
+  return <Suspense fallback={<p>Loading workspace…</p>}><OperationsWorkspace /></Suspense>;
 }
