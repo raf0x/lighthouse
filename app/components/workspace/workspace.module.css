@@ -168,3 +168,54 @@
   .valueSummary { padding: 20px; }
   .searchDialog { padding: 16px; }
 }
+
+/* Account follow-ups: one task, with its detail available on demand. */
+.followUpCard { margin-bottom: 24px; scroll-margin-top: 18px; }
+.followUpCard .sectionHeading h3 { font-size: 16px; }
+.followUpTitle { font-size: 19px; line-height: 1.5; font-weight: 550; margin: 18px 0 7px; overflow-wrap: anywhere; }
+.followUpOwner { font-size: 13px; color: var(--fg-3); line-height: 1.65; overflow-wrap: anywhere; }
+.followUpOwner strong { font-weight: 550; color: var(--fg-2); }
+.followUpActions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 18px; }
+.followUpEmpty { display: flex; align-items: center; flex-wrap: wrap; gap: 12px; margin-top: 18px; color: var(--fg-3); font-size: 14px; line-height: 1.7; }
+.followUpEmpty p { flex: 1; min-width: 200px; }
+.followUpNotice { color: var(--beam-300); font-size: 12px; line-height: 1.65; margin-top: 12px; }
+.followUpNotice:empty { display: none; }
+.dueBadge { display: inline-flex; padding: 5px 8px; font-size: 11px; font-weight: 550; line-height: 1.5; border-radius: 5px; color: var(--fg-3); background: var(--surface-2); white-space: nowrap; }
+.dueBadge[data-tone="overdue"] { color: var(--high-fg); background: var(--high-bg); }
+.dueBadge[data-tone="today"] { color: var(--medium-fg); background: var(--medium-bg); }
+.followUpForm, .noteForm { margin-top: 18px; }
+.followUpForm label, .noteForm label { display: grid; gap: 8px; font-size: 13px; color: var(--fg-2); min-width: 0; }
+.followUpForm input, .noteForm textarea { width: 100%; max-width: 100%; min-width: 0; border: 1px solid var(--border-default); border-radius: 7px; padding: 11px 12px; background: var(--surface-1); color: var(--fg-1); font: inherit; font-size: 16px; line-height: 1.5; }
+.followUpForm input:focus-visible, .noteForm textarea:focus-visible { outline: 2px solid var(--focus-ring); outline-offset: 2px; }
+.followUpFields { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin: 16px 0 12px; }
+.quietButton { display: inline-flex; gap: 7px; align-items: center; justify-content: center; min-height: 44px; padding: 8px 10px; font: inherit; font-size: 13px; color: var(--beam-300); background: transparent; border: 0; border-radius: 7px; cursor: pointer; }
+.quietButton:hover { background: var(--surface-2); }
+.accountActivity { margin-top: 22px; border-top: 1px solid var(--border-subtle); padding-top: 8px; }
+.accountActivity summary, .upcomingFollowUps summary { padding: 12px 0; min-height: 44px; cursor: pointer; color: var(--fg-2); font-size: 13px; font-weight: 550; }
+.accountActivity summary:focus-visible, .upcomingFollowUps summary:focus-visible { outline: 2px solid var(--focus-ring); outline-offset: 2px; }
+.noteForm textarea { resize: vertical; }
+.noteForm button { margin-top: 10px; }
+.noteForm button:disabled { opacity: .55; cursor: not-allowed; }
+.accountActivityList { list-style: none; margin: 18px 0 0; padding: 0; }
+.accountActivityList li { border-top: 1px solid var(--border-subtle); padding: 15px 0; font-size: 13px; }
+.accountActivityList li > strong { font-weight: 550; display: block; }
+.accountActivityList time { display: block; color: var(--fg-3); font-size: 11px; margin: 5px 0 9px; }
+.accountActivityList p { line-height: 1.65; color: var(--fg-2); overflow-wrap: anywhere; }
+.accountActivityList small { display: block; color: var(--fg-3); font-size: 12px; margin-top: 5px; }
+.activityNote { white-space: pre-wrap; }
+.todayFollowUps { margin-bottom: 24px; }
+.followUpList { list-style: none; padding: 0; margin: 16px 0 0; }
+.followUpRow { display: flex; align-items: center; gap: 20px; padding: 18px 0; border-top: 1px solid var(--border-subtle); }
+.followUpRow > div { flex: 1; min-width: 0; }
+.followUpRow strong { font-size: 14px; font-weight: 550; }
+.followUpRow p { font-size: 15px; margin: 8px 0 5px; line-height: 1.6; overflow-wrap: anywhere; }
+.followUpRow small { color: var(--fg-3); font-size: 12px; overflow-wrap: anywhere; }
+.upcomingFollowUps { margin-top: 8px; }
+@media(max-width:700px) {
+  .followUpRow { display: block; }
+  .followUpRow > a { margin-top: 14px; }
+  .followUpFields { grid-template-columns: minmax(0,1fr); gap: 14px; }
+  .followUpActions > button { flex: 1; }
+  .followUpEmpty { display: block; }
+  .followUpEmpty button { margin-top: 12px; }
+}

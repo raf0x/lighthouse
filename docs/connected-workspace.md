@@ -25,3 +25,15 @@ What changed is a deterministic brief of recent evidence events, not AI-generate
 Run `npm test`, `npm run typecheck` and `npm run build`. The workspace regression tests cover identity, corrections propagating across views, stale review handling, reviewed blocked plans, scenario deadline ordering, separate currencies, persisted change history and restoration.
 
 Browser acceptance: open Today; inspect Portside; check evidence; correct its invoice and payment; rerun checks; return to its account and portfolio; inspect the change brief; reload; confirm results persist; verify global order search and existing demos. Check narrow layouts for horizontal overflow, usable navigation and the persistent case action.
+
+## Account follow-ups
+
+Each account can have one open follow-up: a task, a named owner or team, and a calendar due date. Accounts provides Add/Edit, Mark complete, Reopen and Add next follow-up. An optional account note and the latest 50 follow-up events are available under Activity & notes. A completed task remains visible until another is added; earlier task snapshots remain in activity.
+
+Today lists open follow-ups for currently available accounts, earliest due date first. Due and overdue items are shown first; upcoming work is collapsed. Dates use the viewer's local calendar, refreshed on focus and once a minute. They are separate from the fixed sample scenario clocks. No reminders or messages are sent. Ownership is a text label, not a permission or notification assignment.
+
+Follow-ups use a separate validated local store (`lighthouse-follow-ups-v1`), preserving the existing case storage format. Completing a task never edits case evidence, drafts, policy status or approvals. Storage events synchronize browser tabs, and stale account revisions are rejected before changes. Browser-local storage is not a multi-user transactional database. Removed imported accounts are hidden from Today; their follow-up records are retained locally. Storage failures keep session edits available with a visible warning and JSON download.
+
+Sign-in and cross-device storage require a dedicated Lighthouse backend. No shared database or authentication is configured in this release, and no data is uploaded automatically. The intended next step is an isolated Supabase project in the user's selected organization, with per-user access controls and explicit local-data import.
+
+Follow-up QA: create a task due yesterday and another in the future; confirm Today ordering and Upcoming; edit and reload; complete and reopen; add a note; verify activity and unchanged policy blockers. Check the form, date input and account navigation at 390px. `tests/follow-ups.cjs` covers these domain transitions, valid dates, stale revisions, restore validation and bounded history.
