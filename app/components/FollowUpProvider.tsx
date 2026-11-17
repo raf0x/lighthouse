@@ -4,6 +4,7 @@ import { createContext, useContext, useEffect, useMemo, useRef, useState } from 
 import { applyFollowUpAction, FOLLOW_UP_STORAGE_KEY, FOLLOW_UP_VERSION, MAX_FOLLOW_UP_CHARACTERS, restoreFollowUps, type FollowUpAction, type FollowUpStore } from '../lib/follow-ups';
 import { workspaceAccounts } from '../lib/workspace';
 import { useWorkspace } from './WorkspaceProvider';
+import { useCloudWorkspace } from './CloudWorkspaceProvider';
 
 type FollowUpContext = {
   accountWork: FollowUpStore; loaded: boolean; storageError: boolean;
@@ -47,6 +48,8 @@ export default function FollowUpProvider({ children }: { children: React.ReactNo
 }
 export function useFollowUps() {
   const value = useContext(Context);
+  const cloud = useCloudWorkspace();
   if (!value) throw new Error('FollowUpProvider is required');
-  return value;
+  if (cloud.user) return { accountWork: cloud.state.snapshot.followUps, loaded: cloud.loaded, storageError: false, act: cloud.act };
+  return { ...value, loaded: value.loaded && cloud.authReady };
 }

@@ -42,12 +42,13 @@ This is an **independent working demo**, not a claim of enterprise adoption or v
 - Lucide icons and CSS styling
 - Anthropic SDK for the optional AI endpoint
 - Vercel for the live demo
+- Supabase Auth and row-level security for optional private workspaces
 
 The account dataset and health-score logic live in the application source. The AI endpoint requires a configured API key.
 
 ## Run locally
 
-Requires Node.js and npm.
+Requires Node.js 22 or newer and npm.
 
 ```bash
 npm ci
@@ -66,6 +67,10 @@ npm run start
 ```
 
 Run the regression checks with `npm test` and TypeScript checks with `npm run typecheck`.
+
+## Private workspaces
+
+Optional email sign-in keeps cases, applied drafts, plan reviews, account follow-ups and notes together across devices. The public demo remains available without an account. See [cloud setup, data boundaries and verification](docs/cloud-workspace.md).
 
 ## About
 

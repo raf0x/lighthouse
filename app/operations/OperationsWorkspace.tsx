@@ -4,6 +4,8 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import { useWorkspace } from '../components/WorkspaceProvider';
+import { useCloudWorkspace } from '../components/CloudWorkspaceProvider';
+import CloudStatus, { saveLabel } from '../components/workspace/CloudStatus';
 import { accountHref, accountIdForCase } from '../lib/workspace';
 import { ArrowRight, ArrowUpRight, Check, CheckCheck, ChevronRight, CircleAlert, Clock3, Download, FileText, FolderOpen, ListChecks, PencilLine, Play, RotateCcw, Search, ShieldCheck, Upload, X } from 'lucide-react';
 import Header from '../components/Header';
@@ -78,6 +80,7 @@ function EvidenceEditor({ input, onClose, onSave }: { input: OperationCase; onCl
 export default function OperationsWorkspace() {
   const [selectedId, setSelectedId] = useState(operationCases[0].id);
   const { workspaces, setWorkspaces, loaded, storageError } = useWorkspace();
+  const cloud = useCloudWorkspace();
   const searchParams = useSearchParams();
   const [query, setQuery] = useState('');
   const [filter, setFilter] = useState('all');
@@ -150,15 +153,15 @@ export default function OperationsWorkspace() {
     if (!drafts) return;
     const entry = saved?.history[saved.history.length - 1]?.event === 'Drafts edited' ? undefined : activity('Drafts edited', 'Message text changed. Any prior review cleared.');
     update({ drafts: { ...drafts, [kind]: text }, review: undefined }, entry);
-    setReviewMode(null); setNotice('Draft saved locally. Human review is required for this version.');
+    setReviewMode(null); setNotice('Draft updated. Human review is required for this version.');
   }
   function submitReview(event: React.FormEvent) {
     event.preventDefault();
     if (!assessment || !drafts || !reviewMode) return;
     try {
       const recorded = recordReview(input, assessment, drafts, reviewer, reviewMode, reviewNote, new Date().toISOString());
-      update({ review: recorded }, activity(reviewMode === 'approved' ? 'Plan approved locally' : 'Changes requested', `${recorded.reviewer}: ${recorded.note || 'Reviewed this evidence and these drafts.'} Nothing sent or released.`));
-      setReviewMode(null); setReviewError(''); setNotice(reviewMode === 'approved' ? 'Plan approval recorded on this device. No messages sent, invoices changed, or tickets released.' : 'Revision request recorded. Update the evidence or drafts, then review again.');
+      update({ review: recorded }, activity(reviewMode === 'approved' ? 'Plan approved' : 'Changes requested', `${recorded.reviewer}: ${recorded.note || 'Reviewed this evidence and these drafts.'} Nothing sent or released.`));
+      setReviewMode(null); setReviewError(''); setNotice(reviewMode === 'approved' ? 'Plan review recorded. No messages sent, invoices changed, or tickets released.' : 'Revision request recorded. Update the evidence or drafts, then review again.');
     } catch (err) { setReviewError(err instanceof Error ? err.message : 'Review could not be recorded.'); }
   }
   function download() {
@@ -205,16 +208,18 @@ export default function OperationsWorkspace() {
     setTab('Message drafts');
     window.document.getElementById('case-panel')?.scrollIntoView({ block: 'start' });
   }
+  if (cloud.user && (!loaded || cloud.state.status === 'conflict')) return <div className={`app-canvas ${styles.canvas}`}><div className={styles.frame}><Header /><main><CloudStatus /><p>Finish syncing your workspace to continue.</p></main></div></div>;
   if (loaded && searchParams.get('case') && !allCases.some(c => c.id === searchParams.get('case'))) return <div className={`app-canvas ${styles.canvas}`}><div className={styles.frame}><Header /><main className={styles.startState}><h1>Case not available</h1><p>This case may have been removed or saved on another device.</p><Link className={styles.primary} href="/operations">Choose a case <ArrowRight size={15} /></Link></main></div></div>;
   return <div className={`app-canvas ${styles.canvas}`}>
     <div className={styles.frame}>
       <Header accounts={accounts} operations />
       <main>
+        <CloudStatus />
         <section className={styles.intro}>
           <div><h1>Operations</h1><p>One case, its evidence, and a clear next step.</p></div>
           <button className={styles.secondary} disabled={!loaded} onClick={() => setImporting(true)}><FolderOpen size={16} /> Import case</button>
         </section>
-        <div className={styles.overview} aria-label="Workspace summary"><div><FolderOpen size={17} /><strong>{allCases.length}</strong><span>{importedCases.length ? `cases · ${importedCases.length} imported` : 'sample cases'}</span></div><div><ListChecks size={17} /><strong>{countAnalyzed}</strong><span>analyzed</span></div><div><ShieldCheck size={17} /><strong>{countReviewed}</strong><span>plans approved locally</span></div><div className={styles.saveStatus}><span className={styles.statusDot} data-error={storageError} />{!loaded ? 'Loading workspace…' : storageError ? 'Session only · storage unavailable' : 'Saved on this device'}</div></div>
+        <div className={styles.overview} aria-label="Workspace summary"><div><FolderOpen size={17} /><strong>{allCases.length}</strong><span>{importedCases.length ? `cases · ${importedCases.length} imported` : 'sample cases'}</span></div><div><ListChecks size={17} /><strong>{countAnalyzed}</strong><span>analyzed</span></div><div><ShieldCheck size={17} /><strong>{countReviewed}</strong><span>plans reviewed</span></div><div className={styles.saveStatus}><span className={styles.statusDot} data-error={storageError} />{cloud.user ? saveLabel(cloud.state.status, cloud.state.dirty) : !loaded ? 'Loading workspace…' : storageError ? 'Session only · storage unavailable' : 'Saved on this device'}</div></div>
         {storageError && <p role="alert" className={styles.error}>Browser storage is unavailable. Your work remains in this session; download a review packet before leaving.</p>}
         <label className={styles.mobileCasePicker}>Choose a case<select value={input.id} onChange={e => selectCase(e.target.value)}>{allCases.map(c => <option key={c.id} value={c.id}>{c.account} · {c.orderId}</option>)}</select></label>
         <div className={styles.workspace}>
@@ -258,18 +263,18 @@ export default function OperationsWorkspace() {
                 {tab === 'Investigator' && loaded && <AgentInvestigation key={inputSignature(input)} input={input} onSource={openSource} onApply={applyAgentDrafts} />}
                 {tab === 'Source records' && <div><div className={styles.sectionTitle}><h3>Inspect the source</h3><span>{input.imported ? 'CSV fields + fixed demo policy' : 'All records are synthetic'}</span></div><div className={styles.sourceTabs} role="group" aria-label="Source document">{documents.map(doc => <button key={doc.id} aria-pressed={document.id === doc.id} onClick={() => setSourceId(doc.id)}><FileText size={14} />{doc.title}</button>)}</div><article className={styles.document}><div className={styles.documentHeading}><FileText size={23} /><div><span className={styles.eyebrow}>{document.source}</span><h3>{document.title}</h3></div></div><dl>{document.fields.map(field => <div key={field.label}><dt>{field.label}</dt><dd>{field.value}</dd></div>)}</dl><footer>Source reference: [{document.id}] · {input.id}</footer></article><p className={styles.small}>Editing evidence changes the next assessment and clears its approval. The policy and original order totals remain fixed.</p></div>}
                 {tab === 'Message drafts' && (drafts ? <div><div className={styles.sectionTitle}><h3>Prepare the conversation</h3><span>{saved?.draftOrigin ? 'AI-assisted drafts · review required' : 'Editable templates · nothing sent'}</span></div><p className={styles.muted}>Review and edit both drafts. Changing either clears any previous approval.{saved?.draftOrigin && ` Origin: ${saved.draftOrigin.model}. AI wording has not been fact-checked sentence by sentence.`}</p>{([['internal', 'Internal escalation'], ['client', 'Client update']] as const).map(([key, label]) => <label className={styles.draft} key={key}><span><FileText size={16} />{label}</span><textarea aria-label={label} value={drafts[key]} onChange={e => editDraft(key, e.target.value)} maxLength={20000} spellCheck /></label>)}</div> : <div className={styles.emptyPanel}><FileText size={28} /><h3>Drafts follow the evidence.</h3><p>Analyze the case to prepare the internal and client message templates.</p><button className={styles.primary} onClick={analyze} disabled={!loaded}>Analyze this case <ArrowRight size={15} /></button></div>)}
-                {tab === 'Activity' && <div><div className={styles.sectionTitle}><h3>Local activity</h3><span>{saved?.history.length ?? 0} events</span></div><p className={styles.muted}>The latest 100 actions in this browser, separate from the scenario clock. Expand evidence updates to see what changed. This local record is not a shared or tamper-proof audit log.</p>{saved?.history.length ? <ol className={styles.history}>{[...saved.history].reverse().map(event => <li key={event.id}><span /><div><strong>{event.event}</strong><p>{event.detail}</p>{event.evidence && <EvidenceHistory audit={event.evidence} />}<time dateTime={event.at}>{dateTime(event.at)} ET</time></div></li>)}</ol> : <div className={styles.emptyPanel}><Clock3 size={26} /><h3>No actions recorded yet.</h3><p>Run an assessment to start this case’s activity history.</p></div>}</div>}
+                {tab === 'Activity' && <div><div className={styles.sectionTitle}><h3>Case activity</h3><span>{saved?.history.length ?? 0} events</span></div><p className={styles.muted}>The latest 100 actions, separate from the scenario clock. Expand evidence updates to see what changed. This editable history is not a tamper-proof audit log.</p>{saved?.history.length ? <ol className={styles.history}>{[...saved.history].reverse().map(event => <li key={event.id}><span /><div><strong>{event.event}</strong><p>{event.detail}</p>{event.evidence && <EvidenceHistory audit={event.evidence} />}<time dateTime={event.at}>{dateTime(event.at)} ET</time></div></li>)}</ol> : <div className={styles.emptyPanel}><Clock3 size={26} /><h3>No actions recorded yet.</h3><p>Run an assessment to start this case’s activity history.</p></div>}</div>}
               </div>
               <aside id="review-panel" className={styles.reviewRail} aria-label="Harbor human review">
                 <div className={styles.reviewHeading}><div className={styles.harborIcon}><ShieldCheck size={22} /></div><div><span className={styles.eyebrow}>HARBOR · HUMAN REVIEW</span><h3>Review the plan</h3></div><span className={styles.humanTag}>You</span></div>
                 {!assessment ? <><h4>A clear handoff, ready for you.</h4><p>Run the assessment to see the recommended next step, its owner, and the messages to review.</p><div className={styles.railPlaceholder}><FileText size={18} /><span>Proposed action<br /><small>Available after analysis</small></span></div></> : <>
                   {tab === 'Investigator' ? <><span className={styles.eyebrow}>YOUR REVIEW</span><h4>Review and apply the proposed messages.</h4><p>Plan approval covers the current drafts, not ticket release.</p></> : <><span className={styles.eyebrow}>PROPOSED NEXT STEP</span><h4>{assessment.recommendation}</h4><div className={styles.owner}><span>Owner</span><strong>{assessment.owner}</strong></div><button className={styles.textButton} onClick={() => setTab('Investigator')}>Ask the case investigator <ArrowRight size={14} /></button></>}
                   <button className={styles.textButton} onClick={() => setTab('Message drafts')}>Review message drafts <ArrowRight size={14} /></button>
-                  {review && <div className={styles.reviewRecorded} data-approved={review.status === 'approved'}><ShieldCheck size={18} /><div><strong>{review.status === 'approved' ? 'Plan approved locally' : 'Changes requested'}</strong><p>{review.reviewer} · {dateTime(review.at)} ET</p>{review.note && <p>{review.note}</p>}</div></div>}
+                  {review && <div className={styles.reviewRecorded} data-approved={review.status === 'approved'}><ShieldCheck size={18} /><div><strong>{review.status === 'approved' ? 'Plan approved' : 'Changes requested'}</strong><p>{review.reviewer} · {dateTime(review.at)} ET</p>{review.note && <p>{review.note}</p>}</div></div>}
                   {!reviewMode && <div className={styles.reviewActions}><button className={styles.primary} onClick={() => { setReviewMode('approved'); setReviewError(''); }} disabled={review?.status === 'approved'}><Check size={15} />{review?.status === 'approved' ? 'Approval recorded' : 'Approve plan'}</button><button className={styles.secondary} onClick={() => { setReviewMode('changes_requested'); setReviewError(''); }}>Request changes</button></div>}
                   {reviewMode && <form className={styles.reviewForm} onSubmit={submitReview}><h4>{reviewMode === 'approved' ? 'Confirm this review' : 'What needs to change?'}</h4><p>{reviewMode === 'approved' ? 'You are approving the proposed plan and current message drafts. This does not approve or execute ticket release.' : 'Record the missing detail or correction needed before this plan can be approved.'}</p><label>Reviewer name<input autoFocus value={reviewer} onChange={e => setReviewer(e.target.value)} maxLength={100} required placeholder="Your name" /></label><label>{reviewMode === 'changes_requested' ? 'Required changes' : 'Review note (optional)'}<textarea value={reviewNote} onChange={e => setReviewNote(e.target.value)} required={reviewMode === 'changes_requested'} maxLength={2000} rows={3} /></label>{reviewError && <p role="alert" className={styles.error}>{reviewError}</p>}<button className={styles.primary} type="submit">{reviewMode === 'approved' ? 'Confirm plan approval' : 'Record revision request'}</button><button className={styles.textButton} type="button" onClick={() => setReviewMode(null)}>Cancel</button></form>}
                 </>}
-                <div className={styles.boundary}><ShieldCheck size={14} /><p>Review is saved on this device. No message is sent, invoice changed, or ticket released.</p></div>
+                <div className={styles.boundary}><ShieldCheck size={14} /><p>{cloud.user ? 'Review is saved to your private workspace.' : 'Review is saved on this device.'} No message is sent, invoice changed, or ticket released.</p></div>
                 {assessment && <button className={styles.download} onClick={download}><Download size={15} /> Download review packet</button>}
               </aside>
             </div>

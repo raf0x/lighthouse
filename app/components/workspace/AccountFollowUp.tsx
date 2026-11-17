@@ -5,11 +5,13 @@ import { useFollowUps } from '../FollowUpProvider';
 import { dueInfo, tomorrowKey, type FollowUpDraft } from '../../lib/follow-ups';
 import useLocalToday from './useLocalToday';
 import styles from './workspace.module.css';
+import { useCloudWorkspace } from '../CloudWorkspaceProvider';
 
 const eventLabels = { created: 'Follow-up added', updated: 'Follow-up updated', completed: 'Follow-up completed', reopened: 'Follow-up reopened', note: 'Note added' };
 const dateTime = (at: string) => new Intl.DateTimeFormat('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' }).format(new Date(at));
 export default function AccountFollowUp({ accountId, suggestedOwner }: { accountId: string; suggestedOwner: string }) {
   const { accountWork, loaded, act } = useFollowUps();
+  const { user } = useCloudWorkspace();
   const work = accountWork[accountId], task = work?.followUp;
   const today = useLocalToday();
   const [editing, setEditing] = useState(false), [editRevision, setEditRevision] = useState(0);
@@ -58,7 +60,7 @@ export default function AccountFollowUp({ accountId, suggestedOwner }: { account
       <summary>Activity & notes{work?.activity.length ? ` · ${work.activity.length}` : ''}</summary>
       <form className={styles.noteForm} onSubmit={saveNote}><label>Add a note<textarea value={note} onChange={e => setNote(e.target.value)} rows={2} maxLength={2000} required placeholder="What happened, or what is needed next?" /></label><button className={styles.secondary} type="submit" disabled={!note.trim()}>Save note</button></form>
       {work?.activity.length ? <ol className={styles.accountActivityList}>{[...work.activity].reverse().map(event => <li key={event.id}><strong>{eventLabels[event.kind]}</strong><time dateTime={event.at}>{dateTime(event.at)}</time>{event.task && <p>{event.task.title}<small>{event.task.owner} · Due {event.task.dueDate}</small></p>}{event.note && <p className={styles.activityNote}>{event.note}</p>}</li>)}</ol> : <p className={styles.muted}>Your follow-ups and notes will appear here.</p>}
-      <p className={styles.cardNote}>Latest 50 updates on this device. Completing a follow-up does not change case evidence or approve release.</p>
+      <p className={styles.cardNote}>Latest 50 updates{user ? ' in your workspace' : ' on this device'}. Completing a follow-up does not change case evidence or approve release.</p>
     </details>
   </section>;
 }

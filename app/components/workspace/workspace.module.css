@@ -219,3 +219,18 @@
   .followUpEmpty { display: block; }
   .followUpEmpty button { margin-top: 12px; }
 }
+
+/* Cloud saving stays compact; recovery actions appear only when needed. */
+.cloudStatus { display: flex; align-items: center; flex-wrap: wrap; gap: 12px; padding: 14px 0; margin-bottom: 12px; color: var(--fg-3); font-size: 12px; line-height: 1.65; }
+.cloudStatus > div { flex: 1; min-width: 180px; }
+.cloudStatus strong { font-weight: 550; color: var(--beam-300); }
+.cloudStatus[role="alert"] { border: 1px solid var(--border-default); border-radius: 10px; padding: 16px; background: var(--surface-1); }
+.cloudStatus p { margin-top: 5px; }
+.authPanel { max-width: 540px; margin: 40px auto 70px; padding: 32px; background: var(--surface-1); border: 1px solid var(--border-default); border-radius: 14px; }
+.authPanel h1 { font-size: clamp(26px, 4vw, 34px); line-height: 1.2; margin: 12px 0 18px; letter-spacing: -.035em; }
+.authPanel h2 { font-size: 22px; margin-top: 22px; }
+.authPanel p { font-size: 14px; line-height: 1.8; margin-bottom: 18px; overflow-wrap: anywhere; }
+.authPanel .primary { margin-top: 20px; }
+.authPanel > .quietLink { display: inline-flex; margin-top: 24px; }
+.authPanel button:disabled { opacity: .55; cursor: not-allowed; }
+@media(max-width:700px) { .authPanel { margin: 22px auto 40px; padding: 22px; } .cloudStatus { gap: 10px; } }
