@@ -215,7 +215,7 @@
   .followUpRow { display: block; }
   .followUpRow > a { margin-top: 14px; }
   .followUpFields { grid-template-columns: minmax(0,1fr); gap: 14px; }
-  .followUpActions > button { flex: 1; }
+  .followUpActions > button { flex: 1 1 auto; }
   .followUpEmpty { display: block; }
   .followUpEmpty button { margin-top: 12px; }
 }
