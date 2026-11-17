@@ -6,8 +6,10 @@ import { ArrowRight, CheckCheck, CircleAlert, Download, FileText, LoaderCircle, 
 import { assessCase, decisionLabels, evidenceFor, type OperationCase } from '../lib/operations';
 import { AGENT_VERSION, AGENT_PROTOCOL_VERSION, AGENT_REFRESH_MESSAGE, checkAgentRun, restoreAgentRun, type AgentRun, type AgentFailure, type AgentAvailability } from '../lib/operations-agent';
 import styles from './operations.module.css';
+import { useCloudWorkspace } from '../components/CloudWorkspaceProvider';
 
 export default function AgentInvestigation({ input, onSource, onApply }: { input: OperationCase; onSource: (id: string) => void; onApply: (run: AgentRun) => void }) {
+  const { user } = useCloudWorkspace();
   const [availability, setAvailability] = useState<AgentAvailability | null>(null);
   const [run, setRun] = useState<AgentRun | null>(null);
   const [failure, setFailure] = useState<AgentFailure | null>(null);
@@ -17,7 +19,7 @@ export default function AgentInvestigation({ input, onSource, onApply }: { input
   const [elapsed, setElapsed] = useState(0);
   const abortRef = useRef<AbortController | null>(null);
   const mounted = useRef(true);
-  const key = `lighthouse-${AGENT_VERSION}-${input.id}`;
+  const key = user ? `lighthouse-${user.id}-${AGENT_VERSION}-${input.id}` : `lighthouse-${AGENT_VERSION}-${input.id}`;
   const documents = evidenceFor(input);
   const assessment = assessCase(input);
   const blockerCount = assessment.findings.filter(f => f.severity === 'blocker').length;

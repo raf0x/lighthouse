@@ -3,6 +3,7 @@
 import { createContext, useContext, useEffect, useMemo, useRef, useState, type Dispatch, type SetStateAction } from 'react';
 import { ENGINE_VERSION, MAX_WORKSPACE_CHARACTERS, restoreWorkspaces } from '../lib/operations';
 import { WORKSPACE_STORAGE_KEY, type Workspaces } from '../lib/workspace';
+import { useCloudWorkspace } from './CloudWorkspaceProvider';
 
 type WorkspaceContext = { workspaces: Workspaces; setWorkspaces: Dispatch<SetStateAction<Workspaces>>; loaded: boolean; storageError: boolean };
 const Context = createContext<WorkspaceContext | null>(null);
@@ -38,6 +39,8 @@ export default function WorkspaceProvider({ children }: { children: React.ReactN
 }
 export function useWorkspace() {
   const value = useContext(Context);
+  const cloud = useCloudWorkspace();
   if (!value) throw new Error('WorkspaceProvider is required');
-  return value;
+  if (cloud.user) return { workspaces: cloud.state.snapshot.cases, setWorkspaces: cloud.setCases, loaded: cloud.loaded, storageError: false };
+  return { ...value, loaded: value.loaded && cloud.authReady };
 }
