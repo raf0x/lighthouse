@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import { ArrowLeft, ArrowRight, ArrowUpRight, Check, Search } from 'lucide-react';
 import WorkspaceShell from '../components/workspace/WorkspaceShell';
+import AccountFollowUp from '../components/workspace/AccountFollowUp';
 import { useWorkspace } from '../components/WorkspaceProvider';
 import { accountHref, accountStatus, caseHref, changeSummary, deadlineLabel, recentChanges, workspaceAccounts } from '../lib/workspace';
 import { decisionLabels, money, scenarioDate } from '../lib/operations';
@@ -23,6 +24,7 @@ function Accounts() {
       <aside className={styles.directory} aria-label="Account directory"><label className={styles.searchField}><Search size={17} /><input aria-label="Find an account" placeholder="Find an account…" value={query} onChange={e => setQuery(e.target.value)} /></label><div className={styles.directoryCaption}>{visible.length} accounts</div><div className={styles.directoryList}>{visible.map(a => <Link key={a.id} href={accountHref(a.id)} aria-current={selected?.id === a.id ? 'true' : undefined}><span className={styles.avatar}>{a.initials}</span><span><strong>{a.name}</strong><small>{a.kind === 'customer' ? 'Sample account signals' : accountStatus(a)}</small></span></Link>)}{!visible.length && <p className={styles.empty}>No matching accounts.</p>}</div></aside>
       <section className={styles.accountDetail} aria-label="Selected account"><Link href="/accounts" className={styles.mobileBack}><ArrowLeft size={16} /> All accounts</Link>{!selected ? <div className={styles.card}><h2>Account not available</h2><p>This account may have been removed or saved on another device.</p><Link className={styles.quietLink} href="/accounts">Choose an account <ArrowRight size={16} /></Link></div> : <>
         <div className={styles.accountHeading}><span className={styles.avatarLarge}>{selected.initials}</span><div><span className={styles.eyebrow}>{selected.customer ? 'SAMPLE ACCOUNT' : selected.cases[0]?.input.imported ? 'IMPORTED ACCOUNT' : 'SAMPLE PARTNER'}</span><h2>{selected.name}</h2></div></div>
+        <AccountFollowUp key={selected.id} accountId={selected.id} suggestedOwner={selected.cases[0]?.assessment.owner || 'Account owner'} />
         {selected.cases.map(c => <div key={c.input.id} className={styles.card}>
           <div className={styles.sectionHeading}><span className={styles.status} data-tone={c.assessment.decision === 'ready_for_review' ? 'good' : 'attention'}>{decisionLabels[c.assessment.decision]}</span><span className={styles.muted}>{c.input.orderId}</span></div>
           <h3 className={styles.accountConclusion}>{c.assessment.decision === 'ready_for_review' ? 'The evidence is ready. A person reviews the plan.' : `${c.assessment.findings.filter(f => f.severity === 'blocker').length} ${c.assessment.findings.filter(f => f.severity === 'blocker').length === 1 ? 'blocker' : 'blockers'} to resolve.`}</h3>

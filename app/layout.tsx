@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import { Geist, Geist_Mono, Instrument_Serif } from 'next/font/google';
 import './globals.css';
 import WorkspaceProvider from './components/WorkspaceProvider';
+import FollowUpProvider from './components/FollowUpProvider';
 
 const geist = Geist({ subsets: ['latin'], variable: '--font-geist' });
 const geistMono = Geist_Mono({ subsets: ['latin'], variable: '--font-geist-mono' });
@@ -20,7 +21,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <head>
         <script dangerouslySetInnerHTML={{ __html: themeBoot }} />
       </head>
-      <body className="font-sans"><WorkspaceProvider>{children}</WorkspaceProvider></body>
+      <body className="font-sans"><WorkspaceProvider><FollowUpProvider>{children}</FollowUpProvider></WorkspaceProvider></body>
     </html>
   );
 }
