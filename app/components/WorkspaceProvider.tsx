@@ -4,10 +4,10 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useRef, use
 import {
   changedWorkspaceCases, createAuthoritativeReviewPacket, initializeWorkspaceStore, inspectLegacyWorkspace, LEGACY_WORKSPACE_STORAGE_KEY,
   readAuthoritativeWorkspace, StaleReviewError, WORKSPACE_SAVE_UNAVAILABLE, WORKSPACE_STORAGE_KEY, WorkspaceWriteError,
-  withWorkspaceWriteLock, writeCurrentReview, writeWorkspaceChange,
+  verifyUnchangedEvidence, withWorkspaceWriteLock, writeCurrentReview, writeWorkspaceChange,
   type LegacyRecoveryStatus, type ReviewSnapshot, type Workspaces,
 } from '../lib/workspace';
-import type { CaseReview, ReviewStatus } from '../lib/operations';
+import type { CaseReview, CaseWorkspace, OperationCase, ReviewStatus } from '../lib/operations';
 
 type WorkspaceContext = {
   workspaces: Workspaces;
@@ -21,6 +21,7 @@ type WorkspaceContext = {
   legacyStatus: LegacyRecoveryStatus;
   commitReview: (snapshot: ReviewSnapshot, reviewer: string, status: ReviewStatus, note: string, at: string) => Promise<CaseReview>;
   getCurrentReviewPacket: (caseId: string) => Promise<ReturnType<typeof createAuthoritativeReviewPacket>>;
+  confirmUnchangedEvidence: (original: OperationCase, proposed: OperationCase, opened?: CaseWorkspace) => Promise<void>;
 };
 const Context = createContext<WorkspaceContext | null>(null);
 
@@ -190,11 +191,20 @@ export default function WorkspaceProvider({ children }: { children: React.ReactN
     return packet;
   }, [reloadAuthoritative]);
 
+  const confirmUnchangedEvidence = useCallback(async (original: OperationCase, proposed: OperationCase, opened?: CaseWorkspace) => {
+    if (!initialized.current) throw new WorkspaceWriteError(WORKSPACE_SAVE_UNAVAILABLE);
+    // A no-op must still check the current v2 case, not a stale React render.
+    await queue.current;
+    await withWorkspaceWriteLock(navigator.locks, () =>
+      verifyUnchangedEvidence(localStorage, original, proposed, opened));
+    if (!pending.current) reloadAuthoritative();
+  }, [reloadAuthoritative]);
+
   const value = useMemo(
     () => ({ workspaces, setWorkspaces, saveWorkspaces, loaded, saving, storageError, storageMessage,
-      legacyMigration, legacyStatus, commitReview, getCurrentReviewPacket }),
+      legacyMigration, legacyStatus, commitReview, getCurrentReviewPacket, confirmUnchangedEvidence }),
     [workspaces, setWorkspaces, saveWorkspaces, loaded, saving, storageError, storageMessage,
-      legacyMigration, legacyStatus, commitReview, getCurrentReviewPacket],
+      legacyMigration, legacyStatus, commitReview, getCurrentReviewPacket, confirmUnchangedEvidence],
   );
   return <Context.Provider value={value}>{children}</Context.Provider>;
 }
