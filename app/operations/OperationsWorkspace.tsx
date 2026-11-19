@@ -4,7 +4,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import { useWorkspace } from '../components/WorkspaceProvider';
-import { accountHref, accountIdForCase, captureReviewSnapshot, matchesReviewSnapshot, StaleReviewError, type ReviewSnapshot } from '../lib/workspace';
+import { accountHref, accountIdForCase, captureReviewSnapshot, matchesReviewSnapshot, StaleReviewError, WORKSPACE_CHANGED_MESSAGE, WorkspaceWriteError, type ReviewSnapshot } from '../lib/workspace';
 import { ArrowRight, ArrowUpRight, Check, CheckCheck, ChevronRight, CircleAlert, Clock3, Download, FileText, FolderOpen, ListChecks, PencilLine, Play, RotateCcw, Search, ShieldCheck, Upload, X } from 'lucide-react';
 import Header from '../components/Header';
 import AgentInvestigation from './AgentInvestigation';
@@ -29,8 +29,13 @@ function activity(event: string, detail: string): AuditEntry {
   return { id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`, at: new Date().toISOString(), event, detail };
 }
 
-function EvidenceEditor({ input, onClose, onSave }: { input: OperationCase; onClose: () => void; onSave: (next: OperationCase) => Promise<string | null> }) {
+function EvidenceEditor({ input, saved, onClose, onSave }: {
+  input: OperationCase; saved?: CaseWorkspace; onClose: () => void;
+  onSave: (original: OperationCase, next: OperationCase, opened?: CaseWorkspace) => Promise<string | null>;
+}) {
   const ref = useRef<HTMLDialogElement>(null);
+  const [opened] = useState(() => ({ input, saved }));
+  const baseline = opened.input;
   const [error, setError] = useState('');
   const [saving, setSaving] = useState(false);
   useEffect(() => { ref.current?.showModal(); }, []);
@@ -42,16 +47,16 @@ function EvidenceEditor({ input, onClose, onSave }: { input: OperationCase; onCl
     const hours = Number(get('deadlineHours'));
     if (!Number.isFinite(hours) || hours < -168 || hours > 720) { setError('Set a deadline between 168 hours before and 720 hours after the scenario clock.'); return; }
     const next: OperationCase = {
-      ...input, approvedEntity: get('approvedEntity'), duplicateInvoiceId: get('duplicateInvoiceId'),
-      deadline: new Date(Date.parse(input.asOf) + hours * 3_600_000).toISOString(),
-      invoice: { ...input.invoice, entity: get('invoiceEntity'), amountCents: amount('invoiceAmount'), currency: get('invoiceCurrency') as Currency },
+      ...baseline, approvedEntity: get('approvedEntity'), duplicateInvoiceId: get('duplicateInvoiceId'),
+      deadline: new Date(Date.parse(baseline.asOf) + hours * 3_600_000).toISOString(),
+      invoice: { ...baseline.invoice, entity: get('invoiceEntity'), amountCents: amount('invoiceAmount'), currency: get('invoiceCurrency') as Currency },
       payment: { status: get('paymentStatus') as PaymentState, amountCents: amount('paymentAmount'), currency: get('paymentCurrency') as Currency, reference: get('paymentReference') },
       crmPaymentStatus: get('crmStatus') as PaymentState,
     };
     if (!validCase(next)) { setError('Enter valid amounts with up to two decimal places. Invoice amount must be greater than zero.'); return; }
     setSaving(true);
     try {
-      const message = await onSave(next);
+      const message = await onSave(baseline, next, opened.saved);
       if (message) setError(message);
     } catch (error) {
       setError(error instanceof Error ? error.message : 'Evidence was not saved.');
@@ -61,22 +66,22 @@ function EvidenceEditor({ input, onClose, onSave }: { input: OperationCase; onCl
   const currencySelect = (name: string, value: Currency, label: string) => <label>{label}<select name={name} defaultValue={value}>{['USD', 'CAD', 'MXN'].map(c => <option key={c}>{c}</option>)}</select></label>;
   return <dialog ref={ref} className={styles.dialog} onCancel={onClose} aria-labelledby="evidence-editor-title">
     <form onSubmit={submit}>
-      <div className={styles.dialogHeading}><div><span className={styles.eyebrow}>TRY A DIFFERENT OUTCOME</span><h2 id="evidence-editor-title">Edit {input.imported ? 'imported' : 'sample'} evidence</h2></div><button type="button" className={styles.iconButton} onClick={onClose} aria-label="Close evidence editor"><X size={20} /></button></div>
-      <p className={styles.muted}>Change the facts and run the checks again. Saving clears the current assessment and review. The original records stay available to restore.</p>
+      <div className={styles.dialogHeading}><div><span className={styles.eyebrow}>TRY A DIFFERENT OUTCOME</span><h2 id="evidence-editor-title">Edit {baseline.imported ? 'imported' : 'sample'} evidence</h2></div><button type="button" className={styles.iconButton} onClick={onClose} aria-label="Close evidence editor"><X size={20} /></button></div>
+      <p className={styles.muted}>Change the facts and run the checks again. Only changed evidence clears the current assessment and review. The original records remain available to restore.</p>
       <fieldset><legend>Account & invoice</legend><div className={styles.formGrid}>
-        <label className={styles.wide}>Approved billing entity<input name="approvedEntity" defaultValue={input.approvedEntity} maxLength={200} placeholder="Leave blank to test missing evidence" /></label>
-        <label className={styles.wide}>Entity on invoice<input name="invoiceEntity" defaultValue={input.invoice.entity} maxLength={200} /></label>
-        <label>Invoice amount<input name="invoiceAmount" defaultValue={(input.invoice.amountCents / 100).toFixed(2)} inputMode="decimal" required /></label>
-        {currencySelect('invoiceCurrency', input.invoice.currency, 'Invoice currency')}
-        <label className={styles.wide}>Other active invoice ID<input name="duplicateInvoiceId" defaultValue={input.duplicateInvoiceId} maxLength={100} placeholder="Blank means no duplicate" /></label>
+        <label className={styles.wide}>Approved billing entity<input name="approvedEntity" defaultValue={baseline.approvedEntity} maxLength={200} placeholder="Leave blank to test missing evidence" /></label>
+        <label className={styles.wide}>Entity on invoice<input name="invoiceEntity" defaultValue={baseline.invoice.entity} maxLength={200} /></label>
+        <label>Invoice amount<input name="invoiceAmount" defaultValue={(baseline.invoice.amountCents / 100).toFixed(2)} inputMode="decimal" required /></label>
+        {currencySelect('invoiceCurrency', baseline.invoice.currency, 'Invoice currency')}
+        <label className={styles.wide}>Other active invoice ID<input name="duplicateInvoiceId" defaultValue={baseline.duplicateInvoiceId} maxLength={100} placeholder="Blank means no duplicate" /></label>
       </div></fieldset>
       <fieldset><legend>Payment evidence</legend><div className={styles.formGrid}>
-        {statusSelect('paymentStatus', input.payment.status, 'Finance ledger status')}{statusSelect('crmStatus', input.crmPaymentStatus, 'CRM status')}
-        <label>Recorded payment amount<input name="paymentAmount" defaultValue={(input.payment.amountCents / 100).toFixed(2)} inputMode="decimal" required /></label>
-        {currencySelect('paymentCurrency', input.payment.currency, 'Payment currency')}
-        <label className={styles.wide}>Payment reference<input name="paymentReference" defaultValue={input.payment.reference} maxLength={100} /></label>
+        {statusSelect('paymentStatus', baseline.payment.status, 'Finance ledger status')}{statusSelect('crmStatus', baseline.crmPaymentStatus, 'CRM status')}
+        <label>Recorded payment amount<input name="paymentAmount" defaultValue={(baseline.payment.amountCents / 100).toFixed(2)} inputMode="decimal" required /></label>
+        {currencySelect('paymentCurrency', baseline.payment.currency, 'Payment currency')}
+        <label className={styles.wide}>Payment reference<input name="paymentReference" defaultValue={baseline.payment.reference} maxLength={100} /></label>
       </div></fieldset>
-      <fieldset><legend>Allocation window</legend><label>Hours after the scenario clock<input type="number" name="deadlineHours" step="0.5" min="-168" max="720" defaultValue={(Date.parse(input.deadline) - Date.parse(input.asOf)) / 3_600_000} required /></label><p className={styles.small}>Scenario clock: {scenarioDate(input.asOf)}. Use a negative value for an elapsed deadline.</p></fieldset>
+      <fieldset><legend>Allocation window</legend><label>Hours after the scenario clock<input type="number" name="deadlineHours" step="0.5" min="-168" max="720" defaultValue={(Date.parse(baseline.deadline) - Date.parse(baseline.asOf)) / 3_600_000} required /></label><p className={styles.small}>Scenario clock: {scenarioDate(baseline.asOf)}. Use a negative value for an elapsed deadline.</p></fieldset>
       {error && <p role="alert" className={styles.error}>{error}</p>}
       <div className={styles.dialogActions}><button type="button" className={styles.secondary} onClick={onClose}>Cancel</button><button className={styles.primary} type="submit" disabled={saving}>{saving ? 'Saving evidence…' : 'Save evidence'} <ArrowRight size={15} /></button></div>
     </form>
@@ -85,7 +90,7 @@ function EvidenceEditor({ input, onClose, onSave }: { input: OperationCase; onCl
 
 export default function OperationsWorkspace() {
   const [selectedId, setSelectedId] = useState(operationCases[0].id);
-  const { workspaces, saveWorkspaces, commitReview, getCurrentReviewPacket, loaded, saving, storageError, storageMessage, legacyMigration, legacyStatus } = useWorkspace();
+  const { workspaces, saveWorkspaces, commitReview, getCurrentReviewPacket, confirmUnchangedEvidence, loaded, saving, storageError, storageMessage, legacyMigration, legacyStatus } = useWorkspace();
   const searchParams = useSearchParams();
   const [query, setQuery] = useState('');
   const [filter, setFilter] = useState('all');
@@ -179,11 +184,32 @@ export default function OperationsWorkspace() {
     } catch (error) { setNotice(error instanceof Error ? error.message : 'Drafts not saved.'); }
   }
   function openSource(id: string) { setSourceId(id); setTab('Source records'); }
-  async function saveEvidence(next: OperationCase): Promise<string | null> {
-    const entry = activity('Evidence updated', 'Previous assessment and review cleared. New analysis required.');
-    entry.evidence = evidenceAudit(input, next, 'manual', review);
+  async function saveEvidence(original: OperationCase, next: OperationCase, opened?: CaseWorkspace): Promise<string | null> {
     try {
-      await update({ input: next, analyzed: false, drafts: undefined, draftOrigin: undefined, review: undefined }, entry);
+      if (inputSignature(original) === inputSignature(next)) {
+        // A no-op is read-only, but the case must still match the state at
+        // editor opening. A draft or review update in another tab also counts.
+        await confirmUnchangedEvidence(original, next, opened);
+        setEditing(false);
+        setNotice('No evidence changes. Current saved work was left unchanged.');
+        return null;
+      }
+      const priorReview = opened?.drafts && currentReview(original, opened.drafts, opened.review)
+        ? opened.review : undefined;
+      const entry = activity('Evidence updated', 'Previous assessment and review cleared. New analysis required.');
+      entry.evidence = evidenceAudit(original, next, 'manual', priorReview);
+      await saveWorkspaces(previous => {
+        const current = previous[original.id] ?? { input: original, analyzed: false, history: [] };
+        if (JSON.stringify(previous[original.id] ?? null) !== JSON.stringify(opened ?? null)
+          || inputSignature(current.input) !== inputSignature(original)) {
+          throw new WorkspaceWriteError(WORKSPACE_CHANGED_MESSAGE);
+        }
+        return { ...previous, [original.id]: {
+          ...current, input: next, analyzed: false, drafts: undefined,
+          draftOrigin: undefined, review: undefined,
+          history: [...current.history, entry].slice(-100),
+        } };
+      });
       setEditing(false); setReviewMode(null); setReviewError(''); setTab('Assessment');
       setNotice('Evidence saved. Run the checks to assess the updated case.');
       return null;
@@ -380,6 +406,6 @@ export default function OperationsWorkspace() {
     <div className={styles.mobileNext}><button className={styles.primary} disabled={!loaded} onClick={nextAction}>{nextActionLabel} <ArrowRight size={15} /></button></div>
     {importing && loaded && <CaseImport workspaces={workspaces} onAdd={acceptImport} onClose={() => setImporting(false)} />}
     {updatingEvidence && input.imported && <EvidenceUpdate key={input.id} input={input} original={base} onAccept={acceptFollowUp} onClose={() => setUpdatingEvidence(false)} />}
-    {editing && <EvidenceEditor key={input.id} input={input} onClose={() => setEditing(false)} onSave={saveEvidence} />}
+    {editing && <EvidenceEditor key={input.id} input={input} saved={saved} onClose={() => setEditing(false)} onSave={saveEvidence} />}
   </div>;
 }

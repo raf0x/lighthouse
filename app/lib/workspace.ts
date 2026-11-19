@@ -336,3 +336,23 @@ export function createAuthoritativeReviewPacket(
     currentStatus: review?.status ?? 'pending',
   };
 }
+
+
+/** L2: Verify a no-op manual evidence save against authoritative v2 under the
+ * existing exclusive lock. This is read-only: no review, drafts or history
+ * may be rewritten merely because the user clicked Save.
+ */
+export function verifyUnchangedEvidence(
+  storage: Pick<Storage, 'getItem'>, original: OperationCase, proposed: OperationCase, opened?: CaseWorkspace,
+): void {
+  const expected = inputSignature(original);
+  if (original.id !== proposed.id || inputSignature(proposed) !== expected) {
+    throw new WorkspaceWriteError('The proposed evidence is different. A new review is required.');
+  }
+  const persisted = readAuthoritativeWorkspace(storage).workspaces[original.id];
+  const current = persisted?.input ?? operationCases.find(c => c.id === original.id);
+  if (JSON.stringify(persisted ?? null) !== JSON.stringify(opened ?? null)
+    || !current || inputSignature(current) !== expected) {
+    throw new WorkspaceWriteError(WORKSPACE_CHANGED_MESSAGE);
+  }
+}
