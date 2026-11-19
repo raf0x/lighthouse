@@ -4,12 +4,13 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import { useWorkspace } from '../components/WorkspaceProvider';
-import { accountHref, accountIdForCase, captureReviewSnapshot, legacyCaseVersion, matchesReviewSnapshot, StaleReviewError, type ReviewSnapshot } from '../lib/workspace';
+import { accountHref, accountIdForCase, captureReviewSnapshot, matchesReviewSnapshot, StaleReviewError, type ReviewSnapshot } from '../lib/workspace';
 import { ArrowRight, ArrowUpRight, Check, CheckCheck, ChevronRight, CircleAlert, Clock3, Download, FileText, FolderOpen, ListChecks, PencilLine, Play, RotateCcw, Search, ShieldCheck, Upload, X } from 'lucide-react';
 import Header from '../components/Header';
 import AgentInvestigation from './AgentInvestigation';
 import CaseImport from './CaseImport';
 import EvidenceUpdate, { EvidenceHistory } from './EvidenceUpdate';
+import LegacyRecovery from './LegacyRecovery';
 import { acceptEvidenceUpdate, addImportedCase } from '../lib/operations-import';
 import { AGENT_VERSION } from '../lib/operations-agent';
 import type { AgentRun } from '../lib/operations-agent';
@@ -84,7 +85,7 @@ function EvidenceEditor({ input, onClose, onSave }: { input: OperationCase; onCl
 
 export default function OperationsWorkspace() {
   const [selectedId, setSelectedId] = useState(operationCases[0].id);
-  const { workspaces, saveWorkspaces, commitReview, loaded, saving, storageError, storageMessage, legacyMigration, legacyWriteSeen } = useWorkspace();
+  const { workspaces, saveWorkspaces, commitReview, loaded, saving, storageError, storageMessage, legacyMigration, legacyStatus } = useWorkspace();
   const searchParams = useSearchParams();
   const [query, setQuery] = useState('');
   const [filter, setFilter] = useState('all');
@@ -205,7 +206,7 @@ export default function OperationsWorkspace() {
   function openReview(mode: ReviewStatus) {
     if (!assessment || !drafts || !loaded) return;
     try {
-      setReviewStart(captureReviewSnapshot(input, drafts, legacyCaseVersion(localStorage, input.id)));
+      setReviewStart(captureReviewSnapshot(input, drafts));
       setReviewMode(mode);
       setReviewError('');
     } catch { setReviewError('The saved case cannot be verified. Review was not opened.'); }
@@ -303,7 +304,7 @@ export default function OperationsWorkspace() {
         <div className={styles.overview} aria-label="Workspace summary"><div><FolderOpen size={17} /><strong>{allCases.length}</strong><span>{importedCases.length ? `cases · ${importedCases.length} imported` : 'sample cases'}</span></div><div><ListChecks size={17} /><strong>{countAnalyzed}</strong><span>analyzed</span></div><div><ShieldCheck size={17} /><strong>{countReviewed}</strong><span>plans approved locally</span></div><div className={styles.saveStatus}><span className={styles.statusDot} data-error={storageError} />{!loaded ? 'Loading workspace…' : storageError ? 'Save unavailable' : saving ? 'Saving changes…' : 'Saved on this device'}</div></div>
         {storageError && <p role="alert" className={styles.error}>{storageMessage || 'Safe saving is unavailable. Your change was not recorded.'}</p>}
         {legacyMigration && <p className={styles.muted}>Your earlier evidence and drafts were copied into a protected workspace. Old approvals require fresh review. Older open tabs cannot synchronize changes here.</p>}
-        {legacyWriteSeen && <p role="alert" className={styles.error}>An outdated Lighthouse tab changed older browser storage. Close it and check its unsynchronized edits before continuing. This workspace remains protected.</p>}
+        <LegacyRecovery status={legacyStatus} />
         <label className={styles.mobileCasePicker}>Choose a case<select value={input.id} onChange={e => selectCase(e.target.value)}>{allCases.map(c => <option key={c.id} value={c.id}>{c.account} · {c.orderId}</option>)}</select></label>
         <div className={styles.workspace}>
           <aside className={styles.queue} aria-label="Case queue">

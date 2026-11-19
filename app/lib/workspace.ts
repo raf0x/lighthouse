@@ -67,20 +67,13 @@ export function changeSummary(event: AuditEntry) {
 }
 
 /** The exact case and both messages visible when a human opens a review. */
-export type ReviewSnapshot = { caseId: string; inputSignature: string; draftSignature: string; legacyVersion?: string | null };
+export type ReviewSnapshot = { caseId: string; inputSignature: string; draftSignature: string };
 export const STALE_REVIEW_MESSAGE = 'This case evidence or its message drafts changed. Review the current version and open a new confirmation.';
 export class StaleReviewError extends Error {
   constructor() { super(STALE_REVIEW_MESSAGE); this.name = 'StaleReviewError'; }
 }
-export function captureReviewSnapshot(input: OperationCase, drafts: Drafts, legacyVersion?: string | null): ReviewSnapshot {
-  return { caseId: input.id, inputSignature: inputSignature(input), draftSignature: JSON.stringify(drafts),
-    ...(legacyVersion === undefined ? {} : { legacyVersion }) };
-}
-/** Detect a legacy tab modifying the reviewed case while its form is open.
- * The legacy store is never treated as authoritative after migration.
- */
-export function legacyCaseVersion(storage: Pick<Storage, 'getItem'>, caseId: string): string | null {
-  return workspaceContentVersion(restoreWorkspaces(storage.getItem(LEGACY_WORKSPACE_STORAGE_KEY))[caseId]);
+export function captureReviewSnapshot(input: OperationCase, drafts: Drafts): ReviewSnapshot {
+  return { caseId: input.id, inputSignature: inputSignature(input), draftSignature: JSON.stringify(drafts) };
 }
 export function matchesReviewSnapshot(snapshot: ReviewSnapshot, input: OperationCase, drafts?: Drafts): boolean {
   return Boolean(drafts && snapshot.caseId === input.id &&
@@ -95,12 +88,7 @@ export function writeCurrentReview(
   storage: Pick<Storage, 'getItem' | 'setItem'>,
   snapshot: ReviewSnapshot, reviewer: string, status: ReviewStatus, note: string, at: string,
 ): { workspaces: Workspaces; serialized: string; review: CaseReview } {
-  const raw = storage.getItem(WORKSPACE_STORAGE_KEY);
-  if (snapshot.legacyVersion !== undefined
-    && legacyCaseVersion(storage, snapshot.caseId) !== snapshot.legacyVersion) {
-    throw new StaleReviewError();
-  }
-  const latest = restoreWorkspaces(raw);
+  const { raw, workspaces: latest, legacyBaseline } = readAuthoritativeWorkspace(storage);
   const saved = latest[snapshot.caseId];
   if (!raw || !saved?.analyzed || !matchesReviewSnapshot(snapshot, saved.input, saved.drafts)) {
     throw new StaleReviewError();
@@ -116,14 +104,8 @@ export function writeCurrentReview(
       ...saved, review, history: [...saved.history, entry].slice(-100),
     },
   };
-  const serialized = JSON.stringify({ version: ENGINE_VERSION, cases: workspaces });
+  const serialized = serializeAuthoritativeWorkspace(workspaces, legacyBaseline);
   if (serialized.length > MAX_WORKSPACE_CHARACTERS) throw new Error('Workspace size limit. The review was not recorded.');
-  // A legacy tab does not participate in the v2 lock. Check it again at the
-  // final write boundary so a write during a paused v2 read rejects review.
-  if (snapshot.legacyVersion !== undefined
-    && legacyCaseVersion(storage, snapshot.caseId) !== snapshot.legacyVersion) {
-    throw new StaleReviewError();
-  }
   storage.setItem(WORKSPACE_STORAGE_KEY, serialized);
   return { workspaces, serialized, review };
 }
@@ -163,8 +145,7 @@ export function writeWorkspaceChange(
   updater?: (latest: Workspaces) => Workspaces,
 ): { workspaces: Workspaces; serialized: string } {
   const changedIds = changedWorkspaceCases(before, optimistic);
-  const original = storage.getItem(WORKSPACE_STORAGE_KEY);
-  const latest = restoreWorkspaces(original);
+  const { raw: original, workspaces: latest, legacyBaseline } = readAuthoritativeWorkspace(storage);
   for (const id of changedIds) {
     if (workspaceContentVersion(before[id]) !== workspaceContentVersion(latest[id])) {
       throw new WorkspaceWriteError(WORKSPACE_CHANGED_MESSAGE);
@@ -175,47 +156,144 @@ export function writeWorkspaceChange(
     if (Object.hasOwn(optimistic, id)) merged[id] = optimistic[id];
     else delete merged[id];
   }
-  const serialized = JSON.stringify({ version: ENGINE_VERSION, cases: merged });
+  const serialized = serializeAuthoritativeWorkspace(merged, legacyBaseline);
   if (serialized.length > MAX_WORKSPACE_CHARACTERS) throw new WorkspaceWriteError('Workspace size limit. Your change was not recorded.');
   if (serialized !== original) storage.setItem(WORKSPACE_STORAGE_KEY, serialized);
   return { workspaces: merged, serialized };
 }
 
-
-/** This must run under WORKSPACE_WRITE_LOCK before a new client may edit or review.
- * Migration happens once into an isolated key that no older tab knows about.
- * Existing evidence, drafts and history survive, but the unprovable old approval
- * is deliberately cleared. The old key is untouched as a recovery reference.
+/** SHA-256 of the exact original v1 string is a migration witness, not a
+ * cross-version lock. A later v1 write is quarantine material, never a reason
+ * to reject an otherwise current v2 review.
  */
-export function initializeWorkspaceStore(
+async function legacyFingerprint(raw: string | null): Promise<string | null> {
+  if (raw === null) return null;
+  const bytes = new TextEncoder().encode(raw);
+  const digest = await crypto.subtle.digest('SHA-256', bytes);
+  return Array.from(new Uint8Array(digest), byte => byte.toString(16).padStart(2, '0')).join('');
+}
+
+export type LegacyRecoveryStatus =
+  'none' | 'unchanged' | 'changed' | 'unverified' | 'corrupt' | 'changing' | 'unavailable';
+export type LegacyRecovery = {
+  status: LegacyRecoveryStatus;
+  raw: string | null;
+  cases: Workspaces;
+  error?: string;
+};
+type WorkspaceEnvelope = {
+  version: typeof ENGINE_VERSION;
+  cases: Workspaces;
+  /** Absent on v2 workspaces created by the previous PR candidate. */
+  legacyBaseline?: string | null;
+};
+const BAD_V2_DATA = 'Current v2 workspace data could not be read safely. No data was overwritten.';
+const BAD_V1_DATA = 'Older workspace data could not be migrated safely. No data was overwritten.';
+
+function parseWorkspaceEnvelope(raw: string | null, message: string): WorkspaceEnvelope {
+  if (raw === null || raw.length > MAX_WORKSPACE_CHARACTERS) throw new WorkspaceWriteError(message);
+  let value: unknown;
+  try { value = JSON.parse(raw); } catch { throw new WorkspaceWriteError(message); }
+  if (!value || typeof value !== 'object') throw new WorkspaceWriteError(message);
+  const envelope = value as WorkspaceEnvelope;
+  if (envelope.version !== ENGINE_VERSION || !envelope.cases
+    || typeof envelope.cases !== 'object' || Array.isArray(envelope.cases)
+    || (envelope.legacyBaseline !== undefined && envelope.legacyBaseline !== null
+      && (typeof envelope.legacyBaseline !== 'string' || !/^[0-9a-f]{64}$/.test(envelope.legacyBaseline)))) {
+    throw new WorkspaceWriteError(message);
+  }
+  const restored = restoreWorkspaces(raw);
+  // restoreWorkspaces intentionally filters unsafe records. Never silently
+  // discard one of those records while writing back an apparently valid store.
+  if (Object.keys(envelope.cases).some(id => !Object.hasOwn(restored, id))) {
+    throw new WorkspaceWriteError(message);
+  }
+  return envelope;
+}
+
+export function readAuthoritativeWorkspace(storage: Pick<Storage, 'getItem'>): {
+  raw: string; workspaces: Workspaces; legacyBaseline: string | null | undefined;
+} {
+  const raw = storage.getItem(WORKSPACE_STORAGE_KEY);
+  const envelope = parseWorkspaceEnvelope(raw, BAD_V2_DATA);
+  return { raw: raw!, workspaces: restoreWorkspaces(raw), legacyBaseline: envelope.legacyBaseline };
+}
+
+function serializeAuthoritativeWorkspace(cases: Workspaces, legacyBaseline?: string | null): string {
+  return JSON.stringify({
+    version: ENGINE_VERSION,
+    ...(legacyBaseline === undefined ? {} : { legacyBaseline }),
+    cases,
+  });
+}
+
+/** Read-only inspection. No v1 data is ever copied into an existing v2 record.
+ * Exact raw v1 contents remain downloadable even when they cannot be parsed.
+ * For pre-fix v2 records without a migration witness, warn as unverified.
+ */
+export async function inspectLegacyWorkspace(storage: Pick<Storage, 'getItem'>): Promise<LegacyRecovery> {
+  const v2Raw = storage.getItem(WORKSPACE_STORAGE_KEY);
+  let baseline: string | null | undefined;
+  if (v2Raw !== null) {
+    try { baseline = parseWorkspaceEnvelope(v2Raw, BAD_V2_DATA).legacyBaseline; }
+    catch { baseline = undefined; }
+  }
+  const raw = storage.getItem(LEGACY_WORKSPACE_STORAGE_KEY);
+  const signature = await legacyFingerprint(raw);
+  const stillCurrent = storage.getItem(LEGACY_WORKSPACE_STORAGE_KEY);
+  if (stillCurrent !== raw) {
+    return { status: 'changing', raw: stillCurrent, cases: {}, error: 'The older workspace changed during inspection. Inspect it again when the outdated tab is closed.' };
+  }
+  if (raw === null) {
+    return { status: baseline === undefined || baseline === null ? 'none' : 'changed', raw, cases: {} };
+  }
+  let cases: Workspaces = {};
+  let corrupt = false;
+  try {
+    parseWorkspaceEnvelope(raw, BAD_V1_DATA);
+    cases = restoreWorkspaces(raw);
+  } catch { corrupt = true; }
+  return {
+    status: corrupt ? 'corrupt'
+      : baseline === undefined ? 'unverified'
+      : signature === baseline ? 'unchanged' : 'changed',
+    raw, cases,
+    ...(corrupt ? { error: 'The older workspace is not valid. Its exact raw contents can still be downloaded.' } : {}),
+  };
+}
+
+
+/** Run under WORKSPACE_WRITE_LOCK. Migrate the first valid v1 snapshot
+ * exactly once, preserving evidence, imported records, drafts and history.
+ * The v1 key stays untouched. A concurrent unlocked v1 write is detected
+ * separately as an unsynchronized legacy change after v2 is committed.
+ */
+export async function initializeWorkspaceStore(
   storage: Pick<Storage, 'getItem' | 'setItem'>,
-): { workspaces: Workspaces; migrated: boolean } {
+): Promise<{ workspaces: Workspaces; migrated: boolean }> {
   const current = storage.getItem(WORKSPACE_STORAGE_KEY);
   if (current !== null) {
-    const parsed = JSON.parse(current);
-    if (!parsed || parsed.version !== ENGINE_VERSION || !parsed.cases || typeof parsed.cases !== 'object' || Array.isArray(parsed.cases)) {
-      throw new WorkspaceWriteError('Existing workspace data could not be read safely. No data was overwritten.');
-    }
-    return { workspaces: restoreWorkspaces(current), migrated: false };
+    const workspace = readAuthoritativeWorkspace(storage);
+    return { workspaces: workspace.workspaces, migrated: false };
   }
+
   const legacy = storage.getItem(LEGACY_WORKSPACE_STORAGE_KEY);
-  if (legacy !== null) {
-    let parsed: { version?: unknown; cases?: unknown };
-    try { parsed = JSON.parse(legacy); } catch { throw new WorkspaceWriteError('Older workspace data could not be read safely. No data was overwritten.'); }
-    if (!parsed || parsed.version !== ENGINE_VERSION || !parsed.cases || typeof parsed.cases !== 'object' || Array.isArray(parsed.cases)) {
-      throw new WorkspaceWriteError('Older workspace data could not be migrated safely. No data was overwritten.');
-    }
-  }
-  const restored = restoreWorkspaces(legacy);
+  const restored = legacy === null ? {} : restoreWorkspaces(legacy);
+  if (legacy !== null) parseWorkspaceEnvelope(legacy, BAD_V1_DATA);
+
   const migrated: Workspaces = {};
   for (const [id, workspace] of Object.entries(restored)) {
     migrated[id] = { ...workspace, review: undefined };
   }
-  const raw = JSON.stringify({ version: ENGINE_VERSION, cases: migrated });
-  if (raw.length > MAX_WORKSPACE_CHARACTERS) throw new WorkspaceWriteError('Workspace size limit. No migration was completed.');
-  if (storage.getItem(LEGACY_WORKSPACE_STORAGE_KEY) !== legacy) {
-    throw new WorkspaceWriteError('The older workspace changed during migration. Close outdated tabs and reload.');
+
+  const baseline = await legacyFingerprint(legacy);
+  const raw = serializeAuthoritativeWorkspace(migrated, baseline);
+  if (raw.length > MAX_WORKSPACE_CHARACTERS) {
+    throw new WorkspaceWriteError('Workspace size limit. No migration was completed.');
   }
+  // Do NOT re-read or merge v1 here. It is an unlocked, independent protocol.
+  // A write during digest/migration will be marked as unsynchronized by the
+  // post-commit inspector; the originally captured snapshot remains v2 truth.
   storage.setItem(WORKSPACE_STORAGE_KEY, raw);
   return { workspaces: migrated, migrated: legacy !== null };
 }

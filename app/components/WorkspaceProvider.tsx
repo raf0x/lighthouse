@@ -1,12 +1,11 @@
 'use client';
 
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type Dispatch, type SetStateAction } from 'react';
-import { restoreWorkspaces } from '../lib/operations';
 import {
-  changedWorkspaceCases, initializeWorkspaceStore, LEGACY_WORKSPACE_STORAGE_KEY,
-  StaleReviewError, WORKSPACE_SAVE_UNAVAILABLE, WORKSPACE_STORAGE_KEY, WorkspaceWriteError,
+  changedWorkspaceCases, initializeWorkspaceStore, inspectLegacyWorkspace, LEGACY_WORKSPACE_STORAGE_KEY,
+  readAuthoritativeWorkspace, StaleReviewError, WORKSPACE_SAVE_UNAVAILABLE, WORKSPACE_STORAGE_KEY, WorkspaceWriteError,
   withWorkspaceWriteLock, writeCurrentReview, writeWorkspaceChange,
-  type ReviewSnapshot, type Workspaces,
+  type LegacyRecoveryStatus, type ReviewSnapshot, type Workspaces,
 } from '../lib/workspace';
 import type { CaseReview, ReviewStatus } from '../lib/operations';
 
@@ -19,7 +18,7 @@ type WorkspaceContext = {
   storageError: boolean;
   storageMessage: string;
   legacyMigration: boolean;
-  legacyWriteSeen: boolean;
+  legacyStatus: LegacyRecoveryStatus;
   commitReview: (snapshot: ReviewSnapshot, reviewer: string, status: ReviewStatus, note: string, at: string) => Promise<CaseReview>;
 };
 const Context = createContext<WorkspaceContext | null>(null);
@@ -37,26 +36,34 @@ export default function WorkspaceProvider({ children }: { children: React.ReactN
   const [storageError, setStorageError] = useState(false);
   const [storageMessage, setStorageMessage] = useState('');
   const [legacyMigration, setLegacyMigration] = useState(false);
-  const [legacyWriteSeen, setLegacyWriteSeen] = useState(false);
+  const [legacyStatus, setLegacyStatus] = useState<LegacyRecoveryStatus>('none');
+  const legacyCheck = useRef(0);
   const pending = useRef(0);
   const generation = useRef(0);
   const queue = useRef<Promise<void>>(Promise.resolve());
 
   const reloadAuthoritative = useCallback(() => {
-    const raw = localStorage.getItem(WORKSPACE_STORAGE_KEY);
-    if (raw === null) throw new WorkspaceWriteError('The current workspace could not be read. No change was saved.');
-    const latest = restoreWorkspaces(raw);
+    const latest = readAuthoritativeWorkspace(localStorage).workspaces;
     rendered.current = latest;
     setRenderedWorkspaces(latest);
+  }, []);
+
+  // Re-read the old key on mount, on cross-tab events and when the tab regains
+  // focus. The warning is derived from a durable v2 migration witness, so a
+  // reload cannot silently clear a confirmed unsynchronized legacy change.
+  const refreshLegacyStatus = useCallback(() => {
+    const token = ++legacyCheck.current;
+    void inspectLegacyWorkspace(localStorage)
+      .then(result => { if (token === legacyCheck.current) setLegacyStatus(result.status); })
+      .catch(() => { if (token === legacyCheck.current) setLegacyStatus('unavailable'); });
   }, []);
 
   useEffect(() => {
     let active = true;
     const sync = (event: StorageEvent) => {
       if (event.storageArea !== localStorage) return;
-      if (event.key === LEGACY_WORKSPACE_STORAGE_KEY) {
-        setLegacyWriteSeen(true);
-        return;
+      if (event.key === LEGACY_WORKSPACE_STORAGE_KEY || event.key === null) {
+        refreshLegacyStatus();
       }
       if (event.key !== WORKSPACE_STORAGE_KEY && event.key !== null) return;
       if (!initialized.current || pending.current) return;
@@ -65,7 +72,11 @@ export default function WorkspaceProvider({ children }: { children: React.ReactN
         setStorageMessage('Could not read the saved workspace after another tab changed it.');
       }
     };
+    const onFocus = () => refreshLegacyStatus();
+    const onVisibility = () => { if (document.visibilityState === 'visible') refreshLegacyStatus(); };
     window.addEventListener('storage', sync);
+    window.addEventListener('focus', onFocus);
+    document.addEventListener('visibilitychange', onVisibility);
     void withWorkspaceWriteLock(navigator.locks, () => initializeWorkspaceStore(localStorage))
       .then(result => {
         if (!active) return;
@@ -73,18 +84,26 @@ export default function WorkspaceProvider({ children }: { children: React.ReactN
         rendered.current = result.workspaces;
         setRenderedWorkspaces(result.workspaces);
         setLegacyMigration(result.migrated);
+        refreshLegacyStatus();
         setStorageError(false);
         setStorageMessage('');
         setLoaded(true);
       })
       .catch(error => {
         if (!active) return;
+        refreshLegacyStatus();
         setStorageError(true);
         setStorageMessage(error instanceof Error ? error.message : WORKSPACE_SAVE_UNAVAILABLE);
         setLoaded(true);
       });
-    return () => { active = false; window.removeEventListener('storage', sync); };
-  }, [reloadAuthoritative]);
+    return () => {
+      active = false;
+      legacyCheck.current++;
+      window.removeEventListener('storage', sync);
+      window.removeEventListener('focus', onFocus);
+      document.removeEventListener('visibilitychange', onVisibility);
+    };
+  }, [reloadAuthoritative, refreshLegacyStatus]);
 
   const saveWorkspaces = useCallback((change: SetStateAction<Workspaces>): Promise<Workspaces> => {
     if (!initialized.current) {
@@ -161,9 +180,9 @@ export default function WorkspaceProvider({ children }: { children: React.ReactN
 
   const value = useMemo(
     () => ({ workspaces, setWorkspaces, saveWorkspaces, loaded, saving, storageError, storageMessage,
-      legacyMigration, legacyWriteSeen, commitReview }),
+      legacyMigration, legacyStatus, commitReview }),
     [workspaces, setWorkspaces, saveWorkspaces, loaded, saving, storageError, storageMessage,
-      legacyMigration, legacyWriteSeen, commitReview],
+      legacyMigration, legacyStatus, commitReview],
   );
   return <Context.Provider value={value}>{children}</Context.Provider>;
 }
