@@ -22,12 +22,13 @@ export function EvidenceHistory({ audit }: { audit: EvidenceAudit }) {
 }
 
 export default function EvidenceUpdate({ input, original, onAccept, onClose }: {
-  input: OperationCase; original: OperationCase; onAccept: (next: OperationCase, expectedSignature: string) => string | null; onClose: () => void;
+  input: OperationCase; original: OperationCase; onAccept: (next: OperationCase, expectedSignature: string) => Promise<string | null>; onClose: () => void;
 }) {
   const ref = useRef<HTMLDialogElement>(null);
   const fileRef = useRef<HTMLInputElement>(null);
   const attempt = useRef(0);
   const [baseline] = useState(input);
+  const [accepting, setAccepting] = useState(false);
   const [candidate, setCandidate] = useState<OperationCase | null>(null);
   const [errors, setErrors] = useState<string[]>([]);
   const [reading, setReading] = useState(false);
@@ -76,7 +77,7 @@ export default function EvidenceUpdate({ input, original, onAccept, onClose }: {
         <details className={styles.checks}><summary><FileText size={15} /> Findings after this update <ChevronRight size={14} /></summary><ul className={styles.updateFindings}>{after!.findings.map(f => <li key={f.id}>{f.title}</li>)}</ul>{!after!.findings.length && <p className={styles.small}>No policy findings. Human release review is still required.</p>}</details>
         <p className={styles.small}>Accepting replaces the case evidence and drafts, clears any prior approval, and reruns local policy checks. This does not verify the file against external systems or release tickets.</p></> : <p className={styles.muted}>The values match the current case. Its assessment, drafts and approval will be kept.</p>}
     </section>}
-    <div className={styles.dialogActions}><button className={styles.secondary} onClick={onClose}>Cancel</button><button className={styles.primary} disabled={!canAccept} onClick={() => { if (!candidate || !canAccept) return; const error = onAccept(candidate, inputSignature(baseline)); if (error) setErrors([error]); }}>Accept changes & recheck <ArrowRight size={15} /></button></div>
+    <div className={styles.dialogActions}><button className={styles.secondary} onClick={onClose}>Cancel</button><button className={styles.primary} disabled={!canAccept || accepting} onClick={() => { if (!candidate || !canAccept || accepting) return; setAccepting(true); void onAccept(candidate, inputSignature(baseline)).then(error => { if (error) setErrors([error]); }).catch(error => setErrors([error instanceof Error ? error.message : 'Update not saved.'])).finally(() => setAccepting(false)); }}>Accept changes & recheck <ArrowRight size={15} /></button></div>
     <p className={styles.small}>Runs in this browser. No AI call or external action.</p>
   </dialog>;
 }

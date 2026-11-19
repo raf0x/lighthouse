@@ -7,7 +7,9 @@ import {
 } from './operations';
 import type { Account } from '../components/types';
 
-export const WORKSPACE_STORAGE_KEY = 'lighthouse-operations-v1';
+// Old tabs continue to write v1 without Web Locks. Never make that key authoritative again.
+export const LEGACY_WORKSPACE_STORAGE_KEY = 'lighthouse-operations-v1';
+export const WORKSPACE_STORAGE_KEY = 'lighthouse-operations-v2';
 export type Workspaces = Record<string, CaseWorkspace>;
 export type CaseSummary = { input: OperationCase; assessment: Assessment; analyzed: boolean; planApproved: boolean; history: AuditEntry[] };
 export type WorkspaceAccount = { id: string; name: string; initials: string; kind: 'partner' | 'customer'; cases: CaseSummary[]; customer?: Account };
@@ -65,13 +67,20 @@ export function changeSummary(event: AuditEntry) {
 }
 
 /** The exact case and both messages visible when a human opens a review. */
-export type ReviewSnapshot = { caseId: string; inputSignature: string; draftSignature: string };
+export type ReviewSnapshot = { caseId: string; inputSignature: string; draftSignature: string; legacyVersion?: string | null };
 export const STALE_REVIEW_MESSAGE = 'This case evidence or its message drafts changed. Review the current version and open a new confirmation.';
 export class StaleReviewError extends Error {
   constructor() { super(STALE_REVIEW_MESSAGE); this.name = 'StaleReviewError'; }
 }
-export function captureReviewSnapshot(input: OperationCase, drafts: Drafts): ReviewSnapshot {
-  return { caseId: input.id, inputSignature: inputSignature(input), draftSignature: JSON.stringify(drafts) };
+export function captureReviewSnapshot(input: OperationCase, drafts: Drafts, legacyVersion?: string | null): ReviewSnapshot {
+  return { caseId: input.id, inputSignature: inputSignature(input), draftSignature: JSON.stringify(drafts),
+    ...(legacyVersion === undefined ? {} : { legacyVersion }) };
+}
+/** Detect a legacy tab modifying the reviewed case while its form is open.
+ * The legacy store is never treated as authoritative after migration.
+ */
+export function legacyCaseVersion(storage: Pick<Storage, 'getItem'>, caseId: string): string | null {
+  return workspaceContentVersion(restoreWorkspaces(storage.getItem(LEGACY_WORKSPACE_STORAGE_KEY))[caseId]);
 }
 export function matchesReviewSnapshot(snapshot: ReviewSnapshot, input: OperationCase, drafts?: Drafts): boolean {
   return Boolean(drafts && snapshot.caseId === input.id &&
@@ -87,6 +96,10 @@ export function writeCurrentReview(
   snapshot: ReviewSnapshot, reviewer: string, status: ReviewStatus, note: string, at: string,
 ): { workspaces: Workspaces; serialized: string; review: CaseReview } {
   const raw = storage.getItem(WORKSPACE_STORAGE_KEY);
+  if (snapshot.legacyVersion !== undefined
+    && legacyCaseVersion(storage, snapshot.caseId) !== snapshot.legacyVersion) {
+    throw new StaleReviewError();
+  }
   const latest = restoreWorkspaces(raw);
   const saved = latest[snapshot.caseId];
   if (!raw || !saved?.analyzed || !matchesReviewSnapshot(snapshot, saved.input, saved.drafts)) {
@@ -105,6 +118,12 @@ export function writeCurrentReview(
   };
   const serialized = JSON.stringify({ version: ENGINE_VERSION, cases: workspaces });
   if (serialized.length > MAX_WORKSPACE_CHARACTERS) throw new Error('Workspace size limit. The review was not recorded.');
+  // A legacy tab does not participate in the v2 lock. Check it again at the
+  // final write boundary so a write during a paused v2 read rejects review.
+  if (snapshot.legacyVersion !== undefined
+    && legacyCaseVersion(storage, snapshot.caseId) !== snapshot.legacyVersion) {
+    throw new StaleReviewError();
+  }
   storage.setItem(WORKSPACE_STORAGE_KEY, serialized);
   return { workspaces, serialized, review };
 }
@@ -112,7 +131,7 @@ export function writeCurrentReview(
 /** One cooperative cross-tab writer lock for all Operations changes and reviews.
  * Web Locks is browser-native; never use an unsafe localStorage-only fallback.
  */
-export const WORKSPACE_WRITE_LOCK = 'lighthouse-operations-v1-write';
+export const WORKSPACE_WRITE_LOCK = 'lighthouse-operations-v2-write';
 export class WorkspaceWriteError extends Error {
   constructor(message: string) { super(message); this.name = 'WorkspaceWriteError'; }
 }
@@ -160,4 +179,43 @@ export function writeWorkspaceChange(
   if (serialized.length > MAX_WORKSPACE_CHARACTERS) throw new WorkspaceWriteError('Workspace size limit. Your change was not recorded.');
   if (serialized !== original) storage.setItem(WORKSPACE_STORAGE_KEY, serialized);
   return { workspaces: merged, serialized };
+}
+
+
+/** This must run under WORKSPACE_WRITE_LOCK before a new client may edit or review.
+ * Migration happens once into an isolated key that no older tab knows about.
+ * Existing evidence, drafts and history survive, but the unprovable old approval
+ * is deliberately cleared. The old key is untouched as a recovery reference.
+ */
+export function initializeWorkspaceStore(
+  storage: Pick<Storage, 'getItem' | 'setItem'>,
+): { workspaces: Workspaces; migrated: boolean } {
+  const current = storage.getItem(WORKSPACE_STORAGE_KEY);
+  if (current !== null) {
+    const parsed = JSON.parse(current);
+    if (!parsed || parsed.version !== ENGINE_VERSION || !parsed.cases || typeof parsed.cases !== 'object' || Array.isArray(parsed.cases)) {
+      throw new WorkspaceWriteError('Existing workspace data could not be read safely. No data was overwritten.');
+    }
+    return { workspaces: restoreWorkspaces(current), migrated: false };
+  }
+  const legacy = storage.getItem(LEGACY_WORKSPACE_STORAGE_KEY);
+  if (legacy !== null) {
+    let parsed: { version?: unknown; cases?: unknown };
+    try { parsed = JSON.parse(legacy); } catch { throw new WorkspaceWriteError('Older workspace data could not be read safely. No data was overwritten.'); }
+    if (!parsed || parsed.version !== ENGINE_VERSION || !parsed.cases || typeof parsed.cases !== 'object' || Array.isArray(parsed.cases)) {
+      throw new WorkspaceWriteError('Older workspace data could not be migrated safely. No data was overwritten.');
+    }
+  }
+  const restored = restoreWorkspaces(legacy);
+  const migrated: Workspaces = {};
+  for (const [id, workspace] of Object.entries(restored)) {
+    migrated[id] = { ...workspace, review: undefined };
+  }
+  const raw = JSON.stringify({ version: ENGINE_VERSION, cases: migrated });
+  if (raw.length > MAX_WORKSPACE_CHARACTERS) throw new WorkspaceWriteError('Workspace size limit. No migration was completed.');
+  if (storage.getItem(LEGACY_WORKSPACE_STORAGE_KEY) !== legacy) {
+    throw new WorkspaceWriteError('The older workspace changed during migration. Close outdated tabs and reload.');
+  }
+  storage.setItem(WORKSPACE_STORAGE_KEY, raw);
+  return { workspaces: migrated, migrated: legacy !== null };
 }
