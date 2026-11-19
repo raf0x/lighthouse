@@ -108,3 +108,56 @@ export function writeCurrentReview(
   storage.setItem(WORKSPACE_STORAGE_KEY, serialized);
   return { workspaces, serialized, review };
 }
+
+/** One cooperative cross-tab writer lock for all Operations changes and reviews.
+ * Web Locks is browser-native; never use an unsafe localStorage-only fallback.
+ */
+export const WORKSPACE_WRITE_LOCK = 'lighthouse-operations-v1-write';
+export class WorkspaceWriteError extends Error {
+  constructor(message: string) { super(message); this.name = 'WorkspaceWriteError'; }
+}
+export const WORKSPACE_SAVE_UNAVAILABLE = 'Safe cross-tab saving is unavailable in this browser. Your change was not recorded.';
+export const WORKSPACE_CHANGED_MESSAGE = 'This case changed in another tab. Your outdated edit was not saved. Review the current case before editing again.';
+export async function withWorkspaceWriteLock<T>(locks: LockManager | undefined, write: () => T): Promise<T> {
+  if (!locks || typeof locks.request !== 'function') throw new WorkspaceWriteError(WORKSPACE_SAVE_UNAVAILABLE);
+  return locks.request(WORKSPACE_WRITE_LOCK, { mode: 'exclusive' }, write);
+}
+
+/** Ignore activity and review changes when deciding if a later evidence edit
+ * may proceed. An evidence edit after an approval must clear that approval,
+ * not silently erase the evidence edit.
+ */
+export function workspaceContentVersion(workspace?: CaseWorkspace): string | null {
+  return workspace ? JSON.stringify([workspace.input, workspace.analyzed, workspace.drafts, workspace.importedOriginal]) : null;
+}
+export function changedWorkspaceCases(before: Workspaces, after: Workspaces): string[] {
+  return [...new Set([...Object.keys(before), ...Object.keys(after)])].filter(id => before[id] !== after[id]);
+}
+
+/** Called under the same exclusive lock as writeCurrentReview. Its updater
+ * executes against the latest browser-local state, never an old tab snapshot.
+ * Cross-tab conflicting evidence changes fail closed; unrelated cases merge.
+ */
+export function writeWorkspaceChange(
+  storage: Pick<Storage, 'getItem' | 'setItem'>,
+  before: Workspaces, optimistic: Workspaces,
+  updater?: (latest: Workspaces) => Workspaces,
+): { workspaces: Workspaces; serialized: string } {
+  const changedIds = changedWorkspaceCases(before, optimistic);
+  const original = storage.getItem(WORKSPACE_STORAGE_KEY);
+  const latest = restoreWorkspaces(original);
+  for (const id of changedIds) {
+    if (workspaceContentVersion(before[id]) !== workspaceContentVersion(latest[id])) {
+      throw new WorkspaceWriteError(WORKSPACE_CHANGED_MESSAGE);
+    }
+  }
+  const merged = updater ? updater(latest) : { ...latest };
+  if (!updater) for (const id of changedIds) {
+    if (Object.hasOwn(optimistic, id)) merged[id] = optimistic[id];
+    else delete merged[id];
+  }
+  const serialized = JSON.stringify({ version: ENGINE_VERSION, cases: merged });
+  if (serialized.length > MAX_WORKSPACE_CHARACTERS) throw new WorkspaceWriteError('Workspace size limit. Your change was not recorded.');
+  if (serialized !== original) storage.setItem(WORKSPACE_STORAGE_KEY, serialized);
+  return { workspaces: merged, serialized };
+}

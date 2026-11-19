@@ -169,12 +169,12 @@ export default function OperationsWorkspace() {
     setReviewMode(mode);
     setReviewError('');
   }
-  function submitReview(event: React.FormEvent) {
+  async function submitReview(event: React.FormEvent) {
     event.preventDefault();
     if (!assessment || !drafts || !reviewMode) return;
     try {
       if (!reviewStart || !matchesReviewSnapshot(reviewStart, input, drafts)) throw new StaleReviewError();
-      commitReview(reviewStart, reviewer, reviewMode, reviewNote, new Date().toISOString());
+      await commitReview(reviewStart, reviewer, reviewMode, reviewNote, new Date().toISOString());
       setReviewMode(null); setReviewStart(null); setReviewError('');
       setNotice(reviewMode === 'approved' ? 'Plan approval recorded on this device. No messages sent, invoices changed, or tickets released.' : 'Revision request recorded. Update the evidence or drafts, then review again.');
     } catch (err) {

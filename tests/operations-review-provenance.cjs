@@ -12,7 +12,8 @@ const {
   ENGINE_VERSION, operationCases, assessCase, currentReview, exportCase, restoreWorkspaces,
 } = require('../app/lib/operations.ts');
 const {
-  WORKSPACE_STORAGE_KEY, StaleReviewError, captureReviewSnapshot, matchesReviewSnapshot, writeCurrentReview,
+  WORKSPACE_STORAGE_KEY, StaleReviewError, captureReviewSnapshot, matchesReviewSnapshot,
+  writeCurrentReview, writeWorkspaceChange, withWorkspaceWriteLock, WORKSPACE_WRITE_LOCK, WorkspaceWriteError,
 } = require('../app/lib/workspace.ts');
 
 const clone = value => structuredClone(value);
@@ -134,4 +135,120 @@ test('storage failure produces neither a recorded success nor a mutation',()=>{
   assert.throws(()=>writeCurrentReview(denied,snapshot,'QA Reviewer','approved','',at),/Storage blocked/);
   assert.equal(store.getItem(WORKSPACE_STORAGE_KEY),original);
   assert.equal(store.writes(),0);
+});
+
+function deferred() {
+  let resolve;
+  const promise = new Promise(done => { resolve = done; });
+  return { promise, resolve };
+}
+function lockManager() {
+  let queue = Promise.resolve();
+  const entries = [];
+  return {
+    entries,
+    request(name, options, callback) {
+      assert.equal(name, WORKSPACE_WRITE_LOCK);
+      assert.equal(options.mode, 'exclusive');
+      const prior = queue;
+      const release = deferred();
+      queue = release.promise;
+      return prior.then(async () => {
+        entries.push(name);
+        try { return await callback(); } finally { release.resolve(); }
+      });
+    },
+  };
+}
+function changePayment(store, inputBefore, amountCents) {
+  const next = structuredClone(inputBefore);
+  next.input.payment.amountCents = amountCents;
+  next.analyzed = false;
+  next.drafts = undefined;
+  next.review = undefined;
+  const before = store.cases();
+  const after = { ...before, 'OPS-105': next };
+  const change = latest => ({
+    ...latest, 'OPS-105': {
+      ...latest['OPS-105'],
+      input: next.input, analyzed: false, drafts: undefined, review: undefined,
+      history: [...latest['OPS-105'].history, { id: 'change', at, event: 'Evidence updated', detail: 'Payment changed.' }],
+    },
+  });
+  return () => writeWorkspaceChange(store, before, after, change);
+}
+test('cross-tab exclusive lock queues review behind an in-flight one-cent evidence write', async () => {
+  const store = mockStore(), locks = lockManager(), snapshot = capture(store);
+  const entered = deferred(), release = deferred();
+  const before = store.cases()['OPS-105'];
+  const edit = withWorkspaceWriteLock(locks, async () => {
+    entered.resolve();
+    await release.promise;
+    return changePayment(store, before, before.input.payment.amountCents - 1)();
+  });
+  await entered.promise;
+  const approval = withWorkspaceWriteLock(locks, () => submit(store, snapshot));
+  release.resolve();
+  await edit;
+  await assert.rejects(approval, StaleReviewError);
+  const caseAfter = store.cases()['OPS-105'];
+  assert.equal(caseAfter.input.payment.amountCents, before.input.payment.amountCents - 1);
+  assert.equal(caseAfter.review, undefined);
+  assert.equal(caseAfter.history.some(e => e.event === 'Plan approved locally'), false);
+});
+test('review holding the same lock cannot overwrite a queued evidence edit', async () => {
+  const store = mockStore(), locks = lockManager(), snapshot = capture(store);
+  const before = store.cases()['OPS-105'];
+  const entered = deferred(), release = deferred();
+  const approval = withWorkspaceWriteLock(locks, async () => {
+    entered.resolve();
+    await release.promise;
+    return submit(store, snapshot);
+  });
+  await entered.promise;
+  const edit = withWorkspaceWriteLock(locks, changePayment(store, before, before.input.payment.amountCents - 1));
+  // The edit cannot reach storage until the approval critical section exits.
+  assert.equal(store.writes(), 0);
+  release.resolve();
+  await approval; await edit;
+  const current = store.cases()['OPS-105'];
+  assert.equal(current.input.payment.amountCents, before.input.payment.amountCents - 1);
+  assert.equal(current.review, undefined);
+  assert.equal(assessCase(current.input).decision, 'blocked');
+  assert.equal(current.history.at(-1).event, 'Evidence updated');
+  assert.ok(!currentReview(current.input, assessCase(current.input).drafts, current.review));
+});
+test('sequential latest-state case mutation preserves unrelated concurrent edits', async () => {
+  const cases = seed(), second = structuredClone(operationCases[0]), assessment = assessCase(second);
+  cases[second.id] = { input: second, analyzed: true, drafts: assessment.drafts, history: [] };
+  const storage = mockStore(cases), locks = lockManager();
+  const before = storage.cases();
+  const changeA = { ...before, 'OPS-105': { ...before['OPS-105'], drafts: { ...before['OPS-105'].drafts, internal: 'Fresh local draft' } } };
+  const changeB = { ...before, 'OPS-101': { ...before['OPS-101'], input: { ...before['OPS-101'].input, owner: 'Another owner' } } };
+  await Promise.all([
+    withWorkspaceWriteLock(locks, () => writeWorkspaceChange(storage, before, changeA, latest => ({ ...latest, 'OPS-105': { ...latest['OPS-105'], drafts: changeA['OPS-105'].drafts } }))),
+    withWorkspaceWriteLock(locks, () => writeWorkspaceChange(storage, before, changeB, latest => ({ ...latest, 'OPS-101': { ...latest['OPS-101'], input: changeB['OPS-101'].input } }))),
+  ]);
+  assert.equal(storage.cases()['OPS-105'].drafts.internal, 'Fresh local draft');
+  assert.equal(storage.cases()['OPS-101'].input.owner, 'Another owner');
+});
+test('a second tab cannot overwrite an already saved same-case edit with an older version', async () => {
+  const store = mockStore(), before = store.cases();
+  const change1 = structuredClone(before); change1['OPS-105'].drafts.client += ' First change';
+  const change2 = structuredClone(before); change2['OPS-105'].drafts.client += ' Stale change';
+  const locks = lockManager();
+  await withWorkspaceWriteLock(locks, () => writeWorkspaceChange(store, before, change1));
+  const written = store.getItem(WORKSPACE_STORAGE_KEY), writes = store.writes();
+  await assert.rejects(
+    withWorkspaceWriteLock(locks, () => writeWorkspaceChange(store, before, change2)),
+    WorkspaceWriteError,
+  );
+  assert.equal(store.getItem(WORKSPACE_STORAGE_KEY), written);
+  assert.equal(store.writes(), writes);
+});
+test('review and case editing fail closed if native cross-tab locking is unavailable', async () => {
+  const store = mockStore(), snapshot = capture(store);
+  await assert.rejects(withWorkspaceWriteLock(undefined, () => submit(store, snapshot)), WorkspaceWriteError);
+  await assert.rejects(withWorkspaceWriteLock(undefined, () => changePayment(store, store.cases()['OPS-105'], 1)()), WorkspaceWriteError);
+  assert.equal(store.writes(), 0);
 });
