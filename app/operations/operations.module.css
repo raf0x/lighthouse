@@ -385,3 +385,12 @@
   .importDialog .dialogActions { flex-wrap: wrap; }
   .importDialog .dialogActions button { flex: 1 1 auto; }
 }
+
+/* Read-only legacy recovery, deliberately separate from v2 review actions. */
+.legacyRecovery { min-width: 0; margin: 0 0 24px; }
+.legacyRecovery > details { border-top: 1px solid var(--border-subtle); padding: 12px 0; }
+.legacyRecovery > details > summary, .legacyCase > summary { cursor: pointer; color: var(--fg-2); font-size: 12px; line-height: 1.6; }
+.legacyRecoveryBody { min-width: 0; padding: 12px 0 0; }
+.legacyRecoveryActions { display: flex; flex-wrap: wrap; gap: 10px; margin: 12px 0; }
+.legacyCase { margin-top: 12px; padding: 10px 0; border-top: 1px solid var(--border-subtle); }
+.legacyCase pre { max-height: 300px; overflow: auto; white-space: pre-wrap; overflow-wrap: anywhere; font: 11px/1.5 var(--font-mono); margin-top: 10px; color: var(--fg-2); }

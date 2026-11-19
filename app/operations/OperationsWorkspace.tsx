@@ -4,19 +4,20 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import { useWorkspace } from '../components/WorkspaceProvider';
-import { accountHref, accountIdForCase } from '../lib/workspace';
+import { accountHref, accountIdForCase, captureReviewSnapshot, matchesReviewSnapshot, StaleReviewError, type ReviewSnapshot } from '../lib/workspace';
 import { ArrowRight, ArrowUpRight, Check, CheckCheck, ChevronRight, CircleAlert, Clock3, Download, FileText, FolderOpen, ListChecks, PencilLine, Play, RotateCcw, Search, ShieldCheck, Upload, X } from 'lucide-react';
 import Header from '../components/Header';
 import AgentInvestigation from './AgentInvestigation';
 import CaseImport from './CaseImport';
 import EvidenceUpdate, { EvidenceHistory } from './EvidenceUpdate';
+import LegacyRecovery from './LegacyRecovery';
 import { acceptEvidenceUpdate, addImportedCase } from '../lib/operations-import';
 import { AGENT_VERSION } from '../lib/operations-agent';
 import type { AgentRun } from '../lib/operations-agent';
 import { accounts } from '../lib/lighthouse';
 import {
   ENGINE_VERSION, operationCases, assessCase, currentReview, decisionLabels, evidenceAudit,
-  evidenceFor, exportCase, inputSignature, money, recordReview, scenarioDate, validCase,
+  evidenceFor, inputSignature, money, scenarioDate, validCase,
   type AuditEntry, type CaseWorkspace, type Currency, type Drafts, type OperationCase, type PaymentState, type ReviewStatus,
 } from '../lib/operations';
 import styles from './operations.module.css';
@@ -28,11 +29,12 @@ function activity(event: string, detail: string): AuditEntry {
   return { id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`, at: new Date().toISOString(), event, detail };
 }
 
-function EvidenceEditor({ input, onClose, onSave }: { input: OperationCase; onClose: () => void; onSave: (next: OperationCase) => void }) {
+function EvidenceEditor({ input, onClose, onSave }: { input: OperationCase; onClose: () => void; onSave: (next: OperationCase) => Promise<string | null> }) {
   const ref = useRef<HTMLDialogElement>(null);
   const [error, setError] = useState('');
+  const [saving, setSaving] = useState(false);
   useEffect(() => { ref.current?.showModal(); }, []);
-  function submit(event: React.FormEvent<HTMLFormElement>) {
+  async function submit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const values = new FormData(event.currentTarget);
     const get = (name: string) => String(values.get(name) ?? '').trim();
@@ -47,7 +49,13 @@ function EvidenceEditor({ input, onClose, onSave }: { input: OperationCase; onCl
       crmPaymentStatus: get('crmStatus') as PaymentState,
     };
     if (!validCase(next)) { setError('Enter valid amounts with up to two decimal places. Invoice amount must be greater than zero.'); return; }
-    onSave(next);
+    setSaving(true);
+    try {
+      const message = await onSave(next);
+      if (message) setError(message);
+    } catch (error) {
+      setError(error instanceof Error ? error.message : 'Evidence was not saved.');
+    } finally { setSaving(false); }
   }
   const statusSelect = (name: string, value: PaymentState, label: string) => <label>{label}<select name={name} defaultValue={value}><option value="missing">Missing</option><option value="pending">Pending</option><option value="cleared">Cleared</option></select></label>;
   const currencySelect = (name: string, value: Currency, label: string) => <label>{label}<select name={name} defaultValue={value}>{['USD', 'CAD', 'MXN'].map(c => <option key={c}>{c}</option>)}</select></label>;
@@ -70,14 +78,14 @@ function EvidenceEditor({ input, onClose, onSave }: { input: OperationCase; onCl
       </div></fieldset>
       <fieldset><legend>Allocation window</legend><label>Hours after the scenario clock<input type="number" name="deadlineHours" step="0.5" min="-168" max="720" defaultValue={(Date.parse(input.deadline) - Date.parse(input.asOf)) / 3_600_000} required /></label><p className={styles.small}>Scenario clock: {scenarioDate(input.asOf)}. Use a negative value for an elapsed deadline.</p></fieldset>
       {error && <p role="alert" className={styles.error}>{error}</p>}
-      <div className={styles.dialogActions}><button type="button" className={styles.secondary} onClick={onClose}>Cancel</button><button className={styles.primary} type="submit">Save evidence <ArrowRight size={15} /></button></div>
+      <div className={styles.dialogActions}><button type="button" className={styles.secondary} onClick={onClose}>Cancel</button><button className={styles.primary} type="submit" disabled={saving}>{saving ? 'Saving evidence…' : 'Save evidence'} <ArrowRight size={15} /></button></div>
     </form>
   </dialog>;
 }
 
 export default function OperationsWorkspace() {
   const [selectedId, setSelectedId] = useState(operationCases[0].id);
-  const { workspaces, setWorkspaces, loaded, storageError } = useWorkspace();
+  const { workspaces, saveWorkspaces, commitReview, getCurrentReviewPacket, loaded, saving, storageError, storageMessage, legacyMigration, legacyStatus } = useWorkspace();
   const searchParams = useSearchParams();
   const [query, setQuery] = useState('');
   const [filter, setFilter] = useState('all');
@@ -87,6 +95,8 @@ export default function OperationsWorkspace() {
   const [reviewer, setReviewer] = useState('');
   const [reviewNote, setReviewNote] = useState('');
   const [reviewMode, setReviewMode] = useState<ReviewStatus | null>(null);
+  const [reviewStart, setReviewStart] = useState<ReviewSnapshot | null>(null);
+  const [successfulReview, setSuccessfulReview] = useState<{ caseId: string; at: string; inputSignature: string; draftSignature: string } | null>(null);
   const [notice, setNotice] = useState('');
   const [reviewError, setReviewError] = useState('');
   const [resetting, setResetting] = useState(false);
@@ -103,6 +113,22 @@ export default function OperationsWorkspace() {
   const review = drafts && currentReview(input, drafts, saved?.review) ? saved?.review : undefined;
   const documents = useMemo(() => evidenceFor(input), [input]);
   const document = documents.find(d => d.id === sourceId) ?? documents[0];
+  useEffect(() => {
+    if (!reviewMode || !reviewStart) return;
+    if (!matchesReviewSnapshot(reviewStart, input, drafts)) {
+      setReviewMode(null);
+      setReviewStart(null);
+      setReviewError('');
+      setNotice('The evidence or messages changed while the confirmation was open. Review the current version before confirming.');
+    }
+  }, [reviewMode, reviewStart, input, drafts]);
+
+  const reviewNotice = (notice.startsWith('Plan approval recorded') || notice.startsWith('Revision request recorded'))
+    && successfulReview
+    && (successfulReview.caseId !== input.id || !review || review.at !== successfulReview.at
+      || review.inputSignature !== successfulReview.inputSignature || review.draftSignature !== successfulReview.draftSignature)
+    ? 'The evidence or message drafts changed after this review. Fresh human review is required.'
+    : notice;
   const countReviewed = Object.values(workspaces).filter(w => w.analyzed && w.drafts && w.review?.status === 'approved' && currentReview(w.input, w.drafts, w.review)).length;
   const countAnalyzed = Object.values(workspaces).filter(w => w.analyzed).length;
   const filtered = allCases.filter(c => {
@@ -120,83 +146,153 @@ export default function OperationsWorkspace() {
   }, [searchParams]);
 
   function selectCase(id: string) {
-    setSelectedId(id); setTab('Assessment'); setReviewMode(null); setReviewNote(''); setReviewError(''); setNotice(''); setResetting(false); setRemoving(false); setEditing(false); setUpdatingEvidence(false);
+    setSelectedId(id); setTab('Assessment'); setReviewMode(null); setReviewStart(null); setReviewNote(''); setReviewError(''); setNotice(''); setResetting(false); setRemoving(false); setEditing(false); setUpdatingEvidence(false);
     const url = new URL(window.location.href); url.searchParams.set('case', id); url.searchParams.delete('tab'); url.searchParams.delete('import'); window.history.pushState({}, '', url);
   }
   function update(next: Partial<CaseWorkspace>, entry?: AuditEntry) {
-    setWorkspaces(previous => {
+    return saveWorkspaces(previous => {
       const current = previous[base.id] ?? { input: base, analyzed: false, history: [] };
       return { ...previous, [base.id]: { ...current, ...next, history: [...current.history, ...(entry ? [entry] : [])].slice(-100) } };
     });
   }
-  function analyze() {
+  async function analyze() {
     const result = assessCase(input);
-    update({ analyzed: true, drafts: result.drafts, draftOrigin: undefined, review: undefined }, activity('Case analyzed', `${result.findings.length} ${result.findings.length === 1 ? 'finding' : 'findings'}. ${decisionLabels[result.decision]}. Checked with ${ENGINE_VERSION}.`));
-    setTab('Assessment'); setReviewMode(null); setReviewError(''); setNotice('Checks complete. Review the evidence and proposed next step.');
+    setNotice('Saving assessment…');
+    try {
+      await update({ analyzed: true, drafts: result.drafts, draftOrigin: undefined, review: undefined },
+        activity('Case analyzed', String(result.findings.length) + ' findings. ' + decisionLabels[result.decision] + '. Checked with ' + ENGINE_VERSION + '.'));
+      setTab('Assessment'); setReviewMode(null); setReviewError('');
+      setNotice('Checks complete. Review the evidence and proposed next step.');
+    } catch (error) { setNotice(error instanceof Error ? error.message : 'Assessment not saved.'); }
   }
-  function applyAgentDrafts(run: AgentRun) {
-    if (run.inputSignature !== inputSignature(input)) { setNotice('The evidence changed. Run a new investigation before using its drafts.'); return; }
-    update({ analyzed: true, drafts: run.report.drafts, draftOrigin: { model: run.model, runId: run.runId, completedAt: run.completedAt }, review: undefined }, activity('AI drafts applied', `Drafts from ${run.model}, run ${run.runId}. Policy checks remain authoritative; human review required.`));
-    setTab('Message drafts'); setReviewMode(null); setReviewError(''); setNotice('AI drafts applied. Review and edit them, then complete Harbor review. Previous approval cleared.');
+  async function applyAgentDrafts(run: AgentRun) {
+    if (run.inputSignature !== inputSignature(input)) {
+      setNotice('The evidence changed. Run a new investigation before using its drafts.'); return;
+    }
+    setNotice('Saving applied drafts…');
+    try {
+      await update({ analyzed: true, drafts: run.report.drafts,
+        draftOrigin: { model: run.model, runId: run.runId, completedAt: run.completedAt }, review: undefined },
+        activity('AI drafts applied', 'Drafts from ' + run.model + ', run ' + run.runId + '. Policy checks remain authoritative; human review required.'));
+      setTab('Message drafts'); setReviewMode(null); setReviewError('');
+      setNotice('AI drafts applied. Review and edit them, then complete Harbor review. Previous approval cleared.');
+    } catch (error) { setNotice(error instanceof Error ? error.message : 'Drafts not saved.'); }
   }
   function openSource(id: string) { setSourceId(id); setTab('Source records'); }
-  function saveEvidence(next: OperationCase) {
+  async function saveEvidence(next: OperationCase): Promise<string | null> {
     const entry = activity('Evidence updated', 'Previous assessment and review cleared. New analysis required.');
     entry.evidence = evidenceAudit(input, next, 'manual', review);
-    update({ input: next, analyzed: false, drafts: undefined, draftOrigin: undefined, review: undefined }, entry);
-    setEditing(false); setReviewMode(null); setReviewError(''); setTab('Assessment'); setNotice('Evidence saved. Run the checks to assess the updated case.');
+    try {
+      await update({ input: next, analyzed: false, drafts: undefined, draftOrigin: undefined, review: undefined }, entry);
+      setEditing(false); setReviewMode(null); setReviewError(''); setTab('Assessment');
+      setNotice('Evidence saved. Run the checks to assess the updated case.');
+      return null;
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Evidence was not saved.';
+      setNotice(message);
+      return message;
+    }
   }
   function editDraft(kind: keyof Drafts, text: string) {
     if (!drafts) return;
-    const entry = saved?.history[saved.history.length - 1]?.event === 'Drafts edited' ? undefined : activity('Drafts edited', 'Message text changed. Any prior review cleared.');
-    update({ drafts: { ...drafts, [kind]: text }, review: undefined }, entry);
-    setReviewMode(null); setNotice('Draft saved locally. Human review is required for this version.');
+    const entry = saved?.history[saved.history.length - 1]?.event === 'Drafts edited'
+      ? undefined : activity('Drafts edited', 'Message text changed. Any prior review cleared.');
+    setReviewMode(null);
+    setNotice('Saving draft edits…');
+    void update({ drafts: { ...drafts, [kind]: text }, review: undefined }, entry)
+      .then(() => setNotice('Draft saved locally. Human review is required for this version.'))
+      .catch(error => setNotice(error instanceof Error ? error.message : 'Draft edits were not saved.'));
   }
-  function submitReview(event: React.FormEvent) {
+  function openReview(mode: ReviewStatus) {
+    if (!assessment || !drafts || !loaded) return;
+    try {
+      setReviewStart(captureReviewSnapshot(input, drafts));
+      setReviewMode(mode);
+      setReviewError('');
+    } catch { setReviewError('The saved case cannot be verified. Review was not opened.'); }
+  }
+  async function submitReview(event: React.FormEvent) {
     event.preventDefault();
     if (!assessment || !drafts || !reviewMode) return;
     try {
-      const recorded = recordReview(input, assessment, drafts, reviewer, reviewMode, reviewNote, new Date().toISOString());
-      update({ review: recorded }, activity(reviewMode === 'approved' ? 'Plan approved locally' : 'Changes requested', `${recorded.reviewer}: ${recorded.note || 'Reviewed this evidence and these drafts.'} Nothing sent or released.`));
-      setReviewMode(null); setReviewError(''); setNotice(reviewMode === 'approved' ? 'Plan approval recorded on this device. No messages sent, invoices changed, or tickets released.' : 'Revision request recorded. Update the evidence or drafts, then review again.');
-    } catch (err) { setReviewError(err instanceof Error ? err.message : 'Review could not be recorded.'); }
+      if (!reviewStart || !matchesReviewSnapshot(reviewStart, input, drafts)) throw new StaleReviewError();
+      const recorded = await commitReview(reviewStart, reviewer, reviewMode, reviewNote, new Date().toISOString());
+      setSuccessfulReview({ caseId: reviewStart.caseId, at: recorded.at,
+        inputSignature: recorded.inputSignature, draftSignature: recorded.draftSignature });
+      setReviewMode(null); setReviewStart(null); setReviewError('');
+      setNotice(reviewMode === 'approved' ? 'Plan approval recorded on this device. No messages sent, invoices changed, or tickets released.' : 'Revision request recorded. Update the evidence or drafts, then review again.');
+    } catch (err) {
+      if (err instanceof StaleReviewError) {
+        setReviewMode(null); setReviewStart(null); setReviewError('');
+        setNotice(err.message);
+      } else {
+        setReviewError(err instanceof Error ? err.message : 'Review could not be recorded.');
+      }
+    }
   }
-  function download() {
-    if (!assessment || !drafts) return;
-    const blob = new Blob([exportCase(input, assessment, drafts, review, saved?.history ?? [], saved?.draftOrigin)], { type: 'text/markdown;charset=utf-8' });
-    const url = URL.createObjectURL(blob); const a = window.document.createElement('a');
-    a.href = url; a.download = `Lighthouse-${input.id}-review.md`; window.document.body.appendChild(a); a.click(); a.remove();
-    window.setTimeout(() => URL.revokeObjectURL(url), 1000);
-    setNotice('Review packet downloaded with the source records and current review status.');
+  async function download() {
+    if (!loaded) return;
+    setNotice('Preparing review packet from current saved evidence…');
+    try {
+      const packet = await getCurrentReviewPacket(input.id);
+      const blob = new Blob([packet.content], { type: 'text/markdown;charset=utf-8' });
+      const url = URL.createObjectURL(blob); const a = window.document.createElement('a');
+      a.href = url; a.download = packet.filename;
+      window.document.body.appendChild(a); a.click(); a.remove();
+      window.setTimeout(() => URL.revokeObjectURL(url), 1000);
+      setNotice(packet.currentStatus === 'pending'
+        ? 'Current saved review packet downloaded. Pending human review.'
+        : 'Current saved ' + packet.currentStatus + ' review packet downloaded.');
+    } catch (error) {
+      setNotice(error instanceof Error ? error.message : 'Could not verify saved evidence. No packet was downloaded.');
+    }
   }
-  function reset() {
-    const entry = activity(base.imported ? 'Imported records restored' : 'Sample restored', 'Original evidence restored. Previous review cleared.');
+  async function reset() {
+    const entry = activity(base.imported ? 'Imported records restored' : 'Sample restored',
+      'Original evidence restored. Previous review cleared.');
     entry.evidence = evidenceAudit(input, base, 'restore', review);
-    update({ input: base, analyzed: false, drafts: undefined, draftOrigin: undefined, review: undefined }, entry);
-    setResetting(false); setReviewMode(null); setTab('Assessment'); setNotice(base.imported ? 'Original imported records restored.' : 'Original sample restored.');
-  }
-  function acceptImport(next: OperationCase) {
+    setNotice('Restoring original evidence…');
     try {
-      setWorkspaces(addImportedCase(workspaces, next, activity('Case imported', `Reviewed CSV fields from ${next.imported!.fileName}, row 2. No analysis or approval imported.`)));
-      setImporting(false); setQuery(''); setFilter('all'); selectCase(next.id); setTab('Source records'); setSourceId('account');
+      await update({ input: base, analyzed: false, drafts: undefined, draftOrigin: undefined, review: undefined }, entry);
+      setResetting(false); setReviewMode(null); setTab('Assessment');
+      setNotice(base.imported ? 'Original imported records restored.' : 'Original sample restored.');
+    } catch (error) { setNotice(error instanceof Error ? error.message : 'Original evidence was not restored.'); }
+  }
+  async function acceptImport(next: OperationCase) {
+    try {
+      await saveWorkspaces(previous => addImportedCase(previous, next,
+        activity('Case imported', 'Reviewed CSV fields from ' + next.imported!.fileName + ', row 2. No analysis or approval imported.')));
+      setImporting(false); setQuery(''); setFilter('all');
+      selectCase(next.id); setTab('Source records'); setSourceId('account');
       setNotice('Case added. Inspect the records, then analyze this case. No AI call was made.');
-    } catch (err) { setNotice(err instanceof Error ? err.message : 'The case could not be added.'); }
+    } catch (error) { setNotice(error instanceof Error ? error.message : 'The imported case was not saved.'); }
   }
-  function acceptFollowUp(next: OperationCase, expectedSignature: string): string | null {
+  async function acceptFollowUp(next: OperationCase, expectedSignature: string): Promise<string | null> {
     try {
-      setWorkspaces(acceptEvidenceUpdate(workspaces, input.id, next, expectedSignature, activity('CSV evidence accepted', '')));
-      setUpdatingEvidence(false); setReviewMode(null); setReviewError(''); setReviewNote(''); setTab('Assessment');
+      await saveWorkspaces(previous => acceptEvidenceUpdate(previous, input.id, next,
+        expectedSignature, activity('CSV evidence accepted', '')));
+      setUpdatingEvidence(false); setReviewMode(null); setReviewError(''); setReviewNote('');
+      setTab('Assessment');
       setNotice('Evidence updated and policy checks rerun. Previous approval cleared; fresh local drafts are ready. View Activity for the comparison.');
       return null;
-    } catch (err) { return err instanceof Error ? err.message : 'This update could not be accepted. The case has not changed.'; }
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'This update was not saved.';
+      setNotice(message);
+      return message;
+    }
   }
-  function removeImported() {
+  async function removeImported() {
     if (!base.imported) return;
-    const next = { ...workspaces }; delete next[base.id]; setWorkspaces(next);
-    try { localStorage.removeItem(`lighthouse-${AGENT_VERSION}-${base.id}`); } catch { /* storage warning is handled by workspace persistence */ }
-    setSelectedId(operationCases[0].id); setTab('Assessment'); setRemoving(false); setReviewMode(null); setResetting(false);
-    const url = new URL(window.location.href); url.searchParams.delete('case'); window.history.replaceState({}, '', url);
-    setNotice('Imported case removed from this browser. You can import the original CSV again.');
+    try {
+      await saveWorkspaces(previous => { const next = { ...previous }; delete next[base.id]; return next; });
+      try { localStorage.removeItem('lighthouse-' + AGENT_VERSION + '-' + base.id); }
+      catch { /* Storage warning is handled by workspace persistence. */ }
+      setSelectedId(operationCases[0].id); setTab('Assessment');
+      setRemoving(false); setReviewMode(null); setResetting(false);
+      const url = new URL(window.location.href); url.searchParams.delete('case');
+      window.history.replaceState({}, '', url);
+      setNotice('Imported case removed from this browser. You can import the original CSV again.');
+    } catch (error) { setNotice(error instanceof Error ? error.message : 'Imported case was not removed.'); }
   }
   const nextActionLabel = !assessment ? 'Check evidence' : assessment.decision !== 'ready_for_review' ? 'Resolve blockers' : review?.status === 'approved' ? 'View reviewed plan' : 'Review plan';
   function nextAction() {
@@ -214,8 +310,10 @@ export default function OperationsWorkspace() {
           <div><h1>Operations</h1><p>One case, its evidence, and a clear next step.</p></div>
           <button className={styles.secondary} disabled={!loaded} onClick={() => setImporting(true)}><FolderOpen size={16} /> Import case</button>
         </section>
-        <div className={styles.overview} aria-label="Workspace summary"><div><FolderOpen size={17} /><strong>{allCases.length}</strong><span>{importedCases.length ? `cases · ${importedCases.length} imported` : 'sample cases'}</span></div><div><ListChecks size={17} /><strong>{countAnalyzed}</strong><span>analyzed</span></div><div><ShieldCheck size={17} /><strong>{countReviewed}</strong><span>plans approved locally</span></div><div className={styles.saveStatus}><span className={styles.statusDot} data-error={storageError} />{!loaded ? 'Loading workspace…' : storageError ? 'Session only · storage unavailable' : 'Saved on this device'}</div></div>
-        {storageError && <p role="alert" className={styles.error}>Browser storage is unavailable. Your work remains in this session; download a review packet before leaving.</p>}
+        <div className={styles.overview} aria-label="Workspace summary"><div><FolderOpen size={17} /><strong>{allCases.length}</strong><span>{importedCases.length ? `cases · ${importedCases.length} imported` : 'sample cases'}</span></div><div><ListChecks size={17} /><strong>{countAnalyzed}</strong><span>analyzed</span></div><div><ShieldCheck size={17} /><strong>{countReviewed}</strong><span>plans approved locally</span></div><div className={styles.saveStatus}><span className={styles.statusDot} data-error={storageError} />{!loaded ? 'Loading workspace…' : storageError ? 'Save unavailable' : saving ? 'Saving changes…' : 'Saved on this device'}</div></div>
+        {storageError && <p role="alert" className={styles.error}>{storageMessage || 'Safe saving is unavailable. Your change was not recorded.'}</p>}
+        {legacyMigration && <p className={styles.muted}>Your earlier evidence and drafts were copied into a protected workspace. Old approvals require fresh review. Older open tabs cannot synchronize changes here.</p>}
+        <LegacyRecovery status={legacyStatus} />
         <label className={styles.mobileCasePicker}>Choose a case<select value={input.id} onChange={e => selectCase(e.target.value)}>{allCases.map(c => <option key={c.id} value={c.id}>{c.account} · {c.orderId}</option>)}</select></label>
         <div className={styles.workspace}>
           <aside className={styles.queue} aria-label="Case queue">
@@ -242,7 +340,7 @@ export default function OperationsWorkspace() {
               if (e.key === 'ArrowRight') index = (index + 1) % tabs.length; else if (e.key === 'ArrowLeft') index = (index + tabs.length - 1) % tabs.length; else if (e.key === 'Home') index = 0; else if (e.key === 'End') index = tabs.length - 1; else return;
               e.preventDefault(); setTab(tabs[index]); window.document.getElementById(`tab-${tabs[index].replaceAll(' ', '-')}`)?.focus();
             }}>{item}{item === 'Source records' && <span>6</span>}</button>)}</div>
-            <div className={styles.notice} role="status" aria-live="polite">{notice}</div>
+            <div className={styles.notice} role="status" aria-live="polite">{reviewNotice}</div>
             <div className={styles.contentGrid}>
               <div id="case-panel" role="tabpanel" aria-labelledby={`tab-${tab.replaceAll(' ', '-')}`} className={styles.panel} tabIndex={0}>
                 {tab === 'Assessment' && (!assessment ? <div className={styles.startState}>
@@ -266,8 +364,8 @@ export default function OperationsWorkspace() {
                   {tab === 'Investigator' ? <><span className={styles.eyebrow}>YOUR REVIEW</span><h4>Review and apply the proposed messages.</h4><p>Plan approval covers the current drafts, not ticket release.</p></> : <><span className={styles.eyebrow}>PROPOSED NEXT STEP</span><h4>{assessment.recommendation}</h4><div className={styles.owner}><span>Owner</span><strong>{assessment.owner}</strong></div><button className={styles.textButton} onClick={() => setTab('Investigator')}>Ask the case investigator <ArrowRight size={14} /></button></>}
                   <button className={styles.textButton} onClick={() => setTab('Message drafts')}>Review message drafts <ArrowRight size={14} /></button>
                   {review && <div className={styles.reviewRecorded} data-approved={review.status === 'approved'}><ShieldCheck size={18} /><div><strong>{review.status === 'approved' ? 'Plan approved locally' : 'Changes requested'}</strong><p>{review.reviewer} · {dateTime(review.at)} ET</p>{review.note && <p>{review.note}</p>}</div></div>}
-                  {!reviewMode && <div className={styles.reviewActions}><button className={styles.primary} onClick={() => { setReviewMode('approved'); setReviewError(''); }} disabled={review?.status === 'approved'}><Check size={15} />{review?.status === 'approved' ? 'Approval recorded' : 'Approve plan'}</button><button className={styles.secondary} onClick={() => { setReviewMode('changes_requested'); setReviewError(''); }}>Request changes</button></div>}
-                  {reviewMode && <form className={styles.reviewForm} onSubmit={submitReview}><h4>{reviewMode === 'approved' ? 'Confirm this review' : 'What needs to change?'}</h4><p>{reviewMode === 'approved' ? 'You are approving the proposed plan and current message drafts. This does not approve or execute ticket release.' : 'Record the missing detail or correction needed before this plan can be approved.'}</p><label>Reviewer name<input autoFocus value={reviewer} onChange={e => setReviewer(e.target.value)} maxLength={100} required placeholder="Your name" /></label><label>{reviewMode === 'changes_requested' ? 'Required changes' : 'Review note (optional)'}<textarea value={reviewNote} onChange={e => setReviewNote(e.target.value)} required={reviewMode === 'changes_requested'} maxLength={2000} rows={3} /></label>{reviewError && <p role="alert" className={styles.error}>{reviewError}</p>}<button className={styles.primary} type="submit">{reviewMode === 'approved' ? 'Confirm plan approval' : 'Record revision request'}</button><button className={styles.textButton} type="button" onClick={() => setReviewMode(null)}>Cancel</button></form>}
+                  {!reviewMode && <div className={styles.reviewActions}><button className={styles.primary} onClick={() => openReview('approved')} disabled={review?.status === 'approved'}><Check size={15} />{review?.status === 'approved' ? 'Approval recorded' : 'Approve plan'}</button><button className={styles.secondary} onClick={() => openReview('changes_requested')}>Request changes</button></div>}
+                  {reviewMode && <form className={styles.reviewForm} onSubmit={submitReview}><h4>{reviewMode === 'approved' ? 'Confirm this review' : 'What needs to change?'}</h4><p>{reviewMode === 'approved' ? 'You are approving the proposed plan and current message drafts. This does not approve or execute ticket release.' : 'Record the missing detail or correction needed before this plan can be approved.'}</p><label>Reviewer name<input autoFocus value={reviewer} onChange={e => setReviewer(e.target.value)} maxLength={100} required placeholder="Your name" /></label><label>{reviewMode === 'changes_requested' ? 'Required changes' : 'Review note (optional)'}<textarea value={reviewNote} onChange={e => setReviewNote(e.target.value)} required={reviewMode === 'changes_requested'} maxLength={2000} rows={3} /></label>{reviewError && <p role="alert" className={styles.error}>{reviewError}</p>}<button className={styles.primary} type="submit" disabled={!reviewStart || !matchesReviewSnapshot(reviewStart, input, drafts)}>{reviewMode === 'approved' ? 'Confirm plan approval' : 'Record revision request'}</button><button className={styles.textButton} type="button" onClick={() => { setReviewMode(null); setReviewStart(null); }}>Cancel</button></form>}
                 </>}
                 <div className={styles.boundary}><ShieldCheck size={14} /><p>Review is saved on this device. No message is sent, invoice changed, or ticket released.</p></div>
                 {assessment && <button className={styles.download} onClick={download}><Download size={15} /> Download review packet</button>}

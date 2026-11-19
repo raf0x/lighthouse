@@ -1,0 +1,52 @@
+name: L1 P1 v1-v2 Storage Contract QA
+
+on:
+  push:
+    branches:
+      - fix/l1-approval-provenance-20261119
+  workflow_dispatch:
+
+jobs:
+  storage-qa:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - name: Checkout exact candidate
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
+      - name: Setup Node 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - name: Install locked project dependencies
+        run: npm ci
+      - name: Unit and contract assertions
+        run: npm test
+      - name: Typecheck
+        run: npm run typecheck
+      - name: Production build
+        run: npm run build
+      - name: Whitespace and scope check
+        run: git diff --check HEAD^ HEAD
+      - name: Install temporary browser QA tools
+        run: |
+          npm install --no-save --package-lock=false playwright@1.56.1
+          npx playwright install --with-deps chromium firefox webkit
+      - name: Chromium, Firefox and WebKit storage/recovery release assertions
+        run: |
+          npm start -- -p 3000 > /tmp/lighthouse-next.log 2>&1 &
+          for i in {1..40}; do
+            if curl -fsS http://127.0.0.1:3000/operations > /dev/null; then break; fi
+            sleep 1
+          done
+          curl -fsS http://127.0.0.1:3000/operations > /dev/null || { cat /tmp/lighthouse-next.log; exit 1; }
+          node scripts/qa-operations-browser.cjs
+      - name: Upload browser screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: l1-p1-storage-browser-evidence
+          path: storage-qa-screenshots/
+          if-no-files-found: ignore
