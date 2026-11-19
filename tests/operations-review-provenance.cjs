@@ -505,3 +505,29 @@ test('storage failures and unavailable locks never acknowledge migration or revi
   await assert.rejects(withWorkspaceWriteLock(locks, () => writeCurrentReview(denied,snapshot,'QA Reviewer','approved','',at)), /Write denied/);
   assert.equal(savedReview(store), undefined);
 });
+
+test('silent localStorage write drop never acknowledges migration, v2 edit or approval', async () => {
+  const first = twoKeyStorage({ [LEGACY_WORKSPACE_STORAGE_KEY]: legacyRaw() });
+  const noOpMigration = {
+    getItem: first.getItem,
+    setItem() { /* Simulated storage adapter silently drops writes */ },
+  };
+  await assert.rejects(initializeWorkspaceStore(noOpMigration), /could not be verified/);
+  assert.equal(first.raw(WORKSPACE_STORAGE_KEY), null);
+  assert.equal(first.raw(LEGACY_WORKSPACE_STORAGE_KEY), legacyRaw());
+
+  await initializeWorkspaceStore(first);
+  const before = readAuthoritativeWorkspace(first).workspaces;
+  const noOp = { getItem: first.getItem, setItem() {} };
+  const signature = captureReviewSnapshot(before['OPS-105'].input, before['OPS-105'].drafts);
+  const rawBefore = first.raw(WORKSPACE_STORAGE_KEY);
+  assert.throws(() => writeCurrentReview(noOp, signature, 'Browser QA', 'approved', '', at), /could not be verified/);
+  assert.equal(first.raw(WORKSPACE_STORAGE_KEY), rawBefore);
+  assert.equal(readAuthoritativeWorkspace(first).workspaces['OPS-105'].review, undefined);
+
+  const edited = clone(before);
+  edited['OPS-105'].drafts.internal += ' New v2 text';
+  edited['OPS-105'].review = undefined;
+  assert.throws(() => writeWorkspaceChange(noOp, before, edited), /could not be verified/);
+  assert.equal(first.raw(WORKSPACE_STORAGE_KEY), rawBefore);
+});

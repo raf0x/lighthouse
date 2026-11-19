@@ -107,6 +107,9 @@ export function writeCurrentReview(
   const serialized = serializeAuthoritativeWorkspace(workspaces, legacyBaseline);
   if (serialized.length > MAX_WORKSPACE_CHARACTERS) throw new Error('Workspace size limit. The review was not recorded.');
   storage.setItem(WORKSPACE_STORAGE_KEY, serialized);
+  if (storage.getItem(WORKSPACE_STORAGE_KEY) !== serialized) {
+    throw new WorkspaceWriteError('The v2 write could not be verified in browser storage. Do not rely on a save confirmation.');
+  }
   return { workspaces, serialized, review };
 }
 
@@ -158,7 +161,12 @@ export function writeWorkspaceChange(
   }
   const serialized = serializeAuthoritativeWorkspace(merged, legacyBaseline);
   if (serialized.length > MAX_WORKSPACE_CHARACTERS) throw new WorkspaceWriteError('Workspace size limit. Your change was not recorded.');
-  if (serialized !== original) storage.setItem(WORKSPACE_STORAGE_KEY, serialized);
+  if (serialized !== original) {
+    storage.setItem(WORKSPACE_STORAGE_KEY, serialized);
+    if (storage.getItem(WORKSPACE_STORAGE_KEY) !== serialized) {
+      throw new WorkspaceWriteError('The v2 write could not be verified in browser storage. Do not rely on a save confirmation.');
+    }
+  }
   return { workspaces: merged, serialized };
 }
 
@@ -295,5 +303,8 @@ export async function initializeWorkspaceStore(
   // A write during digest/migration will be marked as unsynchronized by the
   // post-commit inspector; the originally captured snapshot remains v2 truth.
   storage.setItem(WORKSPACE_STORAGE_KEY, raw);
+  if (storage.getItem(WORKSPACE_STORAGE_KEY) !== raw) {
+    throw new WorkspaceWriteError('The v2 write could not be verified in browser storage. Do not rely on a save confirmation.');
+  }
   return { workspaces: migrated, migrated: legacy !== null };
 }

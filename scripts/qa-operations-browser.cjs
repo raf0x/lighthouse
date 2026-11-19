@@ -187,15 +187,18 @@ async function scenario(browser, name, ordering, width) {
 }
 
 async function failureModes(browser, name) {
-  for (const failed of ['no-locks', 'write-denied']) {
+  for (const failed of ['no-locks', 'write-denied', 'write-noop']) {
     const context = await browser.newContext({ viewport: { width: 390, height: 844 } });
     await context.addInitScript(({ raw, v1, v2, failed }) => {
       localStorage.setItem(v1, raw);
       if (failed === 'no-locks') Object.defineProperty(navigator, 'locks', { configurable: true, value: undefined });
-      if (failed === 'write-denied') {
+      if (failed === 'write-denied' || failed === 'write-noop') {
         const original = Storage.prototype.setItem;
         Storage.prototype.setItem = function (key, value) {
-          if (key === v2) throw new Error('Simulated v2 write denied');
+          if (key === v2) {
+            if (failed === 'write-denied') throw new Error('Simulated v2 write denied');
+            return undefined;
+          }
           return original.call(this, key, value);
         };
       }
@@ -213,6 +216,24 @@ async function failureModes(browser, name) {
       await context.close();
     }
   }
+}
+
+async function immediateSuccessRetraction(browser, name) {
+  const { context, page } = await loadWithLegacy(browser, 390);
+  try {
+    await approve(page);
+    assert.ok(await page.getByText('Plan approval recorded on this device').count() > 0,
+      'successful v2 review initially has visible success notice');
+    await page.getByRole('button', { name: 'Review message drafts' }).click();
+    await page.getByRole('textbox', { name: 'Client update' }).fill(drafts.client + ' Current v2 edit');
+    await page.getByText('Draft saved locally.').waitFor({ timeout: 15000 });
+    assert.equal(await page.getByText('Plan approval recorded on this device').count(), 0,
+      'v2 draft edit must retract the earlier approval success notice');
+    const latest = (await currentV2(page)).cases['OPS-105'];
+    assert.equal(latest.review, undefined);
+    assert.ok(latest.drafts.client.endsWith('Current v2 edit'));
+    console.log(`PASS ${name} 390px: live success notice retracted on genuine v2 draft change`);
+  } finally { await context.close(); }
 }
 
 async function layoutWidths(browser, name) {
@@ -236,6 +257,7 @@ async function layoutWidths(browser, name) {
       await layoutWidths(browser, name);
       await scenario(browser, name, 'v1-first', 390);
       await scenario(browser, name, 'v2-first', 1440);
+      await immediateSuccessRetraction(browser, name);
       await failureModes(browser, name);
     } finally { await browser.close(); }
   }
