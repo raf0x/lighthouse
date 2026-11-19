@@ -119,9 +119,9 @@ export class WorkspaceWriteError extends Error {
 }
 export const WORKSPACE_SAVE_UNAVAILABLE = 'Safe cross-tab saving is unavailable in this browser. Your change was not recorded.';
 export const WORKSPACE_CHANGED_MESSAGE = 'This case changed in another tab. Your outdated edit was not saved. Review the current case before editing again.';
-export async function withWorkspaceWriteLock<T>(locks: LockManager | undefined, write: () => T): Promise<T> {
+export async function withWorkspaceWriteLock<T>(locks: LockManager | undefined, write: () => T): Promise<Awaited<T>> {
   if (!locks || typeof locks.request !== 'function') throw new WorkspaceWriteError(WORKSPACE_SAVE_UNAVAILABLE);
-  return locks.request(WORKSPACE_WRITE_LOCK, { mode: 'exclusive' }, write);
+  return await locks.request(WORKSPACE_WRITE_LOCK, { mode: 'exclusive' }, write);
 }
 
 /** Ignore activity and review changes when deciding if a later evidence edit
