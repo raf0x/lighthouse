@@ -4,7 +4,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import { useWorkspace } from '../components/WorkspaceProvider';
-import { accountHref, accountIdForCase } from '../lib/workspace';
+import { accountHref, accountIdForCase, captureReviewSnapshot, matchesReviewSnapshot, StaleReviewError, type ReviewSnapshot } from '../lib/workspace';
 import { ArrowRight, ArrowUpRight, Check, CheckCheck, ChevronRight, CircleAlert, Clock3, Download, FileText, FolderOpen, ListChecks, PencilLine, Play, RotateCcw, Search, ShieldCheck, Upload, X } from 'lucide-react';
 import Header from '../components/Header';
 import AgentInvestigation from './AgentInvestigation';
@@ -16,7 +16,7 @@ import type { AgentRun } from '../lib/operations-agent';
 import { accounts } from '../lib/lighthouse';
 import {
   ENGINE_VERSION, operationCases, assessCase, currentReview, decisionLabels, evidenceAudit,
-  evidenceFor, exportCase, inputSignature, money, recordReview, scenarioDate, validCase,
+  evidenceFor, exportCase, inputSignature, money, scenarioDate, validCase,
   type AuditEntry, type CaseWorkspace, type Currency, type Drafts, type OperationCase, type PaymentState, type ReviewStatus,
 } from '../lib/operations';
 import styles from './operations.module.css';
@@ -77,7 +77,7 @@ function EvidenceEditor({ input, onClose, onSave }: { input: OperationCase; onCl
 
 export default function OperationsWorkspace() {
   const [selectedId, setSelectedId] = useState(operationCases[0].id);
-  const { workspaces, setWorkspaces, loaded, storageError } = useWorkspace();
+  const { workspaces, setWorkspaces, commitReview, loaded, storageError } = useWorkspace();
   const searchParams = useSearchParams();
   const [query, setQuery] = useState('');
   const [filter, setFilter] = useState('all');
@@ -87,6 +87,7 @@ export default function OperationsWorkspace() {
   const [reviewer, setReviewer] = useState('');
   const [reviewNote, setReviewNote] = useState('');
   const [reviewMode, setReviewMode] = useState<ReviewStatus | null>(null);
+  const [reviewStart, setReviewStart] = useState<ReviewSnapshot | null>(null);
   const [notice, setNotice] = useState('');
   const [reviewError, setReviewError] = useState('');
   const [resetting, setResetting] = useState(false);
@@ -103,6 +104,16 @@ export default function OperationsWorkspace() {
   const review = drafts && currentReview(input, drafts, saved?.review) ? saved?.review : undefined;
   const documents = useMemo(() => evidenceFor(input), [input]);
   const document = documents.find(d => d.id === sourceId) ?? documents[0];
+  useEffect(() => {
+    if (!reviewMode || !reviewStart) return;
+    if (!matchesReviewSnapshot(reviewStart, input, drafts)) {
+      setReviewMode(null);
+      setReviewStart(null);
+      setReviewError('');
+      setNotice('The evidence or messages changed while the confirmation was open. Review the current version before confirming.');
+    }
+  }, [reviewMode, reviewStart, input, drafts]);
+
   const countReviewed = Object.values(workspaces).filter(w => w.analyzed && w.drafts && w.review?.status === 'approved' && currentReview(w.input, w.drafts, w.review)).length;
   const countAnalyzed = Object.values(workspaces).filter(w => w.analyzed).length;
   const filtered = allCases.filter(c => {
@@ -120,7 +131,7 @@ export default function OperationsWorkspace() {
   }, [searchParams]);
 
   function selectCase(id: string) {
-    setSelectedId(id); setTab('Assessment'); setReviewMode(null); setReviewNote(''); setReviewError(''); setNotice(''); setResetting(false); setRemoving(false); setEditing(false); setUpdatingEvidence(false);
+    setSelectedId(id); setTab('Assessment'); setReviewMode(null); setReviewStart(null); setReviewNote(''); setReviewError(''); setNotice(''); setResetting(false); setRemoving(false); setEditing(false); setUpdatingEvidence(false);
     const url = new URL(window.location.href); url.searchParams.set('case', id); url.searchParams.delete('tab'); url.searchParams.delete('import'); window.history.pushState({}, '', url);
   }
   function update(next: Partial<CaseWorkspace>, entry?: AuditEntry) {
@@ -152,14 +163,28 @@ export default function OperationsWorkspace() {
     update({ drafts: { ...drafts, [kind]: text }, review: undefined }, entry);
     setReviewMode(null); setNotice('Draft saved locally. Human review is required for this version.');
   }
+  function openReview(mode: ReviewStatus) {
+    if (!assessment || !drafts || !loaded) return;
+    setReviewStart(captureReviewSnapshot(input, drafts));
+    setReviewMode(mode);
+    setReviewError('');
+  }
   function submitReview(event: React.FormEvent) {
     event.preventDefault();
     if (!assessment || !drafts || !reviewMode) return;
     try {
-      const recorded = recordReview(input, assessment, drafts, reviewer, reviewMode, reviewNote, new Date().toISOString());
-      update({ review: recorded }, activity(reviewMode === 'approved' ? 'Plan approved locally' : 'Changes requested', `${recorded.reviewer}: ${recorded.note || 'Reviewed this evidence and these drafts.'} Nothing sent or released.`));
-      setReviewMode(null); setReviewError(''); setNotice(reviewMode === 'approved' ? 'Plan approval recorded on this device. No messages sent, invoices changed, or tickets released.' : 'Revision request recorded. Update the evidence or drafts, then review again.');
-    } catch (err) { setReviewError(err instanceof Error ? err.message : 'Review could not be recorded.'); }
+      if (!reviewStart || !matchesReviewSnapshot(reviewStart, input, drafts)) throw new StaleReviewError();
+      commitReview(reviewStart, reviewer, reviewMode, reviewNote, new Date().toISOString());
+      setReviewMode(null); setReviewStart(null); setReviewError('');
+      setNotice(reviewMode === 'approved' ? 'Plan approval recorded on this device. No messages sent, invoices changed, or tickets released.' : 'Revision request recorded. Update the evidence or drafts, then review again.');
+    } catch (err) {
+      if (err instanceof StaleReviewError) {
+        setReviewMode(null); setReviewStart(null); setReviewError('');
+        setNotice(err.message);
+      } else {
+        setReviewError(err instanceof Error ? err.message : 'Review could not be recorded.');
+      }
+    }
   }
   function download() {
     if (!assessment || !drafts) return;
@@ -266,8 +291,8 @@ export default function OperationsWorkspace() {
                   {tab === 'Investigator' ? <><span className={styles.eyebrow}>YOUR REVIEW</span><h4>Review and apply the proposed messages.</h4><p>Plan approval covers the current drafts, not ticket release.</p></> : <><span className={styles.eyebrow}>PROPOSED NEXT STEP</span><h4>{assessment.recommendation}</h4><div className={styles.owner}><span>Owner</span><strong>{assessment.owner}</strong></div><button className={styles.textButton} onClick={() => setTab('Investigator')}>Ask the case investigator <ArrowRight size={14} /></button></>}
                   <button className={styles.textButton} onClick={() => setTab('Message drafts')}>Review message drafts <ArrowRight size={14} /></button>
                   {review && <div className={styles.reviewRecorded} data-approved={review.status === 'approved'}><ShieldCheck size={18} /><div><strong>{review.status === 'approved' ? 'Plan approved locally' : 'Changes requested'}</strong><p>{review.reviewer} · {dateTime(review.at)} ET</p>{review.note && <p>{review.note}</p>}</div></div>}
-                  {!reviewMode && <div className={styles.reviewActions}><button className={styles.primary} onClick={() => { setReviewMode('approved'); setReviewError(''); }} disabled={review?.status === 'approved'}><Check size={15} />{review?.status === 'approved' ? 'Approval recorded' : 'Approve plan'}</button><button className={styles.secondary} onClick={() => { setReviewMode('changes_requested'); setReviewError(''); }}>Request changes</button></div>}
-                  {reviewMode && <form className={styles.reviewForm} onSubmit={submitReview}><h4>{reviewMode === 'approved' ? 'Confirm this review' : 'What needs to change?'}</h4><p>{reviewMode === 'approved' ? 'You are approving the proposed plan and current message drafts. This does not approve or execute ticket release.' : 'Record the missing detail or correction needed before this plan can be approved.'}</p><label>Reviewer name<input autoFocus value={reviewer} onChange={e => setReviewer(e.target.value)} maxLength={100} required placeholder="Your name" /></label><label>{reviewMode === 'changes_requested' ? 'Required changes' : 'Review note (optional)'}<textarea value={reviewNote} onChange={e => setReviewNote(e.target.value)} required={reviewMode === 'changes_requested'} maxLength={2000} rows={3} /></label>{reviewError && <p role="alert" className={styles.error}>{reviewError}</p>}<button className={styles.primary} type="submit">{reviewMode === 'approved' ? 'Confirm plan approval' : 'Record revision request'}</button><button className={styles.textButton} type="button" onClick={() => setReviewMode(null)}>Cancel</button></form>}
+                  {!reviewMode && <div className={styles.reviewActions}><button className={styles.primary} onClick={() => openReview('approved')} disabled={review?.status === 'approved'}><Check size={15} />{review?.status === 'approved' ? 'Approval recorded' : 'Approve plan'}</button><button className={styles.secondary} onClick={() => openReview('changes_requested')}>Request changes</button></div>}
+                  {reviewMode && <form className={styles.reviewForm} onSubmit={submitReview}><h4>{reviewMode === 'approved' ? 'Confirm this review' : 'What needs to change?'}</h4><p>{reviewMode === 'approved' ? 'You are approving the proposed plan and current message drafts. This does not approve or execute ticket release.' : 'Record the missing detail or correction needed before this plan can be approved.'}</p><label>Reviewer name<input autoFocus value={reviewer} onChange={e => setReviewer(e.target.value)} maxLength={100} required placeholder="Your name" /></label><label>{reviewMode === 'changes_requested' ? 'Required changes' : 'Review note (optional)'}<textarea value={reviewNote} onChange={e => setReviewNote(e.target.value)} required={reviewMode === 'changes_requested'} maxLength={2000} rows={3} /></label>{reviewError && <p role="alert" className={styles.error}>{reviewError}</p>}<button className={styles.primary} type="submit" disabled={!reviewStart || !matchesReviewSnapshot(reviewStart, input, drafts)}>{reviewMode === 'approved' ? 'Confirm plan approval' : 'Record revision request'}</button><button className={styles.textButton} type="button" onClick={() => { setReviewMode(null); setReviewStart(null); }}>Cancel</button></form>}
                 </>}
                 <div className={styles.boundary}><ShieldCheck size={14} /><p>Review is saved on this device. No message is sent, invoice changed, or ticket released.</p></div>
                 {assessment && <button className={styles.download} onClick={download}><Download size={15} /> Download review packet</button>}

@@ -1,5 +1,10 @@
 import { accounts, calculateHealthScore, bandLabel } from './lighthouse';
-import { assessCase, currentReview, decisionLabels, operationCases, type Assessment, type AuditEntry, type CaseWorkspace, type Currency, type OperationCase } from './operations';
+import {
+  ENGINE_VERSION, MAX_WORKSPACE_CHARACTERS, assessCase, currentReview, decisionLabels, inputSignature,
+  operationCases, recordReview, restoreWorkspaces,
+  type Assessment, type AuditEntry, type CaseReview, type CaseWorkspace, type Currency,
+  type Drafts, type OperationCase, type ReviewStatus,
+} from './operations';
 import type { Account } from '../components/types';
 
 export const WORKSPACE_STORAGE_KEY = 'lighthouse-operations-v1';
@@ -57,4 +62,49 @@ export function changeSummary(event: AuditEntry) {
   const removed = evidence.before.findings.filter(f => !evidence.after.findings.includes(f));
   const added = evidence.after.findings.filter(f => !evidence.before.findings.includes(f));
   return [removed.length ? `No longer flagged: ${removed.join('; ')}.` : '', added.length ? `New: ${added.join('; ')}.` : '', !removed.length && !added.length ? `${evidence.changes.length} field${evidence.changes.length === 1 ? '' : 's'} changed; the findings stayed the same.` : '', evidence.previousReview ? 'Previous approval or review cleared.' : ''].filter(Boolean).join(' ');
+}
+
+/** The exact case and both messages visible when a human opens a review. */
+export type ReviewSnapshot = { caseId: string; inputSignature: string; draftSignature: string };
+export const STALE_REVIEW_MESSAGE = 'This case evidence or its message drafts changed. Review the current version and open a new confirmation.';
+export class StaleReviewError extends Error {
+  constructor() { super(STALE_REVIEW_MESSAGE); this.name = 'StaleReviewError'; }
+}
+export function captureReviewSnapshot(input: OperationCase, drafts: Drafts): ReviewSnapshot {
+  return { caseId: input.id, inputSignature: inputSignature(input), draftSignature: JSON.stringify(drafts) };
+}
+export function matchesReviewSnapshot(snapshot: ReviewSnapshot, input: OperationCase, drafts?: Drafts): boolean {
+  return Boolean(drafts && snapshot.caseId === input.id &&
+    snapshot.inputSignature === inputSignature(input) &&
+    snapshot.draftSignature === JSON.stringify(drafts));
+}
+
+/** Read, compare, and write the authoritative browser-local case synchronously.
+ * An unrelated case may change while a form is open; its saved update survives.
+ */
+export function writeCurrentReview(
+  storage: Pick<Storage, 'getItem' | 'setItem'>,
+  snapshot: ReviewSnapshot, reviewer: string, status: ReviewStatus, note: string, at: string,
+): { workspaces: Workspaces; serialized: string; review: CaseReview } {
+  const raw = storage.getItem(WORKSPACE_STORAGE_KEY);
+  const latest = restoreWorkspaces(raw);
+  const saved = latest[snapshot.caseId];
+  if (!raw || !saved?.analyzed || !matchesReviewSnapshot(snapshot, saved.input, saved.drafts)) {
+    throw new StaleReviewError();
+  }
+  const review = recordReview(saved.input, assessCase(saved.input), saved.drafts!, reviewer, status, note, at);
+  const entry: AuditEntry = {
+    id: Date.now() + '-' + Math.random().toString(36).slice(2, 8),
+    at, event: status === 'approved' ? 'Plan approved locally' : 'Changes requested',
+    detail: review.reviewer + ': ' + (review.note || 'Reviewed this evidence and these drafts.') + ' Nothing sent or released.',
+  };
+  const workspaces: Workspaces = {
+    ...latest, [snapshot.caseId]: {
+      ...saved, review, history: [...saved.history, entry].slice(-100),
+    },
+  };
+  const serialized = JSON.stringify({ version: ENGINE_VERSION, cases: workspaces });
+  if (serialized.length > MAX_WORKSPACE_CHARACTERS) throw new Error('Workspace size limit. The review was not recorded.');
+  storage.setItem(WORKSPACE_STORAGE_KEY, serialized);
+  return { workspaces, serialized, review };
 }
