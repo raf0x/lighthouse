@@ -59,6 +59,18 @@ async function loadWithLegacy(browser, width) {
   const page = await context.newPage();
   await page.goto(base + '/operations?case=OPS-105');
   await page.getByText('Saved on this device').first().waitFor({ timeout: 15000 });
+  // A rendered status alone is not a release assertion. In WebKit a new
+  // isolated context may complete hydration before the storage read is
+  // observable in the test's next evaluation. Assert the exact committed v2
+  // envelope independently before inspecting any of its case records.
+  await page.waitForFunction(key => {
+    const raw = localStorage.getItem(key);
+    if (!raw) return false;
+    try {
+      const saved = JSON.parse(raw);
+      return Boolean(saved?.cases?.['OPS-105']);
+    } catch { return false; }
+  }, V2, { timeout: 15000 });
   assert.equal(await storageRaw(page, V1), v1Initial);
   const v2 = await currentV2(page);
   assert.equal(v2.cases['OPS-105'].input.payment.amountCents, 4800000);
