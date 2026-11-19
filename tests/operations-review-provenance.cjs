@@ -14,7 +14,7 @@ const {
 const {
   WORKSPACE_STORAGE_KEY, StaleReviewError, captureReviewSnapshot, matchesReviewSnapshot,
   writeCurrentReview, writeWorkspaceChange, withWorkspaceWriteLock, WORKSPACE_WRITE_LOCK, WorkspaceWriteError,
-  LEGACY_WORKSPACE_STORAGE_KEY, initializeWorkspaceStore, inspectLegacyWorkspace, readAuthoritativeWorkspace,
+  LEGACY_WORKSPACE_STORAGE_KEY, initializeWorkspaceStore, inspectLegacyWorkspace, readAuthoritativeWorkspace, createAuthoritativeReviewPacket,
 } = require('../app/lib/workspace.ts');
 
 const { addImportedCase, parseCaseCsv, CSV_TEMPLATE } = require('../app/lib/operations-import.ts');
@@ -530,4 +530,67 @@ test('silent localStorage write drop never acknowledges migration, v2 edit or ap
   edited['OPS-105'].review = undefined;
   assert.throws(() => writeWorkspaceChange(noOp, before, edited), /could not be verified/);
   assert.equal(first.raw(WORKSPACE_STORAGE_KEY), rawBefore);
+});
+
+test('export of a current approved v2 review uses exact saved evidence and drafts', () => {
+  const store=mockStore(), snapshot=capture(store);
+  submit(store,snapshot);
+  const report=createAuthoritativeReviewPacket(store,'OPS-105');
+  const current=store.cases()['OPS-105'];
+  assert.equal(report.currentStatus,'approved');
+  assert.equal(report.filename,'Lighthouse-OPS-105-review.md');
+  assert.match(report.content,/approved by QA Reviewer/);
+  assert.ok(report.content.includes(current.drafts.internal));
+  assert.ok(report.content.includes(current.drafts.client));
+  assert.equal(report.content.includes('Pending human review.'),false);
+});
+test('stale React approval must never determine payment evidence export', () => {
+  const store=mockStore(), snapshot=capture(store);
+  submit(store,snapshot);
+  const tabARender=store.cases()['OPS-105'];
+  externalChange(store, w=>{
+    w.input.payment.amountCents=4799999;
+    w.analyzed=false;
+    w.drafts=undefined;
+    w.review=undefined;
+  });
+  // Tab A never received a storage event; its previous render is still approved.
+  assert.ok(tabARender.review);
+  const report=createAuthoritativeReviewPacket(store,'OPS-105');
+  assert.equal(report.currentStatus,'pending');
+  assert.match(report.content,/Pending human review/);
+  assert.match(report.content,/47,999\.99/);
+  assert.doesNotMatch(report.content,/approved by QA Reviewer/);
+  assert.match(report.content,/unreviewed templates below were generated/);
+  assert.equal(store.cases()['OPS-105'].review,undefined);
+});
+for(const kind of ['internal','client']){
+  test('stale React approval cannot export old '+kind+' message draft as approved',()=>{
+    const store=mockStore(),snapshot=capture(store);
+    submit(store,snapshot);
+    const earlier=store.cases()['OPS-105'][ 'drafts' ][kind];
+    externalChange(store,w=>{w.drafts[kind] += ' UPDATED IN OTHER TAB';w.review=undefined;});
+    const report=createAuthoritativeReviewPacket(store,'OPS-105');
+    assert.equal(report.currentStatus,'pending');
+    assert.match(report.content,/Pending human review/);
+    assert.ok(report.content.includes(earlier+' UPDATED IN OTHER TAB'));
+    assert.doesNotMatch(report.content,/approved by QA Reviewer/);
+  });
+}
+test('authoritative export does not read legacy v1 data after strict cutover',async()=>{
+  const store=twoKeyStorage({[LEGACY_WORKSPACE_STORAGE_KEY]:JSON.stringify({version:ENGINE_VERSION,cases:seed()})});
+  await initializeWorkspaceStore(store);
+  const old=JSON.parse(store.getItem(LEGACY_WORKSPACE_STORAGE_KEY));
+  old.cases['OPS-105'].input.payment.amountCents=4799999;
+  store.setItem(LEGACY_WORKSPACE_STORAGE_KEY,JSON.stringify(old));
+  const packet=createAuthoritativeReviewPacket(store,'OPS-105');
+  assert.equal(packet.currentStatus,'pending');
+  assert.match(packet.content,/48,000\.00/);
+  assert.doesNotMatch(packet.content,/47,999\.99/);
+});
+test('authoritative export fails closed if case is absent or v2 storage is corrupt',()=>{
+  const store=mockStore();
+  assert.throws(()=>createAuthoritativeReviewPacket(store,'OPS-NOT-FOUND'),WorkspaceWriteError);
+  const broken={getItem:()=>'{',setItem(){}};
+  assert.throws(()=>createAuthoritativeReviewPacket(broken,'OPS-105'),WorkspaceWriteError);
 });

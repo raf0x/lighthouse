@@ -1,7 +1,7 @@
 import { accounts, calculateHealthScore, bandLabel } from './lighthouse';
 import {
   ENGINE_VERSION, MAX_WORKSPACE_CHARACTERS, assessCase, currentReview, decisionLabels, inputSignature,
-  operationCases, recordReview, restoreWorkspaces,
+  operationCases, recordReview, restoreWorkspaces, exportCase,
   type Assessment, type AuditEntry, type CaseReview, type CaseWorkspace, type Currency,
   type Drafts, type OperationCase, type ReviewStatus,
 } from './operations';
@@ -307,4 +307,32 @@ export async function initializeWorkspaceStore(
     throw new WorkspaceWriteError('The v2 write could not be verified in browser storage. Do not rely on a save confirmation.');
   }
   return { workspaces: migrated, migrated: legacy !== null };
+}
+
+
+/** Build a packet only from persisted, authoritative v2 data. Callers must
+ * hold the existing exclusive v2 lock, including while the packet is built.
+ * React state and storage notifications are never trusted for an export.
+ */
+export function createAuthoritativeReviewPacket(
+  storage: Pick<Storage, 'getItem'>, caseId: string,
+): { content: string; filename: string; currentStatus: 'approved' | 'changes_requested' | 'pending' } {
+  const saved = readAuthoritativeWorkspace(storage).workspaces[caseId];
+  if (!saved) {
+    throw new WorkspaceWriteError('This case no longer exists in the saved workspace. No packet was downloaded.');
+  }
+  const assessment = assessCase(saved.input);
+  const drafts = saved.drafts ?? assessment.drafts;
+  const review = saved.analyzed && saved.drafts && currentReview(saved.input, saved.drafts, saved.review)
+    ? saved.review : undefined;
+  let content = exportCase(saved.input, assessment, drafts, review, saved.history, saved.draftOrigin);
+  if (!saved.analyzed || !saved.drafts) {
+    content = content.replace('\n## Internal draft\n',
+      '\n**Draft status:** No current saved plan drafts exist for this evidence. The unreviewed templates below were generated from the saved evidence solely for this export. Fresh assessment and human review are required.\n\n## Internal draft\n');
+  }
+  return {
+    content,
+    filename: 'Lighthouse-' + saved.input.id + '-review.md',
+    currentStatus: review?.status ?? 'pending',
+  };
 }

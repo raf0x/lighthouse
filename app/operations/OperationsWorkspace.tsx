@@ -17,7 +17,7 @@ import type { AgentRun } from '../lib/operations-agent';
 import { accounts } from '../lib/lighthouse';
 import {
   ENGINE_VERSION, operationCases, assessCase, currentReview, decisionLabels, evidenceAudit,
-  evidenceFor, exportCase, inputSignature, money, scenarioDate, validCase,
+  evidenceFor, inputSignature, money, scenarioDate, validCase,
   type AuditEntry, type CaseWorkspace, type Currency, type Drafts, type OperationCase, type PaymentState, type ReviewStatus,
 } from '../lib/operations';
 import styles from './operations.module.css';
@@ -85,7 +85,7 @@ function EvidenceEditor({ input, onClose, onSave }: { input: OperationCase; onCl
 
 export default function OperationsWorkspace() {
   const [selectedId, setSelectedId] = useState(operationCases[0].id);
-  const { workspaces, saveWorkspaces, commitReview, loaded, saving, storageError, storageMessage, legacyMigration, legacyStatus } = useWorkspace();
+  const { workspaces, saveWorkspaces, commitReview, getCurrentReviewPacket, loaded, saving, storageError, storageMessage, legacyMigration, legacyStatus } = useWorkspace();
   const searchParams = useSearchParams();
   const [query, setQuery] = useState('');
   const [filter, setFilter] = useState('all');
@@ -230,13 +230,22 @@ export default function OperationsWorkspace() {
       }
     }
   }
-  function download() {
-    if (!assessment || !drafts) return;
-    const blob = new Blob([exportCase(input, assessment, drafts, review, saved?.history ?? [], saved?.draftOrigin)], { type: 'text/markdown;charset=utf-8' });
-    const url = URL.createObjectURL(blob); const a = window.document.createElement('a');
-    a.href = url; a.download = `Lighthouse-${input.id}-review.md`; window.document.body.appendChild(a); a.click(); a.remove();
-    window.setTimeout(() => URL.revokeObjectURL(url), 1000);
-    setNotice('Review packet downloaded with the source records and current review status.');
+  async function download() {
+    if (!loaded) return;
+    setNotice('Preparing review packet from current saved evidence…');
+    try {
+      const packet = await getCurrentReviewPacket(input.id);
+      const blob = new Blob([packet.content], { type: 'text/markdown;charset=utf-8' });
+      const url = URL.createObjectURL(blob); const a = window.document.createElement('a');
+      a.href = url; a.download = packet.filename;
+      window.document.body.appendChild(a); a.click(); a.remove();
+      window.setTimeout(() => URL.revokeObjectURL(url), 1000);
+      setNotice(packet.currentStatus === 'pending'
+        ? 'Current saved review packet downloaded. Pending human review.'
+        : 'Current saved ' + packet.currentStatus + ' review packet downloaded.');
+    } catch (error) {
+      setNotice(error instanceof Error ? error.message : 'Could not verify saved evidence. No packet was downloaded.');
+    }
   }
   async function reset() {
     const entry = activity(base.imported ? 'Imported records restored' : 'Sample restored',

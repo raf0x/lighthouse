@@ -2,7 +2,7 @@
 
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type Dispatch, type SetStateAction } from 'react';
 import {
-  changedWorkspaceCases, initializeWorkspaceStore, inspectLegacyWorkspace, LEGACY_WORKSPACE_STORAGE_KEY,
+  changedWorkspaceCases, createAuthoritativeReviewPacket, initializeWorkspaceStore, inspectLegacyWorkspace, LEGACY_WORKSPACE_STORAGE_KEY,
   readAuthoritativeWorkspace, StaleReviewError, WORKSPACE_SAVE_UNAVAILABLE, WORKSPACE_STORAGE_KEY, WorkspaceWriteError,
   withWorkspaceWriteLock, writeCurrentReview, writeWorkspaceChange,
   type LegacyRecoveryStatus, type ReviewSnapshot, type Workspaces,
@@ -20,6 +20,7 @@ type WorkspaceContext = {
   legacyMigration: boolean;
   legacyStatus: LegacyRecoveryStatus;
   commitReview: (snapshot: ReviewSnapshot, reviewer: string, status: ReviewStatus, note: string, at: string) => Promise<CaseReview>;
+  getCurrentReviewPacket: (caseId: string) => Promise<ReturnType<typeof createAuthoritativeReviewPacket>>;
 };
 const Context = createContext<WorkspaceContext | null>(null);
 
@@ -178,11 +179,22 @@ export default function WorkspaceProvider({ children }: { children: React.ReactN
     }
   }, [reloadAuthoritative]);
 
+  const getCurrentReviewPacket = useCallback(async (caseId: string) => {
+    if (!initialized.current) throw new WorkspaceWriteError(WORKSPACE_SAVE_UNAVAILABLE);
+    // Flush this tab's pending edits first. Never export optimistic text.
+    await queue.current;
+    // Other current v2 tabs can only edit under the same exclusive lock.
+    const packet = await withWorkspaceWriteLock(navigator.locks, () =>
+      createAuthoritativeReviewPacket(localStorage, caseId));
+    if (!pending.current) reloadAuthoritative();
+    return packet;
+  }, [reloadAuthoritative]);
+
   const value = useMemo(
     () => ({ workspaces, setWorkspaces, saveWorkspaces, loaded, saving, storageError, storageMessage,
-      legacyMigration, legacyStatus, commitReview }),
+      legacyMigration, legacyStatus, commitReview, getCurrentReviewPacket }),
     [workspaces, setWorkspaces, saveWorkspaces, loaded, saving, storageError, storageMessage,
-      legacyMigration, legacyStatus, commitReview],
+      legacyMigration, legacyStatus, commitReview, getCurrentReviewPacket],
   );
   return <Context.Provider value={value}>{children}</Context.Provider>;
 }
